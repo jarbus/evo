@@ -1,0 +1,1 @@
+--class-name ss --model large --window 3 3 --pop-size 2 --num-agents 2 --gx 11 --gy 11 --food-types 2 --num-agents 2 --fires 5 5 --foods 0 0 0 0 10 0 1 0 10 1 10 10 --num-gens 200000000 --checkpoint-interval 500 --day-steps 24 --food-agent-start 0.0 --food-env-spawn 5.0 --episode-length 200 --light-coeff 10.0 --pickup-coeff 1.0
