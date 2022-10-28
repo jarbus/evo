@@ -199,14 +199,20 @@ end
 
 function make_large_model(input_size::NTuple{4,Int}, output_size::Integer)
   Chain(
-    Conv((3, 3), input_size[3] => 3, pad=(1, 1), sigmoid, bias=randn(Float32, 3)),
+    Conv((3, 3), input_size[3] => 32, pad=(1, 1), sigmoid, bias=randn(Float32, 3)),
+    VirtualBatchNorm(),
+    Conv((3, 3), 32 => 32, pad=(1, 1), sigmoid, bias=randn(Float32, 3)),
+    VirtualBatchNorm(),
+    Conv((3, 3), 32 => 32, pad=(1, 1), sigmoid, bias=randn(Float32, 3)),
     VirtualBatchNorm(),
     Flux.flatten,
     # Dense(147 => 16, relu),
     # make sure to call reset! when batch size changes
-    LSTM(147 => 16),
+    LSTM(1568 => 256),
     relu,
-    Dense(16 => output_size),
+    Dense(256 => 128),
+    relu,
+    Dense(128 => output_size),
     softmax
   )
 end
