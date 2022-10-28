@@ -1,6 +1,34 @@
 using Distributed
 
-addprocs(3)
+function get_procs(str)
+    full_cpus_per_node = Vector{Int}()
+    for c in str
+        m = match(r"(\d+)\(x(\d+)\)",c)
+        if !isnothing(m)
+            for i in 1:parse(Int, m[2])
+                push!(full_cpus_per_node, parse(Int, m[1]))
+            end
+        else
+            push!(full_cpus_per_node, parse(Int, c))
+        end
+    end
+    full_cpus_per_node
+end
+
+
+
+cpus_per_node = get_procs(split( ENV["SLURM_JOB_CPUS_PER_NODE"],","))
+
+nodelist = ENV["SLURM_JOB_NODELIST"]
+hostnames = read(`scontrol show hostnames "$nodelist"`, String) |> strip |> split .|> String
+@assert length(cpus_per_node) == length(hostnames)
+
+machine_specs = [hostspec for hostspec in zip(hostnames, cpus_per_node)]
+println(machine_specs)
+# TODO FIX SSH NOT FINDING HOT NAMES
+addprocs(machine_specs, max_parallel=100, multiplex=true)
+println("nprocs $(nprocs())")
+
 @everywhere begin
   include("args.jl")
   include("es.jl")
@@ -65,19 +93,18 @@ function main()
 
   println("--------------------------------------")
   @everywhere begin
-    pop_size = 2
+    pop_size = 50
     mut = 0.1f0
-    α = 0.001f0
+    α = 0.0001f0
     rng = StableRNG(0)
     env = Trade.PyTrade.Trade(env_config)
-    batch_size = 10
+    batch_size = 5
     base_model = make_model(:small, (env.obs_size..., batch_size), env.num_actions)
     θ, re = Flux.destructure(base_model)
     model_size = size(θ)[1]
   end
 
   print("Generation 0: ")
-  # fitness(re(θ), print=true)
 
   for i in 1:2000
 
@@ -86,12 +113,13 @@ function main()
 
     for p1 in 1:pop_size
       for p2 in 1:pop_size
+        println("$p1 <-> $p2")
 
-        θ_n1 = θ .+ (mut * N[p1, :])
-        θ_n2 = θ .+ (mut * N[p2, :])
+        #θ_n1 = θ .+ (mut * N[p1, :])
+        #θ_n2 = θ .+ (mut * N[p2, :])
 
-        rew_dict = run_batch(batch_size, Dict("f0a0" => re(θ_n1),
-          "f1a0" => re(θ_n2)))
+        #rew_dict = run_batch(batch_size, Dict("f0a0" => re(θ_n1),
+        #  "f1a0" => re(θ_n2)))
 
         fut = remotecall(procs()[(p2%nprocs())+1]) do
           θ_n1 = θ .+ (mut * N[p1, :])
@@ -111,10 +139,12 @@ function main()
     A = (fits .- mean(fits)) ./ (std(fits) + 0.0001f0)
     @everywhere θ = θ .+ ((α / (pop_size * mut)) * (N' * $A))
 
-    if i % 20 == 0
+    if i % 1 == 0
       print("Generation $i: ")
-      # println(round(mean(fits), digits=2))
-      fitness(re(θ), print=true)
+      println(round(mean(fits), digits=2))
+      #fitness(re(θ), print=true)
     end
   end
 end
+
+main()
