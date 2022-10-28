@@ -35,6 +35,5 @@ s = ArgParseSettings()
   "--pickup-coeff"
   "--food-types"
 end
-line = iterate(eachline("2p-large-1.arg"))[1]
-file_args = split(line)
+file_args = read("2p-large-1.arg", String) |> split
 args = parse_args(file_args, s)
