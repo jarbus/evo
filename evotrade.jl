@@ -18,14 +18,13 @@ end
 
 
 cpus_per_node = get_procs(split( ENV["SLURM_JOB_CPUS_PER_NODE"],","))
-
 nodelist = ENV["SLURM_JOB_NODELIST"]
 hostnames = read(`scontrol show hostnames "$nodelist"`, String) |> strip |> split .|> String
 @assert length(cpus_per_node) == length(hostnames)
 
 machine_specs = [hostspec for hostspec in zip(hostnames, cpus_per_node)]
 println(machine_specs)
-# TODO FIX SSH NOT FINDING HOT NAMES
+#TODO FIX SSH NOT FINDING HOT NAMES
 addprocs(machine_specs, max_parallel=100, multiplex=true)
 println("nprocs $(nprocs())")
 
@@ -35,6 +34,7 @@ println("nprocs $(nprocs())")
   include("trade.jl")
 end
 @everywhere begin
+  args=$args
   using .DistributedES
   using .Trade
   using Flux
@@ -93,33 +93,29 @@ function main()
 
   println("--------------------------------------")
   @everywhere begin
-    pop_size = 50
-    mut = 0.1f0
-    α = 0.0001f0
+    pop_size = args["pop-size"]
+    mut = args["mutation-rate"]
+    α = args["alpha"]
     rng = StableRNG(0)
+    println("Making Env")
     env = Trade.PyTrade.Trade(env_config)
     batch_size = 5
+    println("Making Model")
     base_model = make_model(:small, (env.obs_size..., batch_size), env.num_actions)
     θ, re = Flux.destructure(base_model)
     model_size = size(θ)[1]
+    println("Done")
   end
 
   print("Generation 0: ")
 
-  for i in 1:2000
+  for i in 1:60
 
     @everywhere N = randn(rng, Float32, pop_size, model_size)
     futures = []
 
     for p1 in 1:pop_size
       for p2 in 1:pop_size
-        println("$p1 <-> $p2")
-
-        #θ_n1 = θ .+ (mut * N[p1, :])
-        #θ_n2 = θ .+ (mut * N[p2, :])
-
-        #rew_dict = run_batch(batch_size, Dict("f0a0" => re(θ_n1),
-        #  "f1a0" => re(θ_n2)))
 
         fut = remotecall(procs()[(p2%nprocs())+1]) do
           θ_n1 = θ .+ (mut * N[p1, :])
@@ -142,7 +138,6 @@ function main()
     if i % 1 == 0
       print("Generation $i: ")
       println(round(mean(fits), digits=2))
-      #fitness(re(θ), print=true)
     end
   end
 end
