@@ -27,6 +27,11 @@ s = ArgParseSettings()
   "--num-agents"
   arg_type = Int
   "--pop-size"
+  arg_type = Int
+  "--alpha"
+  arg_type = Float32
+  "--mutation-rate"
+  arg_type = Float32
   "--num-steps"
   "--checkpoint-interval"
   "--food-agent-start"
@@ -35,5 +40,4 @@ s = ArgParseSettings()
   "--pickup-coeff"
   "--food-types"
 end
-file_args = read("2p-large-1.arg", String) |> split
-args = parse_args(file_args, s)
+args = parse_args(s)
