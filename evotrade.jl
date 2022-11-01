@@ -108,13 +108,13 @@ function main()
   for i in 1:1000
 
     if i % 1 == 0
-      open("/home/garbus/evotrade/runs/$expname.log","a") do logfile
-          print(logfile, "Generation $i: ")
-          print(logfile, "mean $(round(mean(fits), digits=2)) ")
-          rew_dict = run_batch(batch_size, Dict("f0a0" => re(θ),
+      open("runs/$expname.log", "a") do logfile
+        print(logfile, "Generation $i: ")
+        i > 1 && print(logfile, "mean $(round(mean(fits), digits=2)) ")
+        rew_dict = run_batch(batch_size, Dict("f0a0" => re(θ),
             "f1a0" => re(θ)), evaluation=true)
-          avg_self_fit = (rew_dict["f0a0"] + rew_dict["f1a0"]) / 2
-          println(logfile, "$(round(avg_self_fit, digits=2)) ")
+        avg_self_fit = (rew_dict["f0a0"] + rew_dict["f1a0"]) / 2
+        println(logfile, "$(round(avg_self_fit, digits=2)) ")
       end
     end
 
