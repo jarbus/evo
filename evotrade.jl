@@ -1,4 +1,5 @@
 using Distributed
+using Dates
 include("args.jl")
 
 if !args["local"]
@@ -92,6 +93,7 @@ end
 
 function main()
 
+  dt_str = Dates.format(now(), "mm-dd_HH:MM")
   println("$expname")
   @everywhere begin
     pop_size = args["pop-size"]
@@ -108,7 +110,7 @@ function main()
   for i in 1:1000
 
     if i % 1 == 0
-      open("runs/$expname.log", "a") do logfile
+      open("runs/$dt_str-$expname.log", "a") do logfile
         print(logfile, "Generation $i: ")
         i > 1 && print(logfile, "mean $(round(mean(fits), digits=2)) ")
         rew_dict = run_batch(batch_size, Dict("f0a0" => re(θ),
