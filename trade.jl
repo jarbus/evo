@@ -52,11 +52,16 @@ end
 
 # TODO test batch size 1 on virtual batch normalization
 
-function batch_step!(envs::Vector{PyObject}, models::Dict{String,<:Chain}, obs::Dict{String,<:AbstractArray})
+function batch_step!(envs::Vector{PyObject}, models::Dict{String,<:Chain}, obs::Dict{String,<:AbstractArray}; evaluation=false)
   @assert length(obs) == 1
   name, ob = first(obs)
   probs = models[name](ob) # bottleneck
   acts = sample_batch(probs)
+  if evaluation
+    # matrix of floats to matrix of cartesian indicies
+    # to vector of cartesian indicies to vector of ints
+    acts = argmax(probs, dims=2)[:,1] .|> z->z[2]
+  end
   @assert length(acts) == length(envs)
   obss, rews, dones = Vector{PyDict{String,PyArray,true}}(), [], []
   for (env, act) in zip(envs, acts)

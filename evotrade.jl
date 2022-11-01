@@ -62,7 +62,7 @@ expname = args["exp-name"]
     "day_steps" => args["day-steps"],
     "vocab_size" => 0)
 
-  function run_batch(batch_size::Int, models::Dict{String,<:Chain})
+  function run_batch(batch_size::Int, models::Dict{String,<:Chain}; evaluation=false)
     benv = [Trade.PyTrade.Trade(env_config) for _ in 1:batch_size]
     obs_size = (benv[1].obs_size..., batch_size)
     num_actions = benv[1].num_actions
@@ -70,7 +70,7 @@ expname = args["exp-name"]
     max_steps = args["episode-length"] * args["num-agents"]
     rews = Dict(key => 0.0f0 for key in keys(models))
     for _ in 1:max_steps
-      b_obs, b_rew, b_dones = batch_step!(benv, models, b_obs)
+      b_obs, b_rew, b_dones = batch_step!(benv, models, b_obs, evaluation=evaluation)
       for rew_dict in b_rew
         for (name, rew) in rew_dict
           rews[name] += rew
@@ -103,9 +103,18 @@ function main()
     model_size = size(θ)[1]
   end
 
-  print("Generation 0: ")
+  for i in 1:1000
 
-  for i in 1:60
+    if i % 1 == 0
+      open("/home/garbus/evotrade/runs/$expname.log","a") do logfile
+          print(logfile, "Generation $i: ")
+          print(logfile, "mean $(round(mean(fits), digits=2)) ")
+          rew_dict = run_batch(batch_size, Dict("f0a0" => re(θ),
+            "f1a0" => re(θ)), evaluation=true)
+          avg_self_fit = (rew_dict["f0a0"] + rew_dict["f1a0"]) / 2
+          println(logfile, "$(round(avg_self_fit, digits=2)) ")
+      end
+    end
 
     @everywhere N = randn(rng, Float32, pop_size, model_size)
     futures = []
