@@ -1,6 +1,8 @@
 using ArgParse
 s = ArgParseSettings()
 @add_arg_table! s begin
+  "--local"
+  action = :store_true
   "--window"
   nargs = 2
   arg_type = Int
