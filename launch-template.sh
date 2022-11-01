@@ -2,9 +2,9 @@
 # shellcheck disable=SC2206
 
 #SBATCH --mail-type=END
-##SBATCH --mail-user=9147037394@vtext.com
+#SBATCH --mail-user=9147037394@vtext.com
 #SBATCH --job-name=${JOB_NAME}
-#SBATCH --output=/home/garbus/evotrade/runs/${JOB_NAME}.log
+#SBATCH --output=/home/garbus/evotrade/all.log
 #SBATCH --account=guest
 #SBATCH --time=24:00:00
 #SBATCH --partition=guest-compute
