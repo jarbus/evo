@@ -56,11 +56,12 @@ function batch_step!(envs::Vector{PyObject}, models::Dict{String,<:Chain}, obs::
   @assert length(obs) == 1
   name, ob = first(obs)
   probs = models[name](ob) # bottleneck
-  acts = sample_batch(probs)
   if evaluation
     # matrix of floats to matrix of cartesian indicies
     # to vector of cartesian indicies to vector of ints
-    acts = argmax(probs, dims=2)[:,1] .|> z->z[2]
+    acts = argmax(probs, dims=1)[1, :] .|> z -> z[2]
+  else
+    acts = sample_batch(probs)
   end
   @assert length(acts) == length(envs)
   obss, rews, dones = Vector{PyDict{String,PyArray,true}}(), [], []
