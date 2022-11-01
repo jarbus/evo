@@ -105,7 +105,7 @@ function main()
     model_size = size(θ)[1]
   end
 
-  for i in 1:1000
+  for i in 1:args["num-gens"]
 
     if i % 1 == 0
       open("runs/$expname.log", "a") do logfile
