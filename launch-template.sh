@@ -14,4 +14,4 @@
 
 source /home/garbus/.bashrc
 conda activate trade
-julia evotrade.jl $(cat /home/garbus/evotrade/afiles/${JOB_NAME}.arg)
+julia evotrade.jl $(cat /home/garbus/evotrade/afiles/${JOB_NAME}.arg) --exp-name ${JOB_NAME}

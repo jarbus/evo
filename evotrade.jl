@@ -33,6 +33,8 @@ println("nprocs $(nprocs())")
   include("es.jl")
   include("trade.jl")
 end
+
+expname = args["exp-name"]
 @everywhere begin
   args=$args
   using .DistributedES

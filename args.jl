@@ -14,6 +14,8 @@ s = ArgParseSettings()
   "--foods"
   nargs = '*'
   arg_type = Int
+  "--exp-name"
+  arg_type = String
   "--class-name"
   arg_type = String
   "--model"
