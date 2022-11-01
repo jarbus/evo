@@ -24,6 +24,8 @@ s = ArgParseSettings()
   arg_type = Int
   "--day-steps"
   arg_type = Int
+  "--batch-size"
+  arg_type = Int
   "--episode-length"
   arg_type = Int
   "--num-agents"
