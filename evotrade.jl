@@ -128,6 +128,14 @@ function main()
     end
 
     @everywhere N = randn(rng, Float32, pop_size, model_size)
+
+    # CHECK TO CONFIRM RNG IS SYNCHRONIZED
+    rands = [fetch(remotecall(() -> N[1], p)) for p in 1:nprocs()]
+    @assert length(unique(rands)) == 1
+
+
+
+
     futures = []
 
     for p1 in 1:pop_size
@@ -150,6 +158,7 @@ function main()
     fits = [compute_matrix_fitness(fits, i) for i in 1:pop_size]
     A = (fits .- mean(fits)) ./ (std(fits) + 0.0001f0)
     @everywhere θ = θ .+ ((α / (pop_size * mut)) * (N' * $A))
+
 
   end
 end
