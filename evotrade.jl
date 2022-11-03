@@ -157,7 +157,11 @@ function main()
     fits = reshape(fits, (pop_size, pop_size))
     fits = [compute_matrix_fitness(fits, i) for i in 1:pop_size]
     A = (fits .- mean(fits)) ./ (std(fits) + 0.0001f0)
-    @everywhere θ = θ .+ ((α / (pop_size * mut)) * (N' * $A))
+    @everywhere begin
+      θ_new = θ .+ ((α / (pop_size * mut)) * (N' * $A))
+      @assert θ_new != θ
+      θ = θ_new
+    end
 
 
   end
