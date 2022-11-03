@@ -1,5 +1,6 @@
 using Distributed
 using Dates
+using DataFrames
 
 if !args["local"]
   function get_procs(str)
@@ -88,7 +89,9 @@ expname = args["exp-name"]
 
       end
     end
-    Dict(name => rew / (args["episode-length"] * batch_size) for (name, rew) in rews)
+    rew_dict = Dict(name => rew / (args["episode-length"] * batch_size) for (name, rew) in rews)
+    mets = get_metrics(b_env[1])
+    rew_dict, mets
   end
 
 end
@@ -103,6 +106,7 @@ function main()
 
   dt_str = Dates.format(now(), "mm-dd_HH:MM")
   println("$expname")
+  df = nothing
   @everywhere begin
     pop_size = args["pop-size"]
     mut = args["mutation-rate"]
@@ -122,8 +126,14 @@ function main()
       run(`mkdir -p $outdir`)
       open("runs/$dt_str-$expname.log", "a") do logfile
         print(logfile, "Generation $i: ")
-        rew_dict = run_batch(4, Dict("f0a0" => re(θ),
+        rew_dict, mets = run_batch(4, Dict("f0a0" => re(θ),
             "f1a0" => re(θ)), evaluation=true, render_str=outdir)
+        if isnothing(df)
+          df = DataFrame(mets)
+        else
+          push!(df, mets)
+        end
+        CSV.write("outs/$expname/metrics.csv", df)
         avg_self_fit = (rew_dict["f0a0"] + rew_dict["f1a0"]) / 2
         println(logfile, "$(round(avg_self_fit, digits=2)) ")
       end
@@ -136,8 +146,6 @@ function main()
     @assert length(unique(rands)) == 1
 
 
-
-
     futures = []
 
     for p1 in 1:pop_size
@@ -147,7 +155,7 @@ function main()
           θ_n1 = θ .+ (mut * N[p1, :])
           θ_n2 = θ .+ (mut * N[p2, :])
 
-          rew_dict = run_batch(batch_size, Dict("f0a0" => re(θ_n1),
+          rew_dict, _ = run_batch(batch_size, Dict("f0a0" => re(θ_n1),
             "f1a0" => re(θ_n2)))
           rew_dict["f0a0"], rew_dict["f1a0"]
         end

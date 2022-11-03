@@ -1,6 +1,6 @@
 module Trade
 
-export batch_reset!, batch_step!, PyTrade, render
+export batch_reset!, batch_step!, PyTrade, render, get_metrics
 
 using PyCall
 using StatsBase
@@ -29,6 +29,10 @@ end
 
 function render(env::PyObject, filename::String)
   pycall(env.render, Nothing, filename)
+end
+
+function get_metrics(env::PyObject)
+  pycall(env.mc.return_metrics, PyDict{String,Float32}, env)
 end
 function step!(env::PyObject, actions::Dict{String,Int})::step_return_type
   pycall(env.step, step_return_type, actions)

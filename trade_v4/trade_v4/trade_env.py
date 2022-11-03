@@ -50,6 +50,46 @@ class TradeMetricCollector():
         self.rew_light                += light
         self.rew_acts                 += action_rewards
 
+    def return_metrics(self, env):
+        custom_metrics = {
+                "rew_base_health": self.rew_base_health,
+                "rew_light": self.rew_base_health,
+                "rew_acts": self.rew_base_health,
+        }
+        for food, count in enumerate(self.num_exchanges):
+            custom_metrics[f"exchange_{food}"] = count
+        #for symbol, count in enumerate(self.comm_history):
+        #    episode.custom_metrics[f"comm_{symbol}"] = count
+        for agent in env.agents:
+            #episode.custom_metrics[f"{agent}_punishes"] = self.punish_counts[agent]
+            #episode.custom_metrics[f"{agent}_lifetime"] = env.mc.lifetimes[agent]
+            custom_metrics[f"{agent}_food_imbalance"] = \
+                max(env.agent_food_counts[agent]) / max(1, min(env.agent_food_counts[agent]))
+            total_agent_exchange = {"give": 0, "take": 0}
+            for other_agent in env.agents:
+                other_agent_exchange = {"give": 0, "take": 0}
+                for food in range(env.food_types):
+                    give = self.player_exchanges[(agent, other_agent, food)]
+                    take = self.player_exchanges[(other_agent, agent, food)]
+                    other_agent_exchange["give"] += give
+                    other_agent_exchange["take"] += take
+                    if other_agent != agent:
+                        total_agent_exchange["give"] += give
+                        total_agent_exchange["take"] += take
+                #episode.custom_metrics[f"{agent}_take_from_{other_agent}"] = other_agent_exchange["take"]
+                #episode.custom_metrics[f"{agent}_give_to_{other_agent}"] = other_agent_exchange["give"]
+                custom_metrics[f"{agent}_mut_exchange_{other_agent}"] =\
+                   min(other_agent_exchange["take"],
+                       other_agent_exchange["give"])
+            #episode.custom_metrics[f"{agent}_take_from_all"] = total_agent_exchange["take"]
+            #episode.custom_metrics[f"{agent}_give_to_all"] = total_agent_exchange["give"]
+            custom_metrics[f"{agent}_mut_exchange_total"] =\
+                min(total_agent_exchange["take"], total_agent_exchange["give"])
+            for food in range(env.food_types):
+                custom_metrics[f"{agent}_PICK_{food}"] = self.picked_counts[agent][food]
+                custom_metrics[f"{agent}_PLACE_{food}"] = self.placed_counts[agent][food]
+        return custom_metrics
+
 
 
 
