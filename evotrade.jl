@@ -67,7 +67,7 @@ expname = args["exp-name"]
     "day_steps" => args["day-steps"],
     "vocab_size" => 0)
 
-  function run_batch(batch_size::Int, models::Dict{String,<:Chain}; evaluation=false, render_itr::Union{Nothing,Integer}=nothing)
+  function run_batch(batch_size::Int, models::Dict{String,<:Chain}; evaluation=false, render_str::Union{Nothing,String}=nothing)
 
     b_env = [Trade.PyTrade.Trade(env_config) for _ in 1:batch_size]
     obs_size = (b_env[1].obs_size..., batch_size)
@@ -81,9 +81,9 @@ expname = args["exp-name"]
         for (name, rew) in rew_dict
           rews[name] += rew
 
-          if render_itr isa Integer && name == first(models).first
-            render_file = "i$render_itr-b$b.out"
-            render(b_env[b], render_file)
+          if render_str isa String && name == first(models).first
+            renderfile = "$render_str/b$b.out"
+            render(b_env[b], renderfile)
           end
         end
 
@@ -119,11 +119,12 @@ function main()
   for i in 1:1000
 
     if i % 1 == 0
+      outdir = "outs/$expname/$i"
+      run(`mkdir -p $outdir`)
       open("runs/$dt_str-$expname.log", "a") do logfile
         print(logfile, "Generation $i: ")
-        i > 1 && print(logfile, "mean $(round(mean(fits), digits=2)) ")
         rew_dict = run_batch(4, Dict("f0a0" => re(θ),
-            "f1a0" => re(θ)), evaluation=true, render_itr=1)
+            "f1a0" => re(θ)), evaluation=true, render_str=outdir)
         avg_self_fit = (rew_dict["f0a0"] + rew_dict["f1a0"]) / 2
         println(logfile, "$(round(avg_self_fit, digits=2)) ")
       end
