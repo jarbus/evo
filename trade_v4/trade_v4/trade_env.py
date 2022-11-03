@@ -171,7 +171,12 @@ class Trade:
         self.mc = TradeMetricCollector(self)
         return {self.agents[0]: self.compute_observation(self.agents[0])}
 
-    def render(self, mode="human", out=sys.stdout):
+    def render(self, outfile=None):
+        if not outfile:
+            out=sys.stdout
+        else:
+            out=open(outfile, "a")
+
         for agent in self.agents:
             out.write(f"{agent}: {self.agent_positions[agent]} {[round(fc, 2) for fc in self.agent_food_counts[agent]]} {self.compute_done(agent)}\n")
         for food in range(self.food_types):
@@ -186,6 +191,8 @@ class Trade:
         for agent, comm in self.communications.items():
             if comm and max(comm) >= 1:
                 out.write(f"{agent} said {comm.index(1)}\n")
+        if outfile:
+            out.close()
 
     def compute_observation2(self, agent):
         ax, ay = self.agent_positions[agent]
