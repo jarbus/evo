@@ -121,9 +121,11 @@ function main()
     if i % 1 == 0
       open("runs/$dt_str-$expname.log", "a") do logfile
         print(logfile, "Generation $i: ")
+
         i > 1 && print(logfile, "mean $(round(mean(fits), digits=2)) ")
         rew_dict = run_batch(4, Dict("f0a0" => re(θ),
             "f1a0" => re(θ)), evaluation=true, render_itr=1)
+
         avg_self_fit = (rew_dict["f0a0"] + rew_dict["f1a0"]) / 2
         println(logfile, "$(round(avg_self_fit, digits=2)) ")
       end
