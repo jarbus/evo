@@ -27,6 +27,8 @@ if !args["local"]
   println(machine_specs)
   addprocs(machine_specs, max_parallel=100, multiplex=true)
   println("nprocs $(nprocs())")
+else
+  addprocs(2)
 end
 
 @everywhere begin
