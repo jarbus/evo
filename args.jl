@@ -60,4 +60,3 @@ s = ArgParseSettings()
   "--food-types"
   "--class-name"
 end
-args = parse_args(s)

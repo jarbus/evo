@@ -1,10 +1,12 @@
 #!/bin/bash
-argbases=$(ls ./afiles | fzf --multi)
-echo $argbases
-for argbase in $argbases; do
-    if [[ -f "afiles/$argbase" ]]; then
-        name=$(basename $argbase ".arg")
-        julia -i evotrade.jl $(cat "afiles/$name.arg") --exp-name "$name" --local
-    fi
-done
-
+#argbases=$(ls ./afiles | fzf --multi)
+#echo $argbases
+#for argbase in $argbases; do
+#    if [[ -f "afiles/$argbase" ]]; then
+#        name=$(basename $argbase ".arg")
+#        julia -i "evotrade.jl" $(cat "afiles/$name.arg") --exp-name "$name" --local
+#    fi
+#done
+#
+export JULIA_REVISE_INCLUDE=1 
+julia -ie "include(\"run-repl.jl\")"

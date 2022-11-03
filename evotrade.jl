@@ -1,6 +1,5 @@
 using Distributed
 using Dates
-include("args.jl")
 
 if !args["local"]
   function get_procs(str)
@@ -172,5 +171,3 @@ function main()
 
   end
 end
-
-main()
