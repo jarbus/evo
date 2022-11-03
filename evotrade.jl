@@ -65,19 +65,26 @@ expname = args["exp-name"]
     "day_steps" => args["day-steps"],
     "vocab_size" => 0)
 
-  function run_batch(batch_size::Int, models::Dict{String,<:Chain}; evaluation=false)
-    benv = [Trade.PyTrade.Trade(env_config) for _ in 1:batch_size]
-    obs_size = (benv[1].obs_size..., batch_size)
-    num_actions = benv[1].num_actions
-    b_obs = batch_reset!(benv, models)
+  function run_batch(batch_size::Int, models::Dict{String,<:Chain}; evaluation=false, render_itr::Union{Nothing,Integer}=nothing)
+
+    b_env = [Trade.PyTrade.Trade(env_config) for _ in 1:batch_size]
+    obs_size = (b_env[1].obs_size..., batch_size)
+    num_actions = b_env[1].num_actions
+    b_obs = batch_reset!(b_env, models)
     max_steps = args["episode-length"] * args["num-agents"]
     rews = Dict(key => 0.0f0 for key in keys(models))
     for _ in 1:max_steps
-      b_obs, b_rew, b_dones = batch_step!(benv, models, b_obs, evaluation=evaluation)
-      for rew_dict in b_rew
+      b_obs, b_rew, b_dones = batch_step!(b_env, models, b_obs, evaluation=evaluation)
+      for (b, rew_dict) in enumerate(b_rew)
         for (name, rew) in rew_dict
           rews[name] += rew
+
+          if render_itr isa Integer && name == first(models).first
+            render_file = "i$render_itr-b$b.out"
+            render(b_env[b], render_file)
+          end
         end
+
       end
     end
     Dict(name => rew / (args["episode-length"] * batch_size) for (name, rew) in rews)
@@ -113,8 +120,8 @@ function main()
       open("runs/$dt_str-$expname.log", "a") do logfile
         print(logfile, "Generation $i: ")
         i > 1 && print(logfile, "mean $(round(mean(fits), digits=2)) ")
-        rew_dict = run_batch(batch_size, Dict("f0a0" => re(θ),
-            "f1a0" => re(θ)), evaluation=true)
+        rew_dict = run_batch(4, Dict("f0a0" => re(θ),
+            "f1a0" => re(θ)), evaluation=true, render_itr=1)
         avg_self_fit = (rew_dict["f0a0"] + rew_dict["f1a0"]) / 2
         println(logfile, "$(round(avg_self_fit, digits=2)) ")
       end
