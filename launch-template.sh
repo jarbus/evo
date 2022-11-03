@@ -8,7 +8,7 @@
 #SBATCH --account=guest
 #SBATCH --time=24:00:00
 #SBATCH --partition=guest-compute
-#SBATCH --ntasks=6
+#SBATCH --ntasks=3
 #SBATCH --cpus-per-task=30
 #SBATCH --mem-per-cpu=3GB
 
