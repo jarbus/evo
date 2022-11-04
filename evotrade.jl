@@ -62,8 +62,8 @@ expname = args["exp-name"]
     "spawn_agents" => "center",
     "spawn_food" => "corner",
     "light_coeff" => 10,
-    "food_agent_start" => 1.0,
-    "food_env_spawn" => 1.0,
+    "food_agent_start" => args["food-agent-start"],
+    "food_env_spawn" => args["food-env-spawn"],
     "day_night_cycle" => true,
     "day_steps" => args["day-steps"],
     "vocab_size" => 0)
@@ -87,10 +87,9 @@ expname = args["exp-name"]
             render(b_env[b], renderfile)
           end
         end
-
       end
     end
-    rew_dict = Dict(name => rew / (args["episode-length"] * batch_size) for (name, rew) in rews)
+    rew_dict = Dict(name => rew / batch_size for (name, rew) in rews)
     mets = get_metrics(b_env[1])
     rew_dict, mets
   end

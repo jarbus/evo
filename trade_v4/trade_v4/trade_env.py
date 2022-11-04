@@ -53,8 +53,8 @@ class TradeMetricCollector():
     def return_metrics(self, env):
         custom_metrics = {
                 "rew_base_health": self.rew_base_health,
-                "rew_light": self.rew_base_health,
-                "rew_acts": self.rew_base_health,
+                "rew_light": self.rew_light,
+                "rew_acts": self.rew_acts,
         }
         for food, count in enumerate(self.num_exchanges):
             custom_metrics[f"exchange_{food}"] = count
@@ -122,13 +122,13 @@ class Trade:
         self.punish                = env_config.get("punish", False)
         self.punish_coeff          = env_config.get("punish_coeff", 3)
         self.survival_bonus        = env_config.get("survival_bonus", 0.0)
-        self.respawn               = env_config.get("respawn", False)
+        self.respawn               = env_config.get("respawn", True)
         self.light_coeff           = env_config.get("light_coeff", 1.0)
         self.pickup_coeff          = env_config.get("pickup_coeff", 1.0)
-        self.health_baseline       = env_config.get("health_baseline", False)
+        self.health_baseline       = env_config.get("health_baseline", True)
         self.policy_mapping_fn     = env_config.get("policy_mapping_fn")
         self.food_env_spawn        = env_config.get("food_env_spawn")
-        self.food_agent_start      = env_config.get("food_agent_start", 1)
+        self.food_agent_start      = env_config.get("food_agent_start", 0)
         self.padded_grid_size      = add_tup(self.grid_size, add_tup(self.window_size, self.window_size))
         self.light                 = Light(self.grid_size, self.fires, 2/self.day_steps)
         super().__init__()
@@ -355,16 +355,8 @@ class Trade:
         other_survival_bonus = 0
         punishment = 0
 
-        base_health = 0
-        if self.health_baseline:
-            num_of_food_types = sum(1 for f in self.agent_food_counts[agent] if f >= 0.1)
-            base_health = [0, 0.1, 1][num_of_food_types]
-            for a in self.agents:
-                if a != agent:
-                    num_of_food_types = sum(1 for f in self.agent_food_counts[a] if f >= 0.1)
-
-        else:
-            base_health = 1
+        num_of_food_types = sum(1 for f in self.agent_food_counts[agent] if f >= 0.1)
+        base_health = [0, 0.1, 1][num_of_food_types]
 
         light_rew = 0 if self.light.contains(self.agent_positions[agent]) else self.light_coeff * self.light.frame[self.agent_positions[agent]]
 

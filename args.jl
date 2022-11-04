@@ -51,10 +51,14 @@ s = ArgParseSettings()
   "--mutation-rate"
   arg_type = Float32
   required = true
+  "--food-env-spawn"
+  arg_type = Int
+  required = true
+  "--food-agent-start"
+  arg_type = Int
+  required = true
   "--num-steps"
   "--checkpoint-interval"
-  "--food-agent-start"
-  "--food-env-spawn"
   "--light-coeff"
   "--pickup-coeff"
   "--food-types"
