@@ -1,6 +1,7 @@
 using Distributed
 using Dates
 using DataFrames
+using CSV
 
 if !args["local"]
   function get_procs(str)
