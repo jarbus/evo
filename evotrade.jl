@@ -124,19 +124,19 @@ function main()
     if i % 1 == 0
       outdir = "outs/$expname/$i"
       run(`mkdir -p $outdir`)
-      open("runs/$dt_str-$expname.log", "a") do logfile
-        print(logfile, "Generation $i: ")
-        rew_dict, mets = run_batch(4, Dict("f0a0" => re(θ),
-            "f1a0" => re(θ)), evaluation=true, render_str=outdir)
-        if isnothing(df)
-          df = DataFrame(mets)
-        else
-          push!(df, mets)
-        end
-        CSV.write("outs/$expname/metrics.csv", df)
-        avg_self_fit = (rew_dict["f0a0"] + rew_dict["f1a0"]) / 2
-        println(logfile, "$(round(avg_self_fit, digits=2)) ")
+      logfile = !args["local"] ? open("runs/$dt_str-$expname.log", "a") : stdout
+      print(logfile, "Generation $i: ")
+      rew_dict, mets = run_batch(4, Dict("f0a0" => re(θ),
+          "f1a0" => re(θ)), evaluation=true, render_str=outdir)
+      if isnothing(df)
+        df = DataFrame(mets)
+      else
+        push!(df, mets)
       end
+      CSV.write("outs/$expname/metrics.csv", df)
+      avg_self_fit = (rew_dict["f0a0"] + rew_dict["f1a0"]) / 2
+      println(logfile, "$(round(avg_self_fit, digits=2)) ")
+      !args["local"] && close(logfile)
     end
 
     @everywhere N = randn(rng, Float32, pop_size, model_size)
