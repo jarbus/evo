@@ -149,7 +149,9 @@ function main()
     futures = []
 
     for p1 in 1:pop_size
-      for p2 in 1:pop_size
+      #for p2 in 1:pop_size
+      begin
+        p2 = p1
 
         fut = remotecall(procs()[(p2%nprocs())+1]) do
           θ_n1 = θ .+ (mut * N[p1, :])
@@ -163,9 +165,10 @@ function main()
       end
     end
 
-    fits = [fetch(future) for future in futures]
-    fits = reshape(fits, (pop_size, pop_size))
-    fits = [compute_matrix_fitness(fits, i) for i in 1:pop_size]
+    fits = [fetch(future)[1] for future in futures]
+    println("min=$(min(fits...)) mean=$(mean(fits)) max=$(max(fits...)) std=$(std(fits))")
+    #fits = reshape(fits, (pop_size, pop_size))
+    #fits = [compute_matrix_fitness(fits, i) for i in 1:pop_size]
     A = (fits .- mean(fits)) ./ (std(fits) + 0.0001f0)
     if A == zeros(size(A))
       A = ones(length(A)) / length(A)
@@ -175,7 +178,5 @@ function main()
       @assert θ_new != θ
       θ = θ_new
     end
-
-
   end
 end
