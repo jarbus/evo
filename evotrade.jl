@@ -166,7 +166,9 @@ function main()
     end
 
     fits = [fetch(future)[1] for future in futures]
-    println("min=$(min(fits...)) mean=$(mean(fits)) max=$(max(fits...)) std=$(std(fits))")
+    logfile = !args["local"] ? open("runs/$dt_str-$expname.log", "a") : stdout
+    println(logfile, "min=$(min(fits...)) mean=$(mean(fits)) max=$(max(fits...)) std=$(std(fits))")
+    !args["local"] && close(logfile)
     #fits = reshape(fits, (pop_size, pop_size))
     #fits = [compute_matrix_fitness(fits, i) for i in 1:pop_size]
     A = (fits .- mean(fits)) ./ (std(fits) + 0.0001f0)
