@@ -216,7 +216,7 @@ class Trade:
             out=sys.stdout
         else:
             out=open(outfile, "a")
-
+        out.write(f"--------STEP-{self.steps}------\n")
         for agent in self.agents:
             out.write(f"{agent}: {self.agent_positions[agent]} {[round(fc, 2) for fc in self.agent_food_counts[agent]]} {self.compute_done(agent)}\n")
         for food in range(self.food_types):
