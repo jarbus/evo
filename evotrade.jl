@@ -178,6 +178,7 @@ function main()
     @assert length(F) == 2 * pop_size
     F = F[1:pop_size] - F[pop_size+1:end] #antietic sampling
     ranks = compute_centered_ranks(F)
+    ranks /= length(ranks)
     # A = (fits .- mean(fits)) ./ (std(fits) + 0.0001f0)
     #if A == zeros(size(A))
     #  A = ones(length(A)) / length(A)
