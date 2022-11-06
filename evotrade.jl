@@ -139,7 +139,10 @@ function main()
       !args["local"] && close(logfile)
     end
 
-    @everywhere N = randn(rng, Float32, pop_size, model_size)
+    @everywhere begin
+      N = randn(rng, Float32, pop_size, model_size)
+      N = vcat(N, -N) #antietic sampling
+    end
 
     # CHECK TO CONFIRM RNG IS SYNCHRONIZED
     rands = [fetch(remotecall(() -> N[1], p)) for p in 1:nprocs()]
@@ -148,7 +151,7 @@ function main()
 
     futures = []
 
-    for p1 in 1:pop_size
+    for p1 in 1:size(N, 1)
       #for p2 in 1:pop_size
       begin
         p2 = p1
@@ -165,18 +168,22 @@ function main()
       end
     end
 
-    fits = [fetch(future)[1] for future in futures]
+    F = [fetch(future)[1] for future in futures]
+
     logfile = !args["local"] ? open("runs/$dt_str-$expname.log", "a") : stdout
-    println(logfile, "min=$(min(fits...)) mean=$(mean(fits)) max=$(max(fits...)) std=$(std(fits))")
+    println(logfile, "min=$(min(F...)) mean=$(mean(F)) max=$(max(F...)) std=$(std(F))")
     !args["local"] && close(logfile)
     #fits = reshape(fits, (pop_size, pop_size))
     #fits = [compute_matrix_fitness(fits, i) for i in 1:pop_size]
-    A = (fits .- mean(fits)) ./ (std(fits) + 0.0001f0)
-    if A == zeros(size(A))
-      A = ones(length(A)) / length(A)
-    end
+    @assert length(F) == 2 * pop_size
+    F = F[1:pop_size] - F[pop_size+1:end] #antietic sampling
+    ranks = compute_centered_ranks(F)
+    # A = (fits .- mean(fits)) ./ (std(fits) + 0.0001f0)
+    #if A == zeros(size(A))
+    #  A = ones(length(A)) / length(A)
+    #end
     @everywhere begin
-      θ_new = θ .+ ((α / (pop_size * mut)) * (N' * $A))
+      θ_new = θ .+ ((α / (pop_size * mut)) * (N[1:pop_size, :]' * $ranks))
       @assert θ_new != θ
       θ = θ_new
     end

@@ -1,6 +1,6 @@
 module DistributedES
 
-export fitness, VirtualBatchNorm, make_model
+export fitness, VirtualBatchNorm, make_model, compute_centered_ranks
 
 using Flux
 using Functors
@@ -9,6 +9,20 @@ using Statistics
 using Logging
 # using ProfileView
 rng = StableRNG(123)
+
+function compute_ranks(x)
+  @assert ndims(x) == 1
+  ranks = zeros(Int, size(x))
+  ranks[sortperm(x)] = 1:length(x)
+  ranks
+end
+function compute_centered_ranks(x)
+  ranks = (compute_ranks(x) .- 1) / length(x)
+  ranks = ranks .- 0.5
+  ranks
+end
+
+
 
 mutable struct VirtualBatchNorm1
   ref::Union{Array{Float32},Nothing}
