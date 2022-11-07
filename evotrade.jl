@@ -170,13 +170,16 @@ function main()
       end)
     end
 
-    F = [fetch(f)[1] for f in fut_pos] .- [fetch(f)[1] for f in fut_neg]
+    fut_pos = [fetch(f)[1] for f in fut_pos]
+    fut_neg = [fetch(f)[1] for f in fut_neg]
+
 
     logfile = !args["local"] ? open("runs/$dt_str-$expname.log", "a") : stdout
-    println(logfile, "min=$(min(F...)) mean=$(mean(F)) max=$(max(F...)) std=$(std(F))")
+    println(logfile, "min=$(min(fut_pos...)) mean=$(mean(fut_pos)) max=$(max(fut_pos...)) std=$(std(fut_pos))")
     !args["local"] && close(logfile)
     #fits = reshape(fits, (pop_size, pop_size))
     #fits = [compute_matrix_fitness(fits, i) for i in 1:pop_size]
+    F = fut_pos .- fut_neg
     @assert length(F) == pop_size
     ranks = Float32.(compute_centered_ranks(F))
 
