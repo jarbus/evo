@@ -48,6 +48,9 @@ s = ArgParseSettings()
   "--alpha"
   arg_type = Float32
   required = true
+  "--l2"
+  arg_type = Float32
+  required = true
   "--mutation-rate"
   arg_type = Float32
   required = true

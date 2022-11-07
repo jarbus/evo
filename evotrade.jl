@@ -181,8 +181,8 @@ function main()
     ranks = Float32.(compute_centered_ranks(F))
 
     @everywhere begin
-      grad = compute_grad(nt, $ranks) / (pop_size * mut)
-      Flux.Optimise.update!(opt, θ, -grad)
+      grad = (args["l2"] * θ) - compute_grad(nt, $ranks) / (pop_size * mut)
+      Flux.Optimise.update!(opt, θ, grad)
     end
     #ranks /= length(ranks)
     # A = (fits .- mean(fits)) ./ (std(fits) + 0.0001f0)
