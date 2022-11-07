@@ -2,6 +2,7 @@ using Distributed
 using Dates
 using DataFrames
 using CSV
+using Infiltrator
 
 if !args["local"]
   function get_procs(str)
@@ -29,7 +30,7 @@ if !args["local"]
   addprocs(machine_specs, max_parallel=100, multiplex=true)
   println("nprocs $(nprocs())")
 else
-  addprocs(2)
+  addprocs(1)
 end
 
 @everywhere begin
@@ -127,7 +128,7 @@ function main()
       run(`mkdir -p $outdir`)
       logfile = !args["local"] ? open("runs/$dt_str-$expname.log", "a") : stdout
       print(logfile, "Generation $i: ")
-      rew_dict, mets = run_batch(4, Dict("f0a0" => re(θ),
+      rew_dict, mets = run_batch(1, Dict("f0a0" => re(θ),
           "f1a0" => re(θ)), evaluation=true, render_str=outdir)
       if isnothing(df)
         df = DataFrame(mets)
