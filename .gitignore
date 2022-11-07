@@ -5,3 +5,4 @@ playground
 outs
 evolution-strategies-starter
 *.mem
+ScalableES.jl
