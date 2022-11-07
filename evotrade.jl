@@ -108,6 +108,7 @@ function main()
   println("$expname")
   df = nothing
   @everywhere begin
+    opt = Adam(args["alpha"])
     pop_size = args["pop-size"]
     mut = args["mutation-rate"]
     α = args["alpha"]
@@ -140,53 +141,52 @@ function main()
     end
 
     @everywhere begin
-      N = randn(rng, Float32, pop_size, model_size)
-      N = vcat(N, -N) #antietic sampling
+      nt = NoiseTable(rng, model_size, pop_size, mut)
     end
 
     # CHECK TO CONFIRM RNG IS SYNCHRONIZED
-    rands = [fetch(remotecall(() -> N[1], p)) for p in 1:nprocs()]
+    rands = [fetch(remotecall(() -> nt.noise[1], p)) for p in 1:nprocs()]
     @assert length(unique(rands)) == 1
 
 
-    futures = []
+    fut_pos = []
+    fut_neg = []
 
-    for p1 in 1:size(N, 1)
+    for p1 in 1:pop_size
       #for p2 in 1:pop_size
-      begin
-        p2 = p1
-
-        fut = remotecall(procs()[(p2%nprocs())+1]) do
-          θ_n1 = θ .+ (mut * N[p1, :])
-          θ_n2 = θ .+ (mut * N[p2, :])
-
-          rew_dict, _ = run_batch(batch_size, Dict("f0a0" => re(θ_n1),
-            "f1a0" => re(θ_n2)))
-          rew_dict["f0a0"], rew_dict["f1a0"]
-        end
-        push!(futures, fut)
-      end
+      p2 = p1
+      push!(fut_pos, remotecall(procs()[(p2%nprocs())+1]) do
+        models = Dict("f0a0" => re(θ .+ get_noise(nt, p1)),
+          "f1a0" => re(θ .+ get_noise(nt, p2)))
+        rew_dict, _ = run_batch(batch_size, models)
+        rew_dict["f0a0"], rew_dict["f1a0"]
+      end)
+      push!(fut_neg, remotecall(procs()[(p2%nprocs())+1]) do
+        models = Dict("f0a0" => re(θ .- get_noise(nt, p1)),
+          "f1a0" => re(θ .- get_noise(nt, p2)))
+        rew_dict, _ = run_batch(batch_size, models)
+        rew_dict["f0a0"], rew_dict["f1a0"]
+      end)
     end
 
-    F = [fetch(future)[1] for future in futures]
+    F = [fetch(f)[1] for f in fut_pos] .- [fetch(f)[1] for f in fut_neg]
 
     logfile = !args["local"] ? open("runs/$dt_str-$expname.log", "a") : stdout
     println(logfile, "min=$(min(F...)) mean=$(mean(F)) max=$(max(F...)) std=$(std(F))")
     !args["local"] && close(logfile)
     #fits = reshape(fits, (pop_size, pop_size))
     #fits = [compute_matrix_fitness(fits, i) for i in 1:pop_size]
-    @assert length(F) == 2 * pop_size
-    F = F[1:pop_size] - F[pop_size+1:end] #antietic sampling
-    ranks = compute_centered_ranks(F)
-    ranks /= length(ranks)
+    @assert length(F) == pop_size
+    ranks = Float32.(compute_centered_ranks(F))
+
+    @everywhere begin
+      grad = compute_grad(nt, $ranks) / (pop_size * mut)
+      Flux.Optimise.update!(opt, θ, -grad)
+    end
+    #ranks /= length(ranks)
     # A = (fits .- mean(fits)) ./ (std(fits) + 0.0001f0)
     #if A == zeros(size(A))
     #  A = ones(length(A)) / length(A)
     #end
-    @everywhere begin
-      θ_new = θ .+ ((α / (pop_size * mut)) * (N[1:pop_size, :]' * $ranks))
-      @assert θ_new != θ
-      θ = θ_new
-    end
   end
 end
