@@ -95,6 +95,19 @@ expname = args["exp-name"]
     rew_dict, mets
   end
 
+  function fitness_pos(p1::Int, p2::Int)
+    models = Dict("f0a0" => re(θ .+ get_noise(nt, p1)),
+      "f1a0" => re(θ .+ get_noise(nt, p2)))
+    rew_dict, _ = run_batch(batch_size, models)
+    rew_dict["f0a0"], rew_dict["f1a0"]
+  end
+  function fitness_neg(p1::Int, p2::Int)
+    models = Dict("f0a0" => re(θ .- get_noise(nt, p1)),
+      "f1a0" => re(θ .- get_noise(nt, p2)))
+    rew_dict, _ = run_batch(batch_size, models)
+    rew_dict["f0a0"], rew_dict["f1a0"]
+  end
+
 end
 
 function compute_matrix_fitness(A::Matrix{Tuple{Float32,Float32}}, i::Integer)
@@ -116,8 +129,7 @@ function main()
     rng = StableRNG(0)
     env = Trade.PyTrade.Trade(env_config)
     batch_size = args["batch-size"]
-    base_model = make_model(:small, (env.obs_size..., batch_size), env.num_actions)
-    θ, re = Flux.destructure(base_model)
+    θ, re = make_model(:small, (env.obs_size..., batch_size), env.num_actions) |> Flux.destructure
     model_size = size(θ)[1]
   end
 
@@ -156,18 +168,8 @@ function main()
     for p1 in 1:pop_size
       #for p2 in 1:pop_size
       p2 = p1
-      push!(fut_pos, remotecall(procs()[(p2%nprocs())+1]) do
-        models = Dict("f0a0" => re(θ .+ get_noise(nt, p1)),
-          "f1a0" => re(θ .+ get_noise(nt, p2)))
-        rew_dict, _ = run_batch(batch_size, models)
-        rew_dict["f0a0"], rew_dict["f1a0"]
-      end)
-      push!(fut_neg, remotecall(procs()[(p2%nprocs())+1]) do
-        models = Dict("f0a0" => re(θ .- get_noise(nt, p1)),
-          "f1a0" => re(θ .- get_noise(nt, p2)))
-        rew_dict, _ = run_batch(batch_size, models)
-        rew_dict["f0a0"], rew_dict["f1a0"]
-      end)
+      push!(fut_pos, remotecall(()->fitness_pos(p1,p2), procs()[(p2%nprocs())+1]))
+      push!(fut_neg, remotecall(()->fitness_neg(p1,p2), procs()[(p2%nprocs())+1]))
     end
 
     fut_pos = [fetch(f)[1] for f in fut_pos]
