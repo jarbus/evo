@@ -6,3 +6,4 @@ outs
 evolution-strategies-starter
 *.mem
 ScalableES.jl
+bug-scripts
