@@ -227,10 +227,13 @@ end
 
 function make_model(s::Symbol, input_size::NTuple{4,Int}, output_size::Integer)
   if s == :small
+    println("Making small model")
     return make_small_model(input_size, output_size)
   elseif s == :medium
+    println("Making medium model")
     return make_medium_model(input_size, output_size)
   elseif s == :large
+    println("Making large model")
     return make_large_model(input_size, output_size)
   end
 end
