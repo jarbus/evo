@@ -129,7 +129,7 @@ function main()
     rng = StableRNG(0)
     env = Trade.PyTrade.Trade(env_config)
     batch_size = args["batch-size"]
-    θ, re = make_model(:small, (env.obs_size..., batch_size), env.num_actions) |> Flux.destructure
+    θ, re = make_model(Symbol(args["model"]), (env.obs_size..., batch_size), env.num_actions) |> Flux.destructure
     model_size = size(θ)[1]
   end
 
