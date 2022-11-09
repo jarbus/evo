@@ -179,8 +179,6 @@ function main()
     logfile = !args["local"] ? open("runs/$dt_str-$expname.log", "a") : stdout
     println(logfile, "min=$(min(fut_pos...)) mean=$(mean(fut_pos)) max=$(max(fut_pos...)) std=$(std(fut_pos))")
     !args["local"] && close(logfile)
-    #fits = reshape(fits, (pop_size, pop_size))
-    #fits = [compute_matrix_fitness(fits, i) for i in 1:pop_size]
     F = fut_pos .- fut_neg
     @assert length(F) == pop_size
     ranks = Float32.(compute_centered_ranks(F))
@@ -189,10 +187,5 @@ function main()
       grad = (args["l2"] * θ) - compute_grad(nt, $ranks) / (pop_size * mut)
       Flux.Optimise.update!(opt, θ, grad)
     end
-    #ranks /= length(ranks)
-    # A = (fits .- mean(fits)) ./ (std(fits) + 0.0001f0)
-    #if A == zeros(size(A))
-    #  A = ones(length(A)) / length(A)
-    #end
   end
 end
