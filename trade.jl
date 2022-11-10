@@ -67,7 +67,8 @@ function batch_step!(envs::Vector{PyObject}, models::Dict{String,<:Chain}, obs::
   if evaluation
     # matrix of floats to matrix of cartesian indicies
     # to vector of cartesian indicies to vector of ints
-    acts = argmax(probs, dims=1)[1, :] .|> z -> z[2]
+    acts = argmax(probs, dims=1)[1, :] .|> z -> z[1]
+    @infiltrate
   else
     acts = sample_batch(probs)
   end
