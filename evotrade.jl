@@ -34,8 +34,13 @@ else
 end
 
 @everywhere begin
-  include("es.jl")
-  include("trade.jl")
+  if !args["local"]
+    include("es.jl")
+    include("trade.jl")
+  else
+    includet("es.jl")
+    includet("trade.jl")
+  end
 end
 
 expname = args["exp-name"]
