@@ -71,6 +71,7 @@ function batch_step!(envs::Vector{PyObject}, models::Dict{String,<:Chain}, obs::
   else
     acts = sample_batch(probs)
   end
+  acts .-= 1 # convert to python
   @assert length(acts) == length(envs)
   obss, rews, dones = Vector{PyDict{String,PyArray,true}}(), [], []
   for (env, act) in zip(envs, acts)
