@@ -34,6 +34,8 @@ else
 end
 
 @everywhere begin
+  # Load args
+  args = $args
   if !args["local"]
     include("es.jl")
     include("trade.jl")
@@ -45,14 +47,12 @@ end
 
 expname = args["exp-name"]
 @everywhere begin
-  args = $args
   using .DistributedES
   using .Trade
   using Flux
   using Statistics
   using StableRNGs
 
-  # Load args
 
   env_config = Dict(
     "window" => args["window"],
