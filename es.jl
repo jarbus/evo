@@ -62,7 +62,7 @@ mutable struct VirtualBatchNorm1
   γ::Array{Float32}
   β::Array{Float32}
   μ::Array{Float32}
-  σ²::Array{Float32}
+  σ::Array{Float32}
 end
 function VirtualBatchNorm1()
   VirtualBatchNorm1(nothing,
@@ -81,43 +81,29 @@ trainable(bn::VirtualBatchNorm) = (β=bn.β, γ=bn.γ)
 # make this dynamically handle 4d input
 function (layer::VirtualBatchNorm)(x)
   if isnothing(layer.ref)
-    batch_start = 1
     layer.ref = x
     b = copy(layer.ref)
-  else
-    batch_start = size(layer.ref)[end] + 1
-    b = cat(layer.ref, x, dims=ndims(x))
+    layer.μ = mean(Float32, b, dims=ndims(x))
+    layer.σ = std(b, dims=ndims(x))
+    @assert size(layer.μ) == (size(x)[1:ndims(x)-1]..., 1)
+    @assert size(layer.σ) == (size(x)[1:ndims(x)-1]..., 1)
   end
-  b̄ = (b .- mean(b)) ./ (std(b) + 0.00001f0)
-  if !isapprox(std(b̄), 1, atol=0.1) || !isapprox(mean(b̄), 0, atol=0.1)
-    @error " " min(x...) max(x...) mean(x) batch_start
-    throw("std(b̄)=$(std(b̄)) mean(b̄)=$(mean(b̄))")
-  end
-  vb = b̄ .* layer.γ .+ layer.β
+  x̄ = (x .- layer.μ) ./ (std(layer.σ) + 0.00001f0)
+  vb = x̄ .* layer.γ .+ layer.β
   @assert ndims(vb) ∈ [4, 2]
-  if ndims(vb) == 4
-    ret = vb[:, :, :, batch_start:end]
-  else
-    ret = vb[:, batch_start:end]
-  end
-  @assert size(ret) == size(x)
-  ret
+  @assert size(vb) == size(x)
+  vb
 end
 
 function test_vbn3d()
   vbn = VirtualBatchNorm()
-  vbn.γ = [1.0f0]
-  vbn.β = [0.0f0]
-
   # test one layer
   m = Chain(vbn)
-  x = randn(rng, 7, 7, 3, 10)
+  x = randn(Float32, 7, 7, 3, 10)
   z = m(x)
   @assert size(x) == size(z)
-  x = ones(7, 7, 3, 10)
+  x = ones(Float32, 7, 7, 3, 10)
   z = m(x)
-  @assert !isapprox(std(z), 1, atol=0.1)
-  @assert !isapprox(mean(z), 0, atol=0.1)
   @assert size(z) == size(x)
 
 
@@ -129,14 +115,12 @@ function test_vbn3d()
     VirtualBatchNorm(),
     Conv((3, 3), 32 => 32, pad=(1, 1), sigmoid, bias=randn(Float32, 32)),
     VirtualBatchNorm())
-  x = randn(rng, 7, 7, 32, 10)
+  x = randn(Float32, 7, 7, 32, 10)
   z = m(x)
   @assert size(x) == size(z)
   for _ in 1:20
-    x = randn(rng, 7, 7, 32, 10)
+    x = randn(Float32, 7, 7, 32, 10)
     z = m(x)
-    @assert !isapprox(std(z), 1, atol=0.1)
-    @assert !isapprox(mean(z), 0, atol=0.1)
     @assert size(z) == size(x)
   end
 end
