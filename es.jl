@@ -60,15 +60,15 @@ end
 
 mutable struct VirtualBatchNorm
   ref::Union{Array{Float32},Nothing}
-  γ::Array{Float32}
-  β::Array{Float32}
+  γ::Union{Array{Float32},Nothing}
+  β::Union{Array{Float32},Nothing}
   μ::Array{Float32}
   σ::Array{Float32}
 end
 function VirtualBatchNorm()
   VirtualBatchNorm(nothing,
-    randn(rng, Float32, 1),
-    randn(rng, Float32, 1),
+    nothing,
+    nothing,
     zeros(Float32, 1),
     zeros(Float32, 1))
 end
@@ -84,11 +84,17 @@ function (layer::VirtualBatchNorm)(x)
     b = copy(layer.ref)
     layer.μ = mean(Float32, b, dims=ndims(x))
     layer.σ = std(b, dims=ndims(x))
-    @assert size(layer.μ) == (size(x)[1:ndims(x)-1]..., 1)
-    @assert size(layer.σ) == (size(x)[1:ndims(x)-1]..., 1)
+    @assert size(layer.μ) == (size(x)[1:end-1]..., 1)
+    @assert size(layer.σ) == (size(x)[1:end-1]..., 1)
+  end
+  if isnothing(layer.γ)
+    @assert isnothing(layer.β)
+    layer.γ = Flux.glorot_normal(size(x)[1:end-1]...)
+    layer.β = Flux.glorot_normal(size(x)[1:end-1]...)
   end
   x̄ = (x .- layer.μ) ./ (std(layer.σ) + 0.00001f0)
   vb = x̄ .* layer.γ .+ layer.β
+  @assert !any(isnan.(vb))
   @assert ndims(vb) ∈ [4, 2]
   @assert size(vb) == size(x)
   vb
