@@ -146,14 +146,14 @@ function main()
       run(`mkdir -p $outdir`)
       logfile = !args["local"] ? open("runs/$dt_str-$expname.log", "a") : stdout
       print(logfile, "Generation $i: ")
-      rew_dict, mets = run_batch(1, Dict("f0a0" => re(θ),
-          "f1a0" => re(θ)), evaluation=true, render_str=outdir)
+      models = Dict("f0a0" => re(θ), "f1a0" => re(θ))
+      rew_dict, mets = run_batch(1, models, evaluation=true, render_str=outdir)
       if isnothing(df)
         df = DataFrame(mets)
       else
         push!(df, mets)
       end
-      save("outs/$expname/models.jld2")
+      save("outs/$expname/models.jld2", models)
       CSV.write("outs/$expname/metrics.csv", df)
       avg_self_fit = (rew_dict["f0a0"] + rew_dict["f1a0"]) / 2
       println(logfile, "$(round(avg_self_fit, digits=2)) ")
