@@ -112,6 +112,8 @@ function test_vbn3d()
   @assert size(z) == size(x)
 
   @assert length(Flux.trainable(vbn)) == 2
+  @assert size(Flux.params(vbn)[1]) == size(x)[1:end-1]
+  @assert size(Flux.params(vbn)[2]) == size(x)[1:end-1]
 
   # test stacked layers 
   m = Chain(
