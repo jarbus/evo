@@ -74,7 +74,7 @@ end
 
 @functor VirtualBatchNorm
 
-trainable(bn::VirtualBatchNorm) = (β=bn.β, γ=bn.γ)
+Flux.trainable(bn::VirtualBatchNorm) = (β=bn.β, γ=bn.γ)
 
 # make this dynamically handle 4d input
 function (layer::VirtualBatchNorm)(x)
@@ -104,6 +104,7 @@ function test_vbn3d()
   z = m(x)
   @assert size(z) == size(x)
 
+  @assert length(Flux.trainable(vbn)) == 2
 
   # test stacked layers 
   m = Chain(
