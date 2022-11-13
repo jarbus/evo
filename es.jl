@@ -8,6 +8,7 @@ using Functors
 using StableRNGs
 using Statistics
 using Logging
+using FileIO
 # using ProfileView
 rng = StableRNG(123)
 
@@ -121,7 +122,15 @@ function test_vbn3d()
     x = randn(Float32, 7, 7, 32, 10)
     z = m(x)
     @assert size(z) == size(x)
+    @assert !any(isnan.(z))
   end
+  save("/tmp/vbn.jld2", Dict("m" => m))
+  m = load("/tmp/vbn.jld2")["m"]
+  @assert Flux.destructure(m)[1] .|> isnan |> any |> !
+  θ, re = Flux.destructure(m)
+  m = re(θ)
+  @assert Flux.destructure(m)[1] .|> isnan |> any |> !
+
 end
 
 function gen_temporal_data()
