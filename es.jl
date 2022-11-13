@@ -57,24 +57,22 @@ function test_nt()
 end
 
 
-mutable struct VirtualBatchNorm1
+mutable struct VirtualBatchNorm
   ref::Union{Array{Float32},Nothing}
   γ::Array{Float32}
   β::Array{Float32}
   μ::Array{Float32}
   σ::Array{Float32}
 end
-function VirtualBatchNorm1()
-  VirtualBatchNorm1(nothing,
+function VirtualBatchNorm()
+  VirtualBatchNorm(nothing,
     randn(rng, Float32, 1),
     randn(rng, Float32, 1),
     zeros(Float32, 1),
     zeros(Float32, 1))
 end
 
-VirtualBatchNorm = VirtualBatchNorm1
 @functor VirtualBatchNorm
-
 
 trainable(bn::VirtualBatchNorm) = (β=bn.β, γ=bn.γ)
 
