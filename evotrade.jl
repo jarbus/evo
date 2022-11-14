@@ -153,7 +153,7 @@ function main()
       else
         push!(df, mets)
       end
-      save("outs/$expname/models.jld2", models)
+      !args["local"] && save("outs/$expname/models.jld2", models)
       CSV.write("outs/$expname/metrics.csv", df)
       avg_self_fit = (rew_dict["f0a0"] + rew_dict["f1a0"]) / 2
       println(logfile, "$(round(avg_self_fit, digits=2)) ")
