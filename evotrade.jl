@@ -193,6 +193,7 @@ function main()
     @everywhere begin
       grad = (args["l2"] * θ) - compute_grad(nt, $ranks) / (pop_size * mut)
       Flux.Optimise.update!(opt, θ, grad)
+      @assert θ .|> isnan |> any |> !
     end
   end
 end
