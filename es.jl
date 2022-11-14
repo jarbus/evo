@@ -62,15 +62,15 @@ mutable struct VirtualBatchNorm
   ref::Union{Array{Float32},Nothing}
   γ::Union{Array{Float32},Nothing}
   β::Union{Array{Float32},Nothing}
-  μ::Array{Float32}
-  σ::Array{Float32}
+  μ::Union{Array{Float32},Nothing}
+  σ::Union{Array{Float32},Nothing}
 end
 function VirtualBatchNorm()
   VirtualBatchNorm(nothing,
     nothing,
     nothing,
-    zeros(Float32, 1),
-    zeros(Float32, 1))
+    nothing,
+    nothing)
 end
 
 @functor VirtualBatchNorm
@@ -80,19 +80,21 @@ Flux.trainable(bn::VirtualBatchNorm) = (β=bn.β, γ=bn.γ)
 # make this dynamically handle 4d input
 function (layer::VirtualBatchNorm)(x)
   if isnothing(layer.ref)
+    @assert isnothing(layer.μ)
+    @assert isnothing(layer.σ)
+    @assert !any(isnan.(x))
     layer.ref = x
-    b = copy(layer.ref)
-    layer.μ = mean(Float32, b, dims=ndims(x))
-    layer.σ = std(b, dims=ndims(x))
+    layer.μ = mean(Float32, layer.ref, dims=ndims(layer.ref))
+    layer.σ = std(layer.ref, dims=ndims(layer.ref))
+    @assert !any(isnan.(layer.σ))
     @assert size(layer.μ) == (size(x)[1:end-1]..., 1)
     @assert size(layer.σ) == (size(x)[1:end-1]..., 1)
   end
   if isnothing(layer.γ)
-    @assert isnothing(layer.β)
     layer.γ = Flux.glorot_normal(size(x)[1:end-1]...)
     layer.β = Flux.glorot_normal(size(x)[1:end-1]...)
   end
-  x̄ = (x .- layer.μ) ./ (std(layer.σ) + 0.00001f0)
+  x̄ = (x .- layer.μ) ./ (layer.σ .+ 0.0001f0)
   vb = x̄ .* layer.γ .+ layer.β
   @assert !any(isnan.(vb))
   @assert ndims(vb) ∈ [4, 2]

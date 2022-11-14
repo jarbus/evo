@@ -147,7 +147,7 @@ function main()
       logfile = !args["local"] ? open("runs/$dt_str-$expname.log", "a") : stdout
       print(logfile, "Generation $i: ")
       models = Dict("f0a0" => re(θ), "f1a0" => re(θ))
-      rew_dict, mets = run_batch(1, models, evaluation=true, render_str=outdir)
+      rew_dict, mets = run_batch(batch_size, models, evaluation=true, render_str=outdir)
       if isnothing(df)
         df = DataFrame(mets)
       else
