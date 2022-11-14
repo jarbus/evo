@@ -96,7 +96,6 @@ function (layer::VirtualBatchNorm)(x)
   end
   x̄ = (x .- layer.μ) ./ (layer.σ .+ 0.0001f0)
   vb = x̄ .* layer.γ .+ layer.β
-  @assert !any(isnan.(vb))
   @assert ndims(vb) ∈ [4, 2]
   @assert size(vb) == size(x)
   vb

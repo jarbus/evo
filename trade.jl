@@ -64,6 +64,7 @@ function batch_step!(envs::Vector{PyObject}, models::Dict{String,<:Chain}, obs::
   @assert length(obs) == 1
   name, ob = first(obs)
   probs = models[name](ob) # bottleneck
+  @assert !any(isnan.(probs))
   if evaluation
     # matrix of floats to matrix of cartesian indicies
     # to vector of cartesian indicies to vector of ints
