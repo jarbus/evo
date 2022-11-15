@@ -39,9 +39,12 @@ end
   args = $args
   if !args["local"]
     include("es.jl")
+    include("net.jl")
     include("trade.jl")
   else
+    using Revise
     includet("es.jl")
+    includet("net.jl")
     includet("trade.jl")
   end
 end
@@ -50,6 +53,7 @@ expname = args["exp-name"]
 @everywhere begin
   using .DistributedES
   using .Trade
+  using .Net
   using Flux
   using Statistics
   using StableRNGs

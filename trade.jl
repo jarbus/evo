@@ -86,20 +86,3 @@ end
 
 end
 
-
-# function test_single()
-#   env = Trade.Trade(env_config)
-#   obs_size = (env.obs_size..., 1)
-#   num_actions = env.num_actions
-#   # models = Dict("f0a0" => make_model(:small),
-#   #   "f1a0" => make_model(:small, obs_size, num_actions))
-#   obs = reset!(env, models)
-#   o = obs["f0a0"]
-#   o2 = [o;;;; o]
-#   model = make_model(:small, size(o2), env.num_actions)
-#   output = model(o2)
-#   acts = sample_batch(output)
-# end
-
-
-
