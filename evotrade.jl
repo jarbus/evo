@@ -1,38 +1,9 @@
-using Distributed
+include("multiproc.jl")
 using Dates
 using DataFrames
 using CSV
 using FileIO
 using Infiltrator
-
-if !args["local"]
-  function get_procs(str)
-    full_cpus_per_node = Vector{Int}()
-    for c in str
-      m = match(r"(\d+)\(x(\d+)\)", c)
-      if !isnothing(m)
-        for i in 1:parse(Int, m[2])
-          push!(full_cpus_per_node, parse(Int, m[1]))
-        end
-      else
-        push!(full_cpus_per_node, parse(Int, c))
-      end
-    end
-    full_cpus_per_node
-  end
-
-  cpus_per_node = get_procs(split(ENV["SLURM_JOB_CPUS_PER_NODE"], ","))
-  nodelist = ENV["SLURM_JOB_NODELIST"]
-  hostnames = read(`scontrol show hostnames "$nodelist"`, String) |> strip |> split .|> String
-  @assert length(cpus_per_node) == length(hostnames)
-
-  machine_specs = [hostspec for hostspec in zip(hostnames, cpus_per_node)]
-  println(machine_specs)
-  addprocs(machine_specs, max_parallel=100, multiplex=true)
-  println("nprocs $(nprocs())")
-else
-  addprocs(1)
-end
 
 @everywhere begin
   # Load args
@@ -120,12 +91,6 @@ expname = args["exp-name"]
 
 end
 
-function compute_matrix_fitness(A::Matrix{Tuple{Float32,Float32}}, i::Integer)
-  row_fit = sum([e[1] for e in A[i, :]])
-  col_fit = sum([e[2] for e in A[:, i]])
-  row_fit + col_fit / (size(A, 1)^2)
-end
-
 function main()
 
   dt_str = Dates.format(now(), "mm-dd_HH:MM")
@@ -179,8 +144,8 @@ function main()
     for p1 in 1:pop_size
       #for p2 in 1:pop_size
       p2 = p1
-      push!(fut_pos, remotecall(()->fitness_pos(p1,p2), procs()[(p2%nprocs())+1]))
-      push!(fut_neg, remotecall(()->fitness_neg(p1,p2), procs()[(p2%nprocs())+1]))
+      push!(fut_pos, remotecall(() -> fitness_pos(p1, p2), procs()[(p2%nprocs())+1]))
+      push!(fut_neg, remotecall(() -> fitness_neg(p1, p2), procs()[(p2%nprocs())+1]))
     end
 
     fut_pos = [fetch(f)[1] for f in fut_pos]
