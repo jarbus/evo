@@ -7,3 +7,4 @@ evolution-strategies-starter
 *.mem
 ScalableES.jl
 bug-scripts
+deep-neuroevolution
