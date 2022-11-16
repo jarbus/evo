@@ -4,7 +4,7 @@ echo $argbases
 for argbase in $argbases; do
     if [[ -f "$argbase" ]]; then
         name=$(basename $argbase ".arg")
-        sed -e "s/\${JOB_NAME}/$name/gI" launch-template.sh > "runs/$name.sh"
+        sed -e "s/\${JOB_NAME}/$name/gI" launch-template.sh > "runs/$(date +"%m-%d_%H:%M")-$name.sh"
         sbatch "runs/$name.sh"
     fi
 done
