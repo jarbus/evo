@@ -45,6 +45,8 @@ s = ArgParseSettings()
   "--pop-size"
   arg_type = Int
   required = true
+  "--num-elites"
+  arg_type = Int
   "--alpha"
   arg_type = Float32
   required = true

@@ -9,12 +9,12 @@ using Infiltrator
   # Load args
   args = $args
   if !args["local"]
-    include("es.jl")
+    include("ga.jl")
     include("net.jl")
     include("trade.jl")
   else
     using Revise
-    includet("es.jl")
+    includet("ga.jl")
     includet("net.jl")
     includet("trade.jl")
   end
@@ -22,9 +22,9 @@ end
 
 expname = args["exp-name"]
 @everywhere begin
-  using .DistributedES
   using .Trade
   using .Net
+  using .GANS
   using Flux
   using Statistics
   using StableRNGs
@@ -50,6 +50,15 @@ expname = args["exp-name"]
     "day_steps" => args["day-steps"],
     "vocab_size" => 0)
 
+
+  function fitness(p1::T, p2::T) where T<:Vector{<:UInt32}
+    models = Dict("f0a0" => re(reconstruct(p1, model_size)),
+                  "f1a0" => re(reconstruct(p2, model_size)))
+    rew_dict, _, bc = run_batch(batch_size, models)
+    rew_dict["f0a0"], rew_dict["f1a0"], bc["f0a0"], bc["f1a0"]
+  end
+
+  
   function run_batch(batch_size::Int, models::Dict{String,<:Chain}; evaluation=false, render_str::Union{Nothing,String}=nothing)
 
     b_env = [Trade.PyTrade.Trade(env_config) for _ in 1:batch_size]
@@ -58,10 +67,13 @@ expname = args["exp-name"]
     b_obs = batch_reset!(b_env, models)
     max_steps = args["episode-length"] * args["num-agents"]
     rews = Dict(key => 0.0f0 for key in keys(models))
+    total_acts = Dict(key => Vector{UInt32}() for key in keys(models))
     for _ in 1:max_steps
       b_obs, b_rew, b_dones, b_acts = batch_step!(b_env, models, b_obs, evaluation=evaluation)
       for (b, rew_dict) in enumerate(b_rew)
         for (name, rew) in rew_dict
+
+          total_acts[name] = vcat(total_acts[name], b_acts)
           rews[name] += rew
 
           if render_str isa String && name == first(models).first
@@ -73,50 +85,93 @@ expname = args["exp-name"]
     end
     rew_dict = Dict(name => rew / batch_size for (name, rew) in rews)
     mets = get_metrics(b_env[1])
-    rew_dict, mets
+    rew_dict, mets, total_acts
   end
-
-  function fitness_pos(p1::Int, p2::Int)
-    models = Dict("f0a0" => re(θ .+ get_noise(nt, p1)),
-      "f1a0" => re(θ .+ get_noise(nt, p2)))
-    rew_dict, _ = run_batch(batch_size, models)
-    rew_dict["f0a0"], rew_dict["f1a0"]
-  end
-  function fitness_neg(p1::Int, p2::Int)
-    models = Dict("f0a0" => re(θ .- get_noise(nt, p1)),
-      "f1a0" => re(θ .- get_noise(nt, p2)))
-    rew_dict, _ = run_batch(batch_size, models)
-    rew_dict["f0a0"], rew_dict["f1a0"]
-  end
-
 end
 
 function main()
-
   dt_str = Dates.format(now(), "mm-dd_HH:MM")
   println("$expname")
   df = nothing
   @everywhere begin
-    opt = Adam(args["alpha"])
     pop_size = args["pop-size"]
-    mut = args["mutation-rate"]
-    α = args["alpha"]
-    rng = StableRNG(0)
+    T = args["num-elites"]
     env = Trade.PyTrade.Trade(env_config)
     batch_size = args["batch-size"]
     θ, re = make_model(Symbol(args["model"]), (env.obs_size..., batch_size), env.num_actions) |> Flux.destructure
-    model_size = size(θ)[1]
+    #opt = Adam(args["alpha"])
+    #mut = args["mutation-rate"]
+    #α = args["alpha"]
+    model_size = length(θ)
   end
 
-  for i in 1:args["num-gens"]
+  pop = Vector{Vector{UInt32}}()
+  next_pop = Vector{Vector{UInt32}}()
+  best = (-Inf, [])
+  archive = Set{Tuple{Vector{Float32},Vector{UInt32}}}()
+  BC = nothing
+  F = nothing
+  for g in 1:args["num-gens"]
+    println("Running generation")
 
-    if i % 1 == 0
-      outdir = "outs/$expname/$i"
+    i₀ = g==1 ? 1 : 2
+    # run on first gen
+    for i in i₀:pop_size
+      if g == 1
+        push!(next_pop, [rand(UInt32)])
+      else
+        k = (rand(UInt) % T) + 1 # select parent
+        next_pop[i] = copy(pop[k])
+        push!(next_pop[i], rand(UInt32))
+      end
+    end
+    @assert length(next_pop) == pop_size
+    pop = next_pop 
+
+    futs = []
+    println("call")
+    for p1 in i₀:pop_size
+      #for p2 in 1:pop_size
+      p2 = p1
+      push!(futs, remotecall(() -> fitness(pop[p1], pop[p2]), procs()[(p2%nprocs())+1]))
+    end
+    println("fetching")
+    fetches = [fetch(fut) for fut in futs]
+    println("fetched")
+    if g==1
+        F = [fet[1]+fet[2]/2 for fet in fetches]
+        BC = [(fet[3] .+ fet[4])/2 for fet in fetches]
+    else
+        BC = vcat([BC[1]], [(fet[3].+fet[4])./2 for fet in fetches])
+        F  = vcat([F[1]],  [fet[1]+fet[2]/2 for fet in fetches])
+    end
+    @assert length(F) == length(BC) == pop_size
+    println(F)
+    max_fit = max(F...)
+    if max_fit > best[1]
+        println("New best ind found, F=$max_fit")
+        best = (max_fit, pop[argmax(F)])
+    end
+    for i in 1:pop_size
+        if i > 1 && rand() > 0.01
+            push!(archive, (BC[i], pop[i]))
+        end
+    end
+    novelties = [compute_novelty(bc, archive) for bc in BC]
+    order = sortperm(novelties, rev=true)
+    pop = pop[order]
+    BC = BC[order]
+    F =  F[order]
+
+    # LOG
+    if g % 1 == 0
+      outdir = "outs/$expname/$g"
       run(`mkdir -p $outdir`)
       logfile = !args["local"] ? open("runs/$dt_str-$expname.log", "a") : stdout
-      print(logfile, "Generation $i: ")
-      models = Dict("f0a0" => re(θ), "f1a0" => re(θ))
-      rew_dict, mets = run_batch(batch_size, models, evaluation=true, render_str=outdir)
+      print(logfile, "Generation $g: ")
+      models = Dict("f0a0" => re(reconstruct(pop[1], model_size)),
+          "f1a0" => re(reconstruct(pop[1], model_size)))
+      rew_dict, mets, _ = run_batch(batch_size, models)
       if isnothing(df)
         df = DataFrame(mets)
       else
@@ -128,41 +183,6 @@ function main()
       println(logfile, "$(round(avg_self_fit, digits=2)) ")
       !args["local"] && close(logfile)
     end
-
-    @everywhere begin
-      nt = NoiseTable(rng, model_size, pop_size, mut)
-    end
-
-    # CHECK TO CONFIRM RNG IS SYNCHRONIZED
-    rands = [fetch(remotecall(() -> nt.noise[1], p)) for p in 1:nprocs()]
-    @assert length(unique(rands)) == 1
-
-
-    fut_pos = []
-    fut_neg = []
-
-    for p1 in 1:pop_size
-      #for p2 in 1:pop_size
-      p2 = p1
-      push!(fut_pos, remotecall(() -> fitness_pos(p1, p2), procs()[(p2%nprocs())+1]))
-      push!(fut_neg, remotecall(() -> fitness_neg(p1, p2), procs()[(p2%nprocs())+1]))
-    end
-
-    fut_pos = [fetch(f)[1] for f in fut_pos]
-    fut_neg = [fetch(f)[1] for f in fut_neg]
-
-
-    logfile = !args["local"] ? open("runs/$dt_str-$expname.log", "a") : stdout
-    println(logfile, "min=$(min(fut_pos...)) mean=$(mean(fut_pos)) max=$(max(fut_pos...)) std=$(std(fut_pos))")
-    !args["local"] && close(logfile)
-    F = fut_pos .- fut_neg
-    @assert length(F) == pop_size
-    ranks = Float32.(compute_centered_ranks(F))
-
-    @everywhere begin
-      grad = (args["l2"] * θ) - compute_grad(nt, $ranks) / (pop_size * mut)
-      Flux.Optimise.update!(opt, θ, grad)
-      @assert θ .|> isnan |> any |> !
-    end
   end
+
 end
