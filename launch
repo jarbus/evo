@@ -4,7 +4,8 @@ echo $argbases
 for argbase in $argbases; do
     if [[ -f "$argbase" ]]; then
         name=$(basename $argbase ".arg")
-        datime = $(date +"%m-%d_%H:%M")
+        datime=$(date +"%m-%d_%H:%M")
+        echo $datime
         sed -e "s/\${JOB_NAME}/$name/gI" launch-template.sh > "runs/$datime-$name.sh"
         sbatch "runs/$datime-$name.sh"
     fi
