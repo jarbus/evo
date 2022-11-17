@@ -3,7 +3,7 @@ using StableRNGs
 using Flux
 export reconstruct, compute_novelty
 
-function reconstruct(x::Vector{<:UInt32}, len, ϵ=0.1)
+function reconstruct(x::Vector{<:UInt32}, len, ϵ=0.01)
   @assert length(x) > 0
   @assert len > 0
   theta = Flux.glorot_normal(StableRNG(x[1]), len)

@@ -52,8 +52,8 @@ expname = args["exp-name"]
 
 
   function fitness(p1::T, p2::T) where T<:Vector{<:UInt32}
-    models = Dict("f0a0" => re(reconstruct(p1, model_size)),
-                  "f1a0" => re(reconstruct(p2, model_size)))
+    models = Dict("f0a0" => re(reconstruct(p1, model_size, 0.01)),
+                  "f1a0" => re(reconstruct(p2, model_size, 0.01)))
     rew_dict, _, bc = run_batch(batch_size, models)
     rew_dict["f0a0"], rew_dict["f1a0"], bc["f0a0"], bc["f1a0"]
   end
@@ -96,6 +96,7 @@ function main()
   @everywhere begin
     pop_size = args["pop-size"]
     T = args["num-elites"]
+    mut = args["mutation-rate"]
     env = Trade.PyTrade.Trade(env_config)
     batch_size = args["batch-size"]
     θ, re = make_model(Symbol(args["model"]), (env.obs_size..., batch_size), env.num_actions) |> Flux.destructure
