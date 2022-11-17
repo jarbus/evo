@@ -20,7 +20,7 @@ function test_reconstruct()
   println(z)
 end
 
-function compute_novelty(ind_bc::Vector{<:Float64}, archive_and_pop::Vector{Vector{Float64}})
+function compute_novelty(ind_bc::Vector{<:Float64}, archive_and_pop::Vector{Vector{Float64}})::Float64
     # Assumptions: Novelty against self is zero, ind_bc is in archive_and_pop
     sum(sum((ind_bc .- bc) .^ 2) for bc in archive_and_pop) / (length(archive_and_pop) - 1)
 end
@@ -43,7 +43,7 @@ function test_compute_novelty()
     @assert nov == 2.0
 end
 
-function bc1(x::Vector{<:Int}, num_actions=9)
+function bc1(x::Vector{<:Int}, num_actions=9)::Vector{Float64}
     # count number of each element in x
     counts = zeros(Int, num_actions)
     for i in x
@@ -64,6 +64,17 @@ function test_bc1()
     bc = bc1(x, 9)
     @assert bc isa Vector{Float64}
     @assert bc == [1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
+end
+
+function test_bc_novelty()
+    bca = bc1([1, 1, 1, 2], 3)
+    bcb = bc1([1, 2, 2, 2], 3)
+    bcc = bc1([3, 3, 3, 3], 3)
+    nov_a = compute_novelty(bca, [bca, bcb])
+    nov_b = compute_novelty(bcb, [bca, bcb])
+    nov_c = compute_novelty(bcc, [bca, bcb, bcc])
+    @assert nov_a == nov_b == 0.5
+    @assert nov_c > nov_a
 end
 
 end
