@@ -6,7 +6,9 @@ for argbase in $argbases; do
         name=$(basename $argbase ".arg")
         datime=$(date +"%m-%d_%H:%M")
         echo $datime
-        sed -e "s/\${JOB_NAME}/$name/gI" launch-template.sh > "runs/$datime-$name.sh"
+        sed -e "s/\${JOB_NAME}/$datime-$name/gI" \
+            -e "s/\${RUN_NAME}/$name/gI" \
+            launch-template.sh > "runs/$datime-$name.sh"
         sbatch "runs/$datime-$name.sh"
     fi
 done
