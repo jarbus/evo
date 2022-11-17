@@ -1,6 +1,9 @@
 using ArgParse
 s = ArgParseSettings()
 @add_arg_table! s begin
+  "--algo"
+  arg_type = String
+  required = true
   "--local"
   action = :store_true
   "--window"
