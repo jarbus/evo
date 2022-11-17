@@ -1,7 +1,7 @@
 module GANS
 using StableRNGs
 using Flux
-export reconstruct, compute_novelty
+export reconstruct, compute_novelty, bc1
 
 function reconstruct(x::Vector{<:UInt32}, len, ϵ=0.1)
   @assert length(x) > 0
@@ -41,6 +41,29 @@ function test_compute_novelty()
     nov = compute_novelty(ind, archive_and_pop)
     @assert nov isa Float64
     @assert nov == 2.0
+end
+
+function bc1(x::Vector{<:Int}, num_actions=9)
+    # count number of each element in x
+    counts = zeros(Int, num_actions)
+    for i in x
+        counts[i] += 1
+    end
+    counts ./ length(x)
+end
+
+function test_bc1()
+    x = [1, 2, 3, 4, 5, 6, 7, 8, 9]
+    bc = bc1(x, 9)
+    @assert bc isa Vector{Float64}
+    @assert length(bc) == 9
+    @assert bc |> sum |> isapprox(1.0)
+    @assert all(bc .== 1/9)
+
+    x = [1,1,1,1,1,1,1,1,1]
+    bc = bc1(x, 9)
+    @assert bc isa Vector{Float64}
+    @assert bc == [1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
 end
 
 end
