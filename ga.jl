@@ -43,7 +43,7 @@ function test_compute_novelty()
     @assert nov == 2.0
 end
 
-function bc1(x::Vector{<:Int}, num_actions=9)::Vector{Float64}
+function bc1(x::Vector{<:Integer}, num_actions=9)::Vector{Float64}
     # count number of each element in x
     counts = zeros(Int, num_actions)
     for i in x
