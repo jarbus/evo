@@ -20,8 +20,9 @@ function test_reconstruct()
   println(z)
 end
 
-function compute_novelty(ind_bc::Vector{<:Float64}, archive::Set{Tuple{Vector{Float32},Vector{UInt32}}})
-    sum((ind_bc .- bc) .^ 2 for (bc, _) in archive) / length(archive)
+function compute_novelty(ind_bc::Vector{<:Float64}, archive_and_pop::Vector{Vector{Float64}})
+    # Assumptions: Novelty against self is zero, ind_bc is in archive_and_pop
+    sum((ind_bc .- bc) .^ 2 for bc in archive_and_pop) / (length(archive_and_pop) - 1)
 end
 
 

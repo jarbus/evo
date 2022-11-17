@@ -157,11 +157,17 @@ function main()
             push!(archive, (BC[i], pop[i]))
         end
     end
-    novelties = [compute_novelty(bc, archive) for bc in BC]
+
+    pop_and_arch_bc = vcat([bc for (bc, _) in archive], BC)
+    @assert length(pop_and_arch_bc) == length(archive) + pop_size
+    novelties = [compute_novelty(bc, pop_and_arch_bc) for bc in BC]
+    @assert length(novelties) == pop_size
+
     order = sortperm(novelties, rev=true)
     pop = pop[order]
     BC = BC[order]
     F =  F[order]
+    @assert length(pop) == length(BC) == length(F) == pop_size
 
     # LOG
     if g % 1 == 0
