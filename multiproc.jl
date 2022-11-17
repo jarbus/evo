@@ -22,7 +22,7 @@ if !args["local"]
 
   machine_specs = [hostspec for hostspec in zip(hostnames, cpus_per_node)]
   println(machine_specs)
-  addprocs(machine_specs, max_parallel=100, multiplex=true)
+  addprocs(machine_specs, max_parallel=1000, multiplex=true, enable_threaded_blas=true)
   println("nprocs $(nprocs())")
 else
   addprocs(1)
