@@ -99,9 +99,6 @@ function main()
     env = Trade.PyTrade.Trade(env_config)
     batch_size = args["batch-size"]
     θ, re = make_model(Symbol(args["model"]), (env.obs_size..., batch_size), env.num_actions) |> Flux.destructure
-    #opt = Adam(args["alpha"])
-    #mut = args["mutation-rate"]
-    #α = args["alpha"]
     model_size = length(θ)
   end
 
@@ -131,7 +128,6 @@ function main()
     futs = []
     println("call")
     for p1 in i₀:pop_size
-      #for p2 in 1:pop_size
       p2 = p1
       push!(futs, remotecall(() -> fitness(pop[p1], pop[p2]), procs()[(p2%nprocs())+1]))
     end
@@ -146,7 +142,6 @@ function main()
         F  = vcat([F[1]],  [fet[1]+fet[2]/2 for fet in fetches])
     end
     @assert length(F) == length(BC) == pop_size
-    println(F)
     max_fit = max(F...)
     if max_fit > best[1]
         println("New best ind found, F=$max_fit")
@@ -190,5 +185,4 @@ function main()
       !args["local"] && close(logfile)
     end
   end
-
 end
