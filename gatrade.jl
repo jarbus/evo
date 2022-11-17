@@ -145,7 +145,10 @@ function main()
     @assert length(F) == length(BC) == pop_size
     max_fit = max(F...)
     if max_fit > best[1]
-        println("New best ind found, F=$max_fit")
+
+        logfile = !args["local"] ? open("runs/$dt_str-$expname.log", "a") : stdout
+        println(logfile, "New best ind found, F=$max_fit")
+        !args["local"] && close(logfile)
         best = (max_fit, pop[argmax(F)])
     end
     for i in 1:pop_size
