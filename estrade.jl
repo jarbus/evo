@@ -106,8 +106,19 @@ function main()
     θ, re = make_model(Symbol(args["model"]), (env.obs_size..., batch_size), env.num_actions) |> Flux.destructure
     model_size = size(θ)[1]
   end
-
-  for i in 1:args["num-gens"]
+  
+  # ###############
+  # load checkpoint
+  # ###############
+  check_name = "outs/$expname/check.jld2"
+  start_gen = 1
+  # check if check exists on the file system
+  if isfile(check_name)
+    check = load(check_name)
+    @everywhere θ = check["theta"]
+    start_gen = check["gen"] + 1
+  end
+  for i in start_gen:args["num-gens"]
 
     if i % 1 == 0
       outdir = "outs/$expname/$i"
@@ -121,7 +132,7 @@ function main()
       else
         push!(df, mets)
       end
-      !args["local"] && save("outs/$expname/models.jld2", models)
+      !args["local"] && save(check_name, Dict("theta"=>θ,"gen"=>i))
       CSV.write("outs/$expname/metrics.csv", df)
       avg_self_fit = (rew_dict["f0a0"] + rew_dict["f1a0"]) / 2
       println(logfile, "$(round(avg_self_fit, digits=2)) ")
