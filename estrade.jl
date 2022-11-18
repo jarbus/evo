@@ -40,9 +40,10 @@ expname = args["exp-name"]
     "fires" => [Tuple(args["fires"][i:i+1]) for i in 1:2:length(args["fires"])],
     "foods" => [Tuple(args["foods"][i:i+2]) for i in 1:3:length(args["foods"])],
     "health_baseline" => true,
+    "pickup_coeff" => args["pickup-coeff"],
+    "light_coeff" => args["light-coeff"],
     "spawn_agents" => "center",
     "spawn_food" => "corner",
-    "light_coeff" => 10,
     "food_agent_start" => args["food-agent-start"],
     "food_env_spawn" => args["food-env-spawn"],
     "day_night_cycle" => true,
@@ -122,9 +123,10 @@ function main()
     start_gen = check["gen"] + 1
     println("resuming from gen $start_gen")
   end
+
   for i in start_gen:args["num-gens"]
 
-    if i % 1 == 0
+    if i % 3 == 0
       outdir = "outs/$expname/$i"
       run(`mkdir -p $outdir`)
       logfile = !args["local"] ? open("runs/$dt_str-$expname.log", "a") : stdout

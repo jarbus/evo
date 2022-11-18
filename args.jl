@@ -69,10 +69,13 @@ s = ArgParseSettings()
   "--food-agent-start"
   arg_type = Int
   required = true
-  "--num-steps"
-  "--checkpoint-interval"
   "--light-coeff"
+  arg_type = Float32
+  required = true
   "--pickup-coeff"
+  arg_type = Float32
+  required = true
   "--food-types"
+  "--checkpoint-interval"
   "--class-name"
 end
