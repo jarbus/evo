@@ -1,5 +1,4 @@
 include("multiproc.jl")
-using Dates
 using DataFrames
 using CSV
 using FileIO
@@ -91,7 +90,7 @@ expname = args["exp-name"]
 end
 
 function main()
-  dt_str = Dates.format(now(), "mm-dd_HH:MM")
+  dt_str = args["datime"]
   println("$expname")
   df = nothing
   @everywhere begin

@@ -1,6 +1,10 @@
 using ArgParse
 s = ArgParseSettings()
 @add_arg_table! s begin
+
+  "--datime"
+  arg_type = String
+  required = true
   "--algo"
   arg_type = String
   required = true

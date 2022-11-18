@@ -8,6 +8,7 @@ for argbase in $argbases; do
         echo $datime
         sed -e "s/\${JOB_NAME}/$datime-$name/gI" \
             -e "s/\${RUN_NAME}/$name/gI" \
+            -e "s/\${DATIME}/$datime/gI" \
             launch-template.sh > "runs/$datime-$name.sh"
         sbatch "runs/$datime-$name.sh"
     fi
