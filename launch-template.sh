@@ -15,4 +15,4 @@
 
 source /home/garbus/.bashrc
 conda activate trade
-julia run-script.jl $(cat /home/garbus/evotrade/afiles/${RUN_NAME}.arg) --exp-name ${JOB_NAME}
+julia run-script.jl $(cat /home/garbus/evotrade/afiles/${RUN_NAME}.arg) --exp-name ${RUN_NAME}
