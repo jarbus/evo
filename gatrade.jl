@@ -1,5 +1,4 @@
 include("multiproc.jl")
-using Dates
 using DataFrames
 using CSV
 using FileIO
@@ -91,7 +90,7 @@ expname = args["exp-name"]
 end
 
 function main()
-  dt_str = Dates.format(now(), "mm-dd_HH:MM")
+  dt_str = args["datime"]
   println("$expname")
   df = nothing
   @everywhere begin
@@ -110,7 +109,20 @@ function main()
   archive = Set{Tuple{Vector{Float32},Vector{UInt32}}}()
   BC = nothing
   F = nothing
-  for g in 1:args["num-gens"]
+
+  # ###############
+  # load checkpoint
+  # ###############
+  check_name = "outs/$expname/check.jld2"
+  start_gen = 1
+  # check if check exists on the file system
+  if isfile(check_name)
+    check = load(check_name)
+    pop = check["pop"]
+    start_gen = check["gen"] + 1
+  end
+
+  for i in start_gen:args["num-gens"]
     println("Running generation")
 
     i₀ = g==1 ? 1 : 2
@@ -183,7 +195,7 @@ function main()
       else
         push!(df, mets)
       end
-      !args["local"] && save("outs/$expname/models.jld2", models)
+      !args["local"] && save(check_name, Dict("gen"=>g, "pop"=>pop))
       CSV.write("outs/$expname/metrics.csv", df)
       avg_self_fit = (rew_dict["f0a0"] + rew_dict["f1a0"]) / 2
       println(logfile, "$(round(avg_self_fit, digits=2)) ")
