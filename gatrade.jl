@@ -106,7 +106,7 @@ function main()
   pop = Vector{Vector{UInt32}}()
   next_pop = Vector{Vector{UInt32}}()
   best = (-Inf, [])
-  archive = Set{Tuple{Vector{Float32},Vector{UInt32}}}()
+  archive = Set{Tuple{Vector{Float64},Vector{UInt32}}}()
   BC = nothing
   F = nothing
 
@@ -123,11 +123,13 @@ function main()
     df = CSV.read(met_csv_name, DataFrame)
     check = load(check_name)
     pop = check["pop"]
+    next_pop = copy(pop)
+    @assert length(pop) == pop_size
     start_gen = check["gen"] + 1
     println("resuming from gen $start_gen")
   end
 
-  for i in start_gen:args["num-gens"]
+  for g in start_gen:args["num-gens"]
     println("Running generation")
 
     i₀ = g==1 ? 1 : 2
