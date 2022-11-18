@@ -114,7 +114,6 @@ function main()
   # load checkpoint
   # ###############
   check_name = "outs/$expname/check.jld2"
-
   met_csv_name = "outs/$expname/metrics.csv"
   start_gen = 1
   # check if check exists on the file system
@@ -122,10 +121,14 @@ function main()
     @assert isfile(met_csv_name)
     df = CSV.read(met_csv_name, DataFrame)
     check = load(check_name)
+    start_gen = check["gen"] + 1
+    F = check["F"]
+    BC = check["BC"]
+    best = check["best"]
+    archive = check["archive"]
     pop = check["pop"]
     next_pop = copy(pop)
     @assert length(pop) == pop_size
-    start_gen = check["gen"] + 1
     println("resuming from gen $start_gen")
   end
 
@@ -202,7 +205,7 @@ function main()
       else
         push!(df, mets)
       end
-      !args["local"] && save(check_name, Dict("gen"=>g, "pop"=>pop))
+      !args["local"] && save(check_name, Dict("gen"=>g, "pop"=>pop, "archive"=>archive, "BC"=> BC, "F"=>F, "best"=>best))
       CSV.write(met_csv_name, df)
       avg_self_fit = (rew_dict["f0a0"] + rew_dict["f1a0"]) / 2
       println(logfile, "$(round(avg_self_fit, digits=2)) ")
