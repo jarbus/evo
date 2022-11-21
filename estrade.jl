@@ -5,20 +5,13 @@ using FileIO
 using Infiltrator
 
 @everywhere begin
-  # Load args
   args = $args
-  if !args["local"]
-    include("es.jl")
-    include("net.jl")
-    include("trade.jl")
-    include("utils.jl")
-  else
-    using Revise
-    includet("es.jl")
-    includet("net.jl")
-    includet("trade.jl")
-    includet("utils.jl")
-  end
+  args["local"] && using Revise
+  inc = args["local"] ? includet : include
+  inc("es.jl")
+  inc("net.jl")
+  inc("trade.jl")
+  inc("utils.jl")
 end
 
 expname = args["exp-name"]
