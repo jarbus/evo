@@ -41,9 +41,9 @@ function get_metrics(envs::Vector{PyObject})
     mets = Dict()
     for key in keys(mets_vec[1])
         vals = [met[key] for met in mets_vec]
-        push!(key*"_min", min(vals...))
-        push!(key*"_mean", mean(vals))
-        push!(key*"_max", max(vals...))
+        push!(mets, key*"_min"=> min(vals...))
+        push!(mets, key*"_mean"=> mean(vals))
+        push!(mets, key*"_max"=> max(vals...))
     end
     mets
 end
