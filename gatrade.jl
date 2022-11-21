@@ -12,6 +12,7 @@ using Infiltrator
   inc("net.jl")
   inc("trade.jl")
   inc("utils.jl")
+  inc("maze.jl")
 end
 
 expname = args["exp-name"]
@@ -20,6 +21,7 @@ expname = args["exp-name"]
   using .Net
   using .GANS
   using .Utils
+  using .Maze
   using Flux
   using Statistics
   using StableRNGs
@@ -76,7 +78,11 @@ function main()
     pop_size = args["pop-size"]
     T = args["num-elites"]
     mut = args["mutation-rate"]
-    env = Trade.PyTrade.Trade(env_config)
+    if "maze" in args
+        env = maze_from_file(args["maze"])
+    else
+        env = Trade.PyTrade.Trade(env_config)
+    end
     batch_size = args["batch-size"]
     θ, re = make_model(Symbol(args["model"]), (env.obs_size..., batch_size), env.num_actions) |> Flux.destructure
     model_size = length(θ)

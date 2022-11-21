@@ -10,6 +10,8 @@ s = ArgParseSettings()
   required = true
   "--local"
   action = :store_true
+  "--maze"
+  arg_type = String
   "--window"
   nargs = 2
   arg_type = Int

@@ -7,6 +7,8 @@ mutable struct MazeEnv
     start::Tuple{Int64,Int64}
     location::Tuple{Int64,Int64}
     goal::Tuple{Int64,Int64}
+    obs_size::Tuple{Int64,Int64,Int64}
+    num_actions::Int64
 end
 
 function maze_from_file(name::String)
@@ -27,7 +29,7 @@ function maze_from_file(name::String)
     start_pos = findfirst(grid .== 2) |> Tuple
     end_pos = findfirst(grid .== 3) |> Tuple
     # create the environment
-    return MazeEnv(grid, start_pos, start_pos, end_pos)
+    return MazeEnv(grid, start_pos, start_pos, end_pos, (size(grid)...,1),4)
 end
 
 function reset!(env::MazeEnv)
@@ -36,7 +38,7 @@ end
     
 
 function step!(env::MazeEnv, act::Int64)
-    # act is 0: up, 1: right, 2: down, 3: left
+    # act is 1: up, 2: right, 3: down, 4: left
     # get the current location
     r, c = env.location
     # otherwise, move the agent
@@ -78,11 +80,12 @@ end
 
 function test_maze()
 
-    env = maze_from_file("test_maze.txt")
+    env = maze_from_file("mazes/test_maze.txt")
     reset!(env)
-    for i in 1:10
+    solution = [4, 4, 3, 3, 3, 3, 2, 2]
+    for i in 1:8
         print_maze(env)
-        act = rand(1:4)
+        act = solution[i]
         println("Act: ", act)
         r, done = step!(env, act)
         println("Player position: $(env.location)")
