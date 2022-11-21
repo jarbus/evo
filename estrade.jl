@@ -49,7 +49,7 @@ expname = args["exp-name"]
       end
     end
     rew_dict = Dict(name => rew / batch_size for (name, rew) in rews)
-    mets = get_metrics(b_env[1])
+    mets = get_metrics(b_env)
     rew_dict, mets
   end
 
