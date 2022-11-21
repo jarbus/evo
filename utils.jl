@@ -32,10 +32,6 @@ function llog(f; islocal::Bool, name::String)
     !islocal && close(logfile)
 end
 
-update_df(df::Nothing, mets) = DataFrame(mets)
-
-function update_df(df::DataFrame, mets)
-    push!(df, mets)
-    df
-end
+update_df(df::Nothing, mets)   = DataFrame(mets)
+update_df(df::DataFrame, mets) = push!(df, mets)
 end
