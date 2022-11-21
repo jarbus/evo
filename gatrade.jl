@@ -10,9 +10,11 @@ using Infiltrator
   if !args["local"]
     include("ga.jl")
     include("net.jl")
+    include("utils.jl")
     include("trade.jl")
   else
     using Revise
+    includet("utils.jl")
     includet("ga.jl")
     includet("net.jl")
     includet("trade.jl")
@@ -24,31 +26,13 @@ expname = args["exp-name"]
   using .Trade
   using .Net
   using .GANS
+  using .Utils
   using Flux
   using Statistics
   using StableRNGs
 
 
-  env_config = Dict(
-    "window" => args["window"],
-    "grid" => (args["gx"], args["gy"]),
-    "food_types" => 2,
-    "latest_agent_ids" => [0, 0],
-    "matchups" => [("f0a0", "f1a0")],
-    "episode_length" => args["episode-length"],
-    "respawn" => true,
-    "fires" => [Tuple(args["fires"][i:i+1]) for i in 1:2:length(args["fires"])],
-    "foods" => [Tuple(args["foods"][i:i+2]) for i in 1:3:length(args["foods"])],
-    "health_baseline" => true,
-    "spawn_agents" => "center",
-    "spawn_food" => "corner",
-    "pickup_coeff" => args["pickup-coeff"],
-    "light_coeff" => args["light-coeff"],
-    "food_agent_start" => args["food-agent-start"],
-    "food_env_spawn" => args["food-env-spawn"],
-    "day_night_cycle" => true,
-    "day_steps" => args["day-steps"],
-    "vocab_size" => 0)
+  env_config = mk_env_config(args)
 
 
   function fitness(p1::T, p2::T) where T<:Vector{<:UInt32}
@@ -92,6 +76,7 @@ end
 
 function main()
   dt_str = args["datime"]
+  logname="runs/$dt_str-$expname.log"
   println("$expname")
   df = nothing
   @everywhere begin
@@ -169,10 +154,9 @@ function main()
     @assert length(F) == length(BC) == pop_size
     max_fit = max(F...)
     if max_fit > best[1]
-
-        logfile = !args["local"] ? open("runs/$dt_str-$expname.log", "a") : stdout
-        println(logfile, "New best ind found, F=$max_fit")
-        !args["local"] && close(logfile)
+        llog(islocal=args["local"], name=logname) do logfile
+            println(logfile, "New best ind found, F=$max_fit")
+        end
         best = (max_fit, pop[argmax(F)])
     end
     for i in 1:pop_size
@@ -194,23 +178,24 @@ function main()
 
     # LOG
     if g % 1 == 0
-      outdir = "outs/$expname/$g"
-      run(`mkdir -p $outdir`)
-      logfile = !args["local"] ? open("runs/$dt_str-$expname.log", "a") : stdout
-      print(logfile, "Generation $g: ")
       models = Dict("f0a0" => re(reconstruct(pop[1], model_size)),
           "f1a0" => re(reconstruct(pop[1], model_size)))
-      rew_dict, mets, _ = run_batch(batch_size, models)
-      if isnothing(df)
-        df = DataFrame(mets)
-      else
-        push!(df, mets)
-      end
-      !args["local"] && save(check_name, Dict("gen"=>g, "pop"=>pop, "archive"=>archive, "BC"=> BC, "F"=>F, "best"=>best))
+
+      # Compute and write metrics
+      outdir = "outs/$expname/$g"
+      run(`mkdir -p $outdir`)
+      rew_dict, mets, _ = run_batch(batch_size, models, evaluation=false, render_str=outdir)
+      df = update_df(df, mets)
       CSV.write(met_csv_name, df)
-      avg_self_fit = (rew_dict["f0a0"] + rew_dict["f1a0"]) / 2
-      println(logfile, "$(round(avg_self_fit, digits=2)) ")
-      !args["local"] && close(logfile)
+
+      # Log to file
+      avg_self_fit = round((rew_dict["f0a0"] + rew_dict["f1a0"]) / 2; digits=2)
+      llog(islocal=args["local"], name=logname) do logfile
+        println(logfile, "Generation $g: $avg_self_fit")
+      end
+
+      # Save checkpoint
+      !args["local"] && save(check_name, Dict("gen"=>g, "pop"=>pop, "archive"=>archive, "BC"=> BC, "F"=>F, "best"=>best))
     end
   end
 end

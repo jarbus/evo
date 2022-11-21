@@ -11,11 +11,13 @@ using Infiltrator
     include("es.jl")
     include("net.jl")
     include("trade.jl")
+    include("utils.jl")
   else
     using Revise
     includet("es.jl")
     includet("net.jl")
     includet("trade.jl")
+    includet("utils.jl")
   end
 end
 
@@ -24,32 +26,14 @@ expname = args["exp-name"]
   using .DistributedES
   using .Trade
   using .Net
+  using .Utils
   using Flux
   using Statistics
   using StableRNGs
 
 
-  env_config = Dict(
-    "window" => args["window"],
-    "grid" => (args["gx"], args["gy"]),
-    "food_types" => 2,
-    "latest_agent_ids" => [0, 0],
-    "matchups" => [("f0a0", "f1a0")],
-    "episode_length" => args["episode-length"],
-    "respawn" => true,
-    "fires" => [Tuple(args["fires"][i:i+1]) for i in 1:2:length(args["fires"])],
-    "foods" => [Tuple(args["foods"][i:i+2]) for i in 1:3:length(args["foods"])],
-    "health_baseline" => true,
-    "pickup_coeff" => args["pickup-coeff"],
-    "light_coeff" => args["light-coeff"],
-    "spawn_agents" => "center",
-    "spawn_food" => "corner",
-    "food_agent_start" => args["food-agent-start"],
-    "food_env_spawn" => args["food-env-spawn"],
-    "day_night_cycle" => true,
-    "day_steps" => args["day-steps"],
-    "vocab_size" => 0)
-
+  env_config = mk_env_config(args)
+  
   function run_batch(batch_size::Int, models::Dict{String,<:Chain}; evaluation=false, render_str::Union{Nothing,String}=nothing)
 
     b_env = [Trade.PyTrade.Trade(env_config) for _ in 1:batch_size]
@@ -94,6 +78,7 @@ end
 function main()
 
   dt_str = args["datime"]
+  logname = "runs/$dt_str-$expname.log"
   println("$expname")
   df = nothing
   @everywhere begin
@@ -127,22 +112,21 @@ function main()
   for i in start_gen:args["num-gens"]
 
     if i % 3 == 0
+      # compute and write metrics and outfile
       outdir = "outs/$expname/$i"
       run(`mkdir -p $outdir`)
-      logfile = !args["local"] ? open("runs/$dt_str-$expname.log", "a") : stdout
-      print(logfile, "Generation $i: ")
       models = Dict("f0a0" => re(θ), "f1a0" => re(θ))
       rew_dict, mets = run_batch(batch_size, models, evaluation=false, render_str=outdir)
-      if isnothing(df)
-        df = DataFrame(mets)
-      else
-        push!(df, mets)
+      df = update_df(df, mets)
+      CSV.write(met_csv_name, df)
+
+      # log mets and save gen
+      avg_self_fit = round((rew_dict["f0a0"] + rew_dict["f1a0"]) / 2, digits=2)
+      llog(islocal=args["local"], name=logname) do logfile
+        println(logfile, "Generation $i: $avg_self_fit")
       end
       !args["local"] && save(check_name, Dict("theta"=>θ,"gen"=>i))
-      CSV.write(met_csv_name, df)
-      avg_self_fit = (rew_dict["f0a0"] + rew_dict["f1a0"]) / 2
-      println(logfile, "$(round(avg_self_fit, digits=2)) ")
-      !args["local"] && close(logfile)
+
     end
 
     @everywhere begin
@@ -167,10 +151,11 @@ function main()
     fut_pos = [fetch(f)[1] for f in fut_pos]
     fut_neg = [fetch(f)[1] for f in fut_neg]
 
+    # Log fitness distribution
+    llog(islocal=args["local"], name=logname) do logfile
+      println(logfile, "min=$(min(fut_pos...)) mean=$(mean(fut_pos)) max=$(max(fut_pos...)) std=$(std(fut_pos))")
+    end
 
-    logfile = !args["local"] ? open("runs/$dt_str-$expname.log", "a") : stdout
-    println(logfile, "min=$(min(fut_pos...)) mean=$(mean(fut_pos)) max=$(max(fut_pos...)) std=$(std(fut_pos))")
-    !args["local"] && close(logfile)
     F = fut_pos .- fut_neg
     @assert length(F) == pop_size
     ranks = Float32.(compute_centered_ranks(F))
