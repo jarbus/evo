@@ -8,7 +8,7 @@ using Infiltrator
   args = $args
   args["local"] && using Revise
   inc = args["local"] ? includet : include
-  inc("es.jl")
+  inc("ga.jl")
   inc("net.jl")
   inc("trade.jl")
   inc("utils.jl")
