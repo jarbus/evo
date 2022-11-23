@@ -146,7 +146,6 @@ function make_large_model(input_size::NTuple{4,Int}, output_size::Integer)
         Flux.flatten)
         # Get size of last layer
 
-    println(input_size)
     cnn_size = Flux.outputsize(cnn, input_size)
 
     Chain(cnn,

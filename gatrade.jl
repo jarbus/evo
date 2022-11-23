@@ -44,12 +44,10 @@ expname = args["exp-name"]
   
   function run_batch(::Val{maze}, batch_size::Int, models::Dict{String,<:Chain}; evaluation=false, render_str::Union{Nothing,String}=nothing)
 
-    println("maze")
     reset!(env)
     total_rew = 0
     for i in 1:args["episode-length"]
         obs = get_obs(env)
-        println(obs)
         probs = models["f0a0"](obs)
         acts = sample_batch(probs)
         @assert length(acts) == 1
@@ -141,7 +139,6 @@ function main()
   end
 
   for g in start_gen:args["num-gens"]
-    println("Running generation")
 
     i₀ = g==1 ? 1 : 2
     # run on first gen
@@ -158,7 +155,6 @@ function main()
     pop = next_pop 
 
     futs = []
-    println("call")
     for p1 in i₀:pop_size
       p2 = p1
       push!(futs, remotecall(() -> fitness(pop[p1], pop[p2]), procs()[(p2%nprocs())+1]))
@@ -166,7 +162,7 @@ function main()
     println("fetching")
     fetches = [fetch(fut) for fut in futs]
     println("fetched")
-    println(fetches)
+   
     if g==1
         F = [(fet[1]+fet[2])/2 for fet in fetches]
         BC = [fet[3] for fet in fetches]
@@ -174,6 +170,7 @@ function main()
         F  = vcat([F[1]],  [fet[1]+fet[2]/2 for fet in fetches])
         BC = vcat([BC[1]], [fet[3] for fet in fetches])
     end
+
     @assert length(F) == length(BC) == pop_size
     max_fit = max(F...)
     if max_fit > best[1]
