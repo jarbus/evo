@@ -118,7 +118,7 @@ function gen_temporal_data()
   seq, hcat(labels...)
 end
 
-function make_large_model(input_size::NTuple{4,Int}, output_size::Integer)
+function make_large_model_vbn(input_size::NTuple{4,Int}, output_size::Integer)
   Chain(
     Conv((3, 3), input_size[3] => 32, pad=(1, 1), sigmoid, bias=randn(Float32, 32)),
     VirtualBatchNorm(),
@@ -138,7 +138,29 @@ function make_large_model(input_size::NTuple{4,Int}, output_size::Integer)
   )
 end
 
-function make_model(s::Symbol, input_size::NTuple{4,Int}, output_size::Integer)
+function make_large_model(input_size::NTuple{4,Int}, output_size::Integer)
+    cnn = Chain(
+        Conv((3, 3), input_size[3] => 32, pad=(1, 1), sigmoid, bias=randn(Float32, 32)),
+        Conv((3, 3), 32 => 32, pad=(1, 1), sigmoid, bias=randn(Float32, 32)),
+        Conv((3, 3), 32 => 32, pad=(1, 1), sigmoid, bias=randn(Float32, 32)),
+        Flux.flatten)
+        # Get size of last layer
+
+    println(input_size)
+    cnn_size = Flux.outputsize(cnn, input_size)
+
+    Chain(cnn,
+        LSTM(cnn_size[1] => 256),
+        relu,
+        Dense(256 => 128),
+        relu,
+        Dense(128 => output_size),
+        softmax
+      )
+end
+
+
+function make_model(s::Symbol, input_size::NTuple{4,Int}, output_size::Integer, vbn::Bool=true)
   if s == :small
     println("Making small model")
     return make_small_model(input_size, output_size)
@@ -147,7 +169,12 @@ function make_model(s::Symbol, input_size::NTuple{4,Int}, output_size::Integer)
     return make_medium_model(input_size, output_size)
   elseif s == :large
     println("Making large model")
-    return make_large_model(input_size, output_size)
+    if vbn
+        return make_large_model_vbn(input_size, output_size)
+    else
+        return make_large_model(input_size, output_size)
+    end
+
   end
 end
 

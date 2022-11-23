@@ -1,6 +1,7 @@
 module Maze
 
-export maze_from_file, step!, reset!, test_maze
+export maze_from_file, step!, reset!, test_maze, sample_batch, get_obs
+using StatsBase
 
 mutable struct MazeEnv
     grid::Array{Int64,2}
@@ -30,6 +31,14 @@ function maze_from_file(name::String)
     end_pos = findfirst(grid .== 3) |> Tuple
     # create the environment
     return MazeEnv(grid, start_pos, start_pos, end_pos, (size(grid)...,1),4)
+end
+
+function get_obs(env::MazeEnv)
+    return env.grid[:,:,:,:]
+end
+
+function sample_batch(probs::Matrix{Float32})
+  [sample(1:size(probs, 1), Weights(probs[:, i])) for i in 1:size(probs, 2)]
 end
 
 function reset!(env::MazeEnv)

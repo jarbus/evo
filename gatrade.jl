@@ -13,6 +13,10 @@ using Infiltrator
   inc("trade.jl")
   inc("utils.jl")
   inc("maze.jl")
+
+  @enum Env trade maze
+  env_type = !isempty(args["maze"]) ? maze : trade
+  
 end
 
 expname = args["exp-name"]
@@ -33,12 +37,31 @@ expname = args["exp-name"]
   function fitness(p1::T, p2::T) where T<:Vector{<:UInt32}
     models = Dict("f0a0" => re(reconstruct(p1, model_size, 0.01)),
                   "f1a0" => re(reconstruct(p2, model_size, 0.01)))
-    rew_dict, _, bc = run_batch(batch_size, models)
+    rew_dict, _, bc = run_batch(Val(env_type), batch_size, models)
     rew_dict["f0a0"], rew_dict["f1a0"], bc["f0a0"], bc["f1a0"]
   end
 
   
-  function run_batch(batch_size::Int, models::Dict{String,<:Chain}; evaluation=false, render_str::Union{Nothing,String}=nothing)
+  function run_batch(::Val{maze}, batch_size::Int, models::Dict{String,<:Chain}; evaluation=false, render_str::Union{Nothing,String}=nothing)
+
+    println("maze")
+    reset!(env)
+    total_rew = 0
+    for i in 1:args["episode-length"]
+        obs = get_obs(env)
+        println(obs)
+        probs = models["f0a0"](obs)
+        acts = sample_batch(probs)
+        @assert length(acts) == 1
+        r, done = step!(env, acts[1])
+        total_rew += r
+    end
+    rews = Dict("f0a0" => total_rew, "f1a0"=> total_rew)
+    bc = Dict("f0a0" => env.location, "f1a0"=> env.location)
+    rews, nothing, bc
+  end
+
+  function run_batch(::Val{trade}, batch_size::Int, models::Dict{String,<:Chain}; evaluation=false, render_str::Union{Nothing,String}=nothing)
 
     b_env = [Trade.PyTrade.Trade(env_config) for _ in 1:batch_size]
     obs_size = (b_env[1].obs_size..., batch_size)
@@ -78,20 +101,20 @@ function main()
     pop_size = args["pop-size"]
     T = args["num-elites"]
     mut = args["mutation-rate"]
-    if "maze" in args
+    if "maze" in keys(args)
         env = maze_from_file(args["maze"])
     else
         env = Trade.PyTrade.Trade(env_config)
     end
     batch_size = args["batch-size"]
-    θ, re = make_model(Symbol(args["model"]), (env.obs_size..., batch_size), env.num_actions) |> Flux.destructure
+    θ, re = make_model(Symbol(args["model"]), (env.obs_size..., batch_size), env.num_actions, false) |> Flux.destructure
     model_size = length(θ)
   end
 
   pop = Vector{Vector{UInt32}}()
   next_pop = Vector{Vector{UInt32}}()
   best = (-Inf, [])
-  archive = Set{Tuple{Vector{Float64},Vector{UInt32}}}()
+  archive = Set()
   BC = nothing
   F = nothing
 
@@ -143,12 +166,13 @@ function main()
     println("fetching")
     fetches = [fetch(fut) for fut in futs]
     println("fetched")
+    println(fetches)
     if g==1
-        F = [fet[1]+fet[2]/2 for fet in fetches]
-        BC = [(fet[3] .+ fet[4])/2 for fet in fetches]
+        F = [(fet[1]+fet[2])/2 for fet in fetches]
+        BC = [fet[3] for fet in fetches]
     else
-        BC = vcat([BC[1]], [(fet[3].+fet[4])./2 for fet in fetches])
         F  = vcat([F[1]],  [fet[1]+fet[2]/2 for fet in fetches])
+        BC = vcat([BC[1]], [fet[3] for fet in fetches])
     end
     @assert length(F) == length(BC) == pop_size
     max_fit = max(F...)
@@ -183,9 +207,11 @@ function main()
       # Compute and write metrics
       outdir = "outs/$expname/$g"
       run(`mkdir -p $outdir`)
-      rew_dict, mets, _ = run_batch(batch_size, models, evaluation=false, render_str=outdir)
-      df = update_df(df, mets)
-      CSV.write(met_csv_name, df)
+      rew_dict, mets, _ = run_batch(Val(env_type), batch_size, models, evaluation=false, render_str=outdir)
+      if !isnothing(mets)
+        df = update_df(df, mets)
+        CSV.write(met_csv_name, df)
+      end
 
       # Log to file
       avg_self_fit = round((rew_dict["f0a0"] + rew_dict["f1a0"]) / 2; digits=2)
