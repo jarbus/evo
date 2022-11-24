@@ -26,7 +26,7 @@ function compute_novelty(ind_bc::Vector{<:Float64}, archive_and_pop::Vector{Vect
 end
 
 
-function compute_novelty(ind_bc::Tuple, archive_and_pop::Vector{<:Tuple})::Float64 
+function compute_novelty(ind_bc::Tuple, archive_and_pop::Vector)::Float64 
     # Assumptions: Novelty against self is zero, ind_bc is in archive_and_pop
     sum(sum(sum((ind_bc .- bc) .^ 2) for bc in archive_and_pop)) / (length(archive_and_pop) - 1)
 end
