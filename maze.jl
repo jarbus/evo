@@ -34,7 +34,7 @@ function maze_from_file(name::String)
 end
 
 function get_obs(env::MazeEnv)
-    return env.grid[:,:,:,:]
+    return env.grid[:,:,:,:] ./ 3f0
 end
 
 function sample_batch(probs::Matrix{Float32})

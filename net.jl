@@ -179,7 +179,7 @@ end
 
 
 
-function make_small_model(input_size::NTuple{4,Int}, output_size::Integer)
+function make_small_model_vbn(input_size::NTuple{4,Int}, output_size::Integer)
   Chain(
     Conv((3, 3), input_size[3] => 32, pad=(1, 1), relu, bias=randn(Float32, 32)),
     VirtualBatchNorm(),
@@ -195,18 +195,38 @@ function make_small_model(input_size::NTuple{4,Int}, output_size::Integer)
   )
 end
 
-function make_medium_model(input_size::NTuple{4,Int}, output_size::Integer)
+function make_small_model(input_size::NTuple{4,Int}, output_size::Integer)
   Chain(
-    Conv((3, 3), input_size[3] => 3, pad=(1, 1), sigmoid, bias=randn(Float32, 3)),
-    VirtualBatchNorm(),
+    Conv((3, 3), input_size[3] => 32, pad=(1, 1), relu, bias=randn(Float32, 32)),
+    Conv((3, 3), 32 => 16, pad=(1, 1), relu, bias=randn(Float32, 16)),
     Flux.flatten,
     # Dense(147 => 16, relu),
     # make sure to call reset! when batch size changes
-    LSTM(147 => 16),
+    LSTM(784 => 256),
     relu,
-    Dense(16 => output_size),
+    Dense(256 => output_size),
     softmax
   )
+end
+
+
+
+
+function make_medium_model(input_size::NTuple{4,Int}, output_size::Integer)
+    cnn = Chain(
+        Conv((3, 3), input_size[3] => 8, pad=(1, 1), sigmoid, bias=randn(Float32, 8)),
+        Conv((3, 3), 8 => 4, pad=(1, 1), sigmoid, bias=randn(Float32, 4)),
+        Flux.flatten)
+        # Get size of last layer
+
+    cnn_size = Flux.outputsize(cnn, input_size)
+
+    Chain(cnn,
+        LSTM(cnn_size[1] => 64),
+        relu,
+        Dense(64 => output_size),
+        softmax
+      )
 end
 
 
