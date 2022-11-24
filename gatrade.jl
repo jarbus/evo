@@ -45,17 +45,16 @@ expname = args["exp-name"]
   function run_batch(::Val{maze}, batch_size::Int, models::Dict{String,<:Chain}; evaluation=false, render_str::Union{Nothing,String}=nothing)
 
     reset!(env)
-    total_rew = 0
+    r = -Inf
     for i in 1:args["episode-length"]
         obs = get_obs(env)
         probs = models["f0a0"](obs)
         acts = sample_batch(probs)
         @assert length(acts) == 1
         r, done = step!(env, acts[1])
-        total_rew += r
         done && break
     end
-    rews = Dict("f0a0" => total_rew, "f1a0"=> total_rew)
+    rews = Dict("f0a0" => r, "f1a0"=> r)
     bc = Dict("f0a0" => env.location, "f1a0"=> env.location)
     rews, nothing, bc
   end

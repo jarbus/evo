@@ -60,10 +60,15 @@ function step!(env::MazeEnv, act::Int64)
     env.location = min.(max.(env.location, 1), size(env.grid))
     # get the current grid value
     if env.grid[env.location...] == 3
-        return 10.0, true
+        return 10, true
     end
 
-    return -1.0, false
+    return -dist(env), false
+end
+
+function dist(env::MazeEnv)
+    # compute euclidean distance between env.location and env.goal
+    return sqrt(sum((env.location .- env.goal).^2))
 end
 
 function print_maze(env::MazeEnv)
