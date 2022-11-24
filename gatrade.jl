@@ -53,6 +53,7 @@ expname = args["exp-name"]
         @assert length(acts) == 1
         r, done = step!(env, acts[1])
         total_rew += r
+        done && break
     end
     rews = Dict("f0a0" => total_rew, "f1a0"=> total_rew)
     bc = Dict("f0a0" => env.location, "f1a0"=> env.location)
