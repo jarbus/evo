@@ -18,11 +18,12 @@ if !args["local"]
   cpus_per_node = get_procs(split(ENV["SLURM_JOB_CPUS_PER_NODE"], ","))
   nodelist = ENV["SLURM_JOB_NODELIST"]
   hostnames = read(`scontrol show hostnames "$nodelist"`, String) |> strip |> split .|> String
+  ENV["OPENBLAS_NUM_THREADS"] = "1"
   @assert length(cpus_per_node) == length(hostnames)
 
   machine_specs = [hostspec for hostspec in zip(hostnames, cpus_per_node)]
   println(machine_specs)
-  addprocs(machine_specs, max_parallel=1000, multiplex=true, enable_threaded_blas=true)
+  addprocs(machine_specs, max_parallel=1000, multiplex=true, enable_threaded_blas=false, env=["OPENBLAS_NUM_THREADS"=>"1"])
   println("nprocs $(nprocs())")
 else
   addprocs(1)

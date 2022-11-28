@@ -1,4 +1,5 @@
 #!/bin/bash
+ulimit -u 10000
 argbases=$(ls ./afiles/*.arg | fzf --multi)
 echo $argbases
 for argbase in $argbases; do
