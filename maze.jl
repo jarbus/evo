@@ -7,7 +7,7 @@ mutable struct MazeEnv
     grid::Array{Int64,2}
     start::Tuple{Int64,Int64}
     location::Tuple{Int64,Int64}
-    goal::Tuple{Int64,Int64}
+    goals::Vector{Tuple{Int64,Int64}}
     obs_size::Tuple{Int64,Int64,Int64}
     num_actions::Int64
 end
@@ -28,7 +28,7 @@ function maze_from_file(name::String)
     @assert 3 in grid
     # find the start location
     start_pos = findfirst(grid .== 2) |> Tuple
-    end_pos = findfirst(grid .== 3) |> Tuple
+    end_pos = findall(grid .== 3) .|> Tuple
     # create the environment
     return MazeEnv(grid, start_pos, start_pos, end_pos, (size(grid)...,1),4)
 end
@@ -68,7 +68,7 @@ end
 
 function dist(env::MazeEnv)
     # compute euclidean distance between env.location and env.goal
-    return sqrt(sum((env.location .- env.goal).^2))
+    return min([sqrt(sum((env.location .- g).^2)) for g in env.goals]...)
 end
 
 function print_maze(env::MazeEnv)
@@ -79,7 +79,7 @@ function print_maze(env::MazeEnv)
                 print("A")
             elseif (i, j) == env.start
                 print("S")
-            elseif (i, j) == env.goal
+            elseif (i, j) in env.goals
                 print("G")
             elseif env.grid[i, j] == 1
                 print("#")
