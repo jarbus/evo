@@ -1,18 +1,27 @@
 include("multiproc.jl")
+println("including gatrade")
 using DataFrames
 using CSV
 using FileIO
 using Infiltrator
 
 @everywhere begin
+  ts() = Dates.format(now(), "HH:MM:SS")
   args = $args
   args["local"] && using Revise
   inc = args["local"] ? includet : include
+  using Dates
+  println(ts() * " including modules")
   inc("ga.jl")
+  println(ts() * " ga done")
   inc("net.jl")
+  println(ts() * " net done")
   inc("trade.jl")
+  println(ts() * " trade done")
   inc("utils.jl")
+  println(ts() * " utils done")
   inc("maze.jl")
+  println(ts() * " maze done")
 
   @enum Env trade maze
   env_type = !isempty(args["maze"]) ? maze : trade
@@ -135,7 +144,7 @@ function main()
     pop = check["pop"]
     next_pop = copy(pop)
     @assert length(pop) == pop_size
-    println("resuming from gen $start_gen")
+    println(ts()*"resuming from gen $start_gen")
   end
 
   for g in start_gen:args["num-gens"]
@@ -159,9 +168,9 @@ function main()
       p2 = p1
       push!(futs, remotecall(() -> fitness(pop[p1], pop[p2]), procs()[(p2%nprocs())+1]))
     end
-    println("fetching")
+    println(ts()*"fetching")
     fetches = [fetch(fut) for fut in futs]
-    println("fetched")
+    println(ts()*"fetched")
    
     if g==1
         F = [(fet[1]+fet[2])/2 for fet in fetches]
@@ -175,7 +184,7 @@ function main()
     max_fit = max(F...)
     if max_fit > best[1]
         llog(islocal=args["local"], name=logname) do logfile
-            println(logfile, "New best ind found, F=$max_fit")
+            println(logfile, ts()*"New best ind found, F=$max_fit")
         end
         best = (max_fit, pop[argmax(F)])
     end
@@ -213,7 +222,7 @@ function main()
       # Log to file
       avg_self_fit = round((rew_dict["f0a0"] + rew_dict["f1a0"]) / 2; digits=2)
       llog(islocal=args["local"], name=logname) do logfile
-        println(logfile, "Generation $g: $avg_self_fit")
+      println(logfile, ts()*"Generation $g: $avg_self_fit")
       end
 
       # Save checkpoint
