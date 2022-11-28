@@ -6,22 +6,22 @@ using FileIO
 using Infiltrator
 
 @everywhere begin
-  ts() = Dates.format(now(), "HH:MM:SS")
+  ts() = Dates.format(now(), "HH:MM:SS")*" "
   args = $args
   args["local"] && using Revise
   inc = args["local"] ? includet : include
   using Dates
-  println(ts() * " including modules")
+  println(ts() * "including modules")
   inc("ga.jl")
-  println(ts() * " ga done")
+  println(ts() * "ga done")
   inc("net.jl")
-  println(ts() * " net done")
+  println(ts() * "net done")
   inc("trade.jl")
-  println(ts() * " trade done")
+  println(ts() * "trade done")
   inc("utils.jl")
-  println(ts() * " utils done")
+  println(ts() * "utils done")
   inc("maze.jl")
-  println(ts() * " maze done")
+  println(ts() * "maze done")
 
   @enum Env trade maze
   env_type = !isempty(args["maze"]) ? maze : trade
