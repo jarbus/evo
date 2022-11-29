@@ -24,12 +24,13 @@ using Infiltrator
   println(ts() * "maze done")
 
   @enum Env trade maze
-  env_type = !isempty(args["maze"]) ? maze : trade
+  env_type = !isempty(args["maze"]) ? Val(maze) : Val(trade)
   
 end
 
 expname = args["exp-name"]
 @everywhere begin
+  println("using modules")
   using .Trade
   using .Net
   using .GANS
@@ -46,7 +47,7 @@ expname = args["exp-name"]
   function fitness(p1::T, p2::T) where T<:Vector{<:UInt32}
     models = Dict("f0a0" => re(reconstruct(p1, model_size, 0.01)),
                   "f1a0" => re(reconstruct(p2, model_size, 0.01)))
-    rew_dict, _, bc = run_batch(Val(env_type), batch_size, models)
+    rew_dict, _, bc = run_batch(env_type, batch_size, models)
     rew_dict["f0a0"], rew_dict["f1a0"], bc["f0a0"], bc["f1a0"]
   end
 
@@ -213,7 +214,7 @@ function main()
       # Compute and write metrics
       outdir = "outs/$expname/$g"
       run(`mkdir -p $outdir`)
-      rew_dict, mets, _ = run_batch(Val(env_type), batch_size, models, evaluation=false, render_str=outdir)
+      rew_dict, mets, _ = run_batch(env_type, batch_size, models, evaluation=false, render_str=outdir)
       if !isnothing(mets)
         df = update_df(df, mets)
         CSV.write(met_csv_name, df)
