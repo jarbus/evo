@@ -12,6 +12,9 @@ using Infiltrator
   inc("net.jl")
   inc("trade.jl")
   inc("utils.jl")
+  inc("maze.jl")
+  @enum Env trade maze
+  env_type = !isempty(args["maze"]) ? Val(maze) : Val(trade)
 end
 
 expname = args["exp-name"]
@@ -20,6 +23,7 @@ expname = args["exp-name"]
   using .Trade
   using .Net
   using .Utils
+  using .Maze
   using Flux
   using Statistics
   using StableRNGs
@@ -27,7 +31,7 @@ expname = args["exp-name"]
 
   env_config = mk_env_config(args)
   
-  function run_batch(batch_size::Int, models::Dict{String,<:Chain}; evaluation=false, render_str::Union{Nothing,String}=nothing)
+  function run_batch(::Val{trade}, batch_size::Int, models::Dict{String,<:Chain}; evaluation=false, render_str::Union{Nothing,String}=nothing)
 
     b_env = [Trade.PyTrade.Trade(env_config) for _ in 1:batch_size]
     obs_size = (b_env[1].obs_size..., batch_size)
@@ -50,19 +54,39 @@ expname = args["exp-name"]
     end
     rew_dict = Dict(name => rew / batch_size for (name, rew) in rews)
     mets = get_metrics(b_env)
-    rew_dict, mets
+    rew_dict, mets, nothing
   end
+
+  function run_batch(::Val{maze}, batch_size::Int, models::Dict{String,<:Chain}; evaluation=false, render_str::Union{Nothing,String}=nothing)
+
+    reset!(env)
+    r = -Inf
+    for i in 1:args["episode-length"]
+        obs = get_obs(env)
+        obs = repeat(obs, outer=(1,1,1,batch_size))
+        probs = models["f0a0"](obs)
+        acts = sample_batch(probs)
+        @assert length(acts) == batch_size
+        r, done = step!(env, acts[1])
+        done && break
+    end
+    rews = Dict("f0a0" => r, "f1a0"=> r)
+    bc = Dict("f0a0" => env.location, "f1a0"=> env.location)
+    rews, nothing, bc
+  end
+
+
 
   function fitness_pos(p1::Int, p2::Int)
     models = Dict("f0a0" => re(θ .+ get_noise(nt, p1)),
       "f1a0" => re(θ .+ get_noise(nt, p2)))
-    rew_dict, _ = run_batch(batch_size, models)
+    rew_dict, _, _ = run_batch(env_type, batch_size, models)
     rew_dict["f0a0"], rew_dict["f1a0"]
   end
   function fitness_neg(p1::Int, p2::Int)
     models = Dict("f0a0" => re(θ .- get_noise(nt, p1)),
       "f1a0" => re(θ .- get_noise(nt, p2)))
-    rew_dict, _ = run_batch(batch_size, models)
+    rew_dict, _, _ = run_batch(env_type, batch_size, models)
     rew_dict["f0a0"], rew_dict["f1a0"]
   end
 
@@ -80,10 +104,15 @@ function main()
     mut = args["mutation-rate"]
     α = args["alpha"]
     rng = StableRNG(0)
-    env = Trade.PyTrade.Trade(env_config)
+    if "maze" in keys(args)
+        env = maze_from_file(args["maze"])
+    else
+        env = Trade.PyTrade.Trade(env_config)
+    end
+
     batch_size = args["batch-size"]
     θ, re = make_model(Symbol(args["model"]), (env.obs_size..., batch_size), env.num_actions) |> Flux.destructure
-    model_size = size(θ)[1]
+    model_size = length(θ)
   end
   
   # ###############
@@ -109,9 +138,11 @@ function main()
       outdir = "outs/$expname/$i"
       run(`mkdir -p $outdir`)
       models = Dict("f0a0" => re(θ), "f1a0" => re(θ))
-      rew_dict, mets = run_batch(batch_size, models, evaluation=false, render_str=outdir)
-      df = update_df(df, mets)
-      CSV.write(met_csv_name, df)
+      rew_dict, mets, _ = run_batch(env_type, batch_size, models, evaluation=false, render_str=outdir)
+      if !isnothing(mets)
+          df = update_df(df, mets)
+          CSV.write(met_csv_name, df)
+      end
 
       # log mets and save gen
       avg_self_fit = round((rew_dict["f0a0"] + rew_dict["f1a0"]) / 2, digits=2)

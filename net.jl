@@ -8,11 +8,11 @@ using FileIO
 export VirtualBatchNorm, make_model
 
 mutable struct VirtualBatchNorm
-  ref::Union{Array{Float32},Nothing}
-  γ::Union{Array{Float32},Nothing}
-  β::Union{Array{Float32},Nothing}
-  μ::Union{Array{Float32},Nothing}
-  σ::Union{Array{Float32},Nothing}
+  ref::Union{AbstractArray,Nothing}
+  γ::Union{AbstractArray,Nothing}
+  β::Union{AbstractArray,Nothing}
+  μ::Union{AbstractArray,Nothing}
+  σ::Union{AbstractArray,Nothing}
 end
 function VirtualBatchNorm()
   VirtualBatchNorm(nothing,
@@ -26,18 +26,24 @@ end
 
 Flux.trainable(bn::VirtualBatchNorm) = (β=bn.β, γ=bn.γ)
 
+
+
 # make this dynamically handle 4d input
 function (layer::VirtualBatchNorm)(x)
+  if Flux.NilNumber.Nil() in x
+    return x
+  end
   if isnothing(layer.ref)
-    @assert isnothing(layer.μ)
-    @assert isnothing(layer.σ)
-    @assert !any(isnan.(x))
+    println(x)
+    # @assert isnothing(layer.μ)
+    # @assert isnothing(layer.σ)
+    # @assert !any(isnan.(x))
     layer.ref = x
     layer.μ = mean(Float32, layer.ref, dims=ndims(layer.ref))
     layer.σ = std(layer.ref, dims=ndims(layer.ref))
-    @assert !any(isnan.(layer.σ))
-    @assert size(layer.μ) == (size(x)[1:end-1]..., 1)
-    @assert size(layer.σ) == (size(x)[1:end-1]..., 1)
+    # @assert !any(isnan.(layer.σ))
+    # @assert size(layer.μ) == (size(x)[1:end-1]..., 1)
+    # @assert size(layer.σ) == (size(x)[1:end-1]..., 1)
   end
   if isnothing(layer.γ)
     layer.γ = Flux.glorot_normal(size(x)[1:end-1]...)
@@ -47,6 +53,11 @@ function (layer::VirtualBatchNorm)(x)
   vb = x̄ .* layer.γ .+ layer.β
   @assert ndims(vb) ∈ [4, 2]
   @assert size(vb) == size(x)
+  println(vb)
+  @assert !any(isnan.(vb))
+  # check that vb is not nil
+  @assert !in(Flux.NilNumber.Nil(), vb)
+
   vb
 end
 
@@ -119,23 +130,27 @@ function gen_temporal_data()
 end
 
 function make_large_model_vbn(input_size::NTuple{4,Int}, output_size::Integer)
-  Chain(
-    Conv((3, 3), input_size[3] => 32, pad=(1, 1), sigmoid, bias=randn(Float32, 32)),
-    VirtualBatchNorm(),
-    Conv((3, 3), 32 => 32, pad=(1, 1), sigmoid, bias=randn(Float32, 32)),
-    VirtualBatchNorm(),
-    Conv((3, 3), 32 => 32, pad=(1, 1), sigmoid, bias=randn(Float32, 32)),
-    VirtualBatchNorm(),
-    Flux.flatten,
-    # Dense(147 => 16, relu),
-    # make sure to call reset! when batch size changes
-    LSTM(1568 => 256),
-    relu,
-    Dense(256 => 128),
-    relu,
-    Dense(128 => output_size),
-    softmax
-  )
+    cnn = Chain(
+        Conv((3, 3), input_size[3] => 32, pad=(1, 1), sigmoid, bias=randn(Float32, 32)),
+        VirtualBatchNorm(),
+        Conv((3, 3), 32 => 32, pad=(1, 1), sigmoid, bias=randn(Float32, 32)),
+        VirtualBatchNorm(),
+        Conv((3, 3), 32 => 32, pad=(1, 1), sigmoid, bias=randn(Float32, 32)),
+        VirtualBatchNorm(),
+        Flux.flatten)
+        # Get size of last layer
+
+    cnn_size = Flux.outputsize(cnn, input_size)
+
+    Chain(cnn,
+        LSTM(cnn_size[1] => 256),
+        relu,
+        Dense(256 => 128),
+        relu,
+        Dense(128 => output_size),
+        softmax
+      )
+
 end
 
 function make_large_model(input_size::NTuple{4,Int}, output_size::Integer)
@@ -250,7 +265,7 @@ function fitness(model; print=false)::Float32
 end
 
 function test_lstm()
-  m = make_model(:large)
+  m = make_model(:large, (7, 7, 3, 1), 2)
   # x, y = gen_temporal_data()
   # [m(xi) for xi in x[1:end-1]]
   # z = m(x[end])
