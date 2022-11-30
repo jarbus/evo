@@ -124,7 +124,9 @@ function main()
     # check if check exists on the file system
     if isfile(check_name)
         check = load(check_name)
-        df = CSV.read(met_csv_name, DataFrame)
+        if isfile(met_csv_name)
+            df = CSV.read(met_csv_name, DataFrame)
+        end
         @everywhere θ = $check["theta"]
         start_gen = check["gen"] + 1
         println("resuming from gen $start_gen")

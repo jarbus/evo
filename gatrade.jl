@@ -134,8 +134,9 @@ function main()
     start_gen = 1
     # check if check exists on the file system
     if isfile(check_name)
-        @assert isfile(met_csv_name)
-        df = CSV.read(met_csv_name, DataFrame)
+        if isfile(met_csv_name)
+            df = CSV.read(met_csv_name, DataFrame)
+        end
         check = load(check_name)
         start_gen = check["gen"] + 1
         F = check["F"]
