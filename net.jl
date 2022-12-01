@@ -129,7 +129,30 @@ function gen_temporal_data()
   seq, hcat(labels...)
 end
 
-function make_large_model_vbn(input_size::NTuple{4,Int}, output_size::Integer)
+make_model(s::Val, input_size, output_size) = make_model(s, input_size, output_size, Val(false))
+function make_model(::Val{:large}, input_size::NTuple{4,Int}, output_size::Integer, vbn::Val{false})
+    println("making large model without vbn")
+    cnn = Chain(
+        Conv((3, 3), input_size[3] => 32, pad=(1, 1), sigmoid, bias=randn(Float32, 32)),
+        Conv((3, 3), 32 => 32, pad=(1, 1), sigmoid, bias=randn(Float32, 32)),
+        Conv((3, 3), 32 => 32, pad=(1, 1), sigmoid, bias=randn(Float32, 32)),
+        Flux.flatten)
+        # Get size of last layer
+
+    cnn_size = Flux.outputsize(cnn, input_size)
+
+    Chain(cnn,
+        LSTM(cnn_size[1] => 256),
+        relu,
+        Dense(256 => 128),
+        relu,
+        Dense(128 => output_size),
+        softmax
+      )
+end
+
+function make_model(::Val{:large}, input_size::NTuple{4,Int}, output_size::Integer,vbn::Val{true})
+    println("making large model with vbn")
     cnn = Chain(
         Conv((3, 3), input_size[3] => 32, pad=(1, 1), sigmoid, bias=randn(Float32, 32)),
         VirtualBatchNorm(),
@@ -153,81 +176,47 @@ function make_large_model_vbn(input_size::NTuple{4,Int}, output_size::Integer)
 
 end
 
-function make_large_model(input_size::NTuple{4,Int}, output_size::Integer)
+function make_model(::Val{:small}, input_size::NTuple{4,Int}, output_size::Integer, vbn::Val{true})
+    println("Making small model with vbn")
     cnn = Chain(
-        Conv((3, 3), input_size[3] => 32, pad=(1, 1), sigmoid, bias=randn(Float32, 32)),
-        Conv((3, 3), 32 => 32, pad=(1, 1), sigmoid, bias=randn(Float32, 32)),
-        Conv((3, 3), 32 => 32, pad=(1, 1), sigmoid, bias=randn(Float32, 32)),
-        Flux.flatten)
-        # Get size of last layer
+        Conv((3, 3), input_size[3] => 4, pad=(1, 1), relu, bias=randn(Float32, 4)),
+        VirtualBatchNorm(),
+        Conv((3, 3), 4 => 4, pad=(1, 1), relu, bias=randn(Float32, 4)),
+        VirtualBatchNorm(),
+        Flux.flatten,
+        # Dense(147 => 16, relu),
+        # make sure to call reset! when batch size changes
+    )
+    cnn_size = Flux.outputsize(cnn, input_size)
+    Chain(cnn,
+        LSTM(cnn_size[1] => 16),
+        relu,
+        Dense(16 => output_size),
+        softmax
+    )
+end
+
+function make_model(::Val{:small},input_size::NTuple{4,Int}, output_size::Integer, vbn::Val{false})
+    println("Making small model without vbn")
+    cnn = Chain(
+        Conv((3, 3), input_size[3] => 4, pad=(1, 1), relu, bias=randn(Float32, 4)),
+        Conv((3, 3), 4 => 4, pad=(1, 1), relu, bias=randn(Float32, 4)),
+        Flux.flatten,
+    )
 
     cnn_size = Flux.outputsize(cnn, input_size)
-
     Chain(cnn,
-        LSTM(cnn_size[1] => 256),
+        LSTM(cnn_size[1] => 16),
         relu,
-        Dense(256 => 128),
-        relu,
-        Dense(128 => output_size),
+        Dense(16 => output_size),
         softmax
-      )
-end
-
-
-function make_model(s::Symbol, input_size::NTuple{4,Int}, output_size::Integer, vbn::Bool=true)
-  if s == :small
-    println("Making small model")
-    return make_small_model(input_size, output_size)
-  elseif s == :medium
-    println("Making medium model")
-    return make_medium_model(input_size, output_size)
-  elseif s == :large
-    println("Making large model")
-    if vbn
-        return make_large_model_vbn(input_size, output_size)
-    else
-        return make_large_model(input_size, output_size)
-    end
-
-  end
-end
-
-
-
-function make_small_model_vbn(input_size::NTuple{4,Int}, output_size::Integer)
-  Chain(
-    Conv((3, 3), input_size[3] => 32, pad=(1, 1), relu, bias=randn(Float32, 32)),
-    VirtualBatchNorm(),
-    Conv((3, 3), 32 => 16, pad=(1, 1), relu, bias=randn(Float32, 16)),
-    VirtualBatchNorm(),
-    Flux.flatten,
-    # Dense(147 => 16, relu),
-    # make sure to call reset! when batch size changes
-    LSTM(784 => 256),
-    relu,
-    Dense(256 => output_size),
-    softmax
-  )
-end
-
-function make_small_model(input_size::NTuple{4,Int}, output_size::Integer)
-  Chain(
-    Conv((3, 3), input_size[3] => 32, pad=(1, 1), relu, bias=randn(Float32, 32)),
-    Conv((3, 3), 32 => 16, pad=(1, 1), relu, bias=randn(Float32, 16)),
-    Flux.flatten,
-    # Dense(147 => 16, relu),
-    # make sure to call reset! when batch size changes
-    LSTM(784 => 256),
-    relu,
-    Dense(256 => output_size),
-    softmax
-  )
+    )
 end
 
 
 
 
-function make_medium_model(input_size::NTuple{4,Int}, output_size::Integer)
+function make_model(::Val{:medium}, input_size::NTuple{4,Int}, output_size::Integer, vbn::Val{false})
     cnn = Chain(
         Conv((3, 3), input_size[3] => 8, pad=(1, 1), sigmoid, bias=randn(Float32, 8)),
         Conv((3, 3), 8 => 4, pad=(1, 1), sigmoid, bias=randn(Float32, 4)),
@@ -244,6 +233,24 @@ function make_medium_model(input_size::NTuple{4,Int}, output_size::Integer)
       )
 end
 
+function make_model(::Val{:medium}, input_size::NTuple{4,Int}, output_size::Integer, vbn::Val{true})
+    cnn = Chain(
+        Conv((3, 3), input_size[3] => 8, pad=(1, 1), sigmoid, bias=randn(Float32, 8)),
+        VirtualBatchNorm(),
+        Conv((3, 3), 8 => 4, pad=(1, 1), sigmoid, bias=randn(Float32, 4)),
+        VirtualBatchNorm(),
+        Flux.flatten)
+        # Get size of last layer
+
+    cnn_size = Flux.outputsize(cnn, input_size)
+
+    Chain(cnn,
+        LSTM(cnn_size[1] => 64),
+        relu,
+        Dense(64 => output_size),
+        softmax
+      )
+end
 
 function fitness(model; print=false)::Float32
   # y_pred should be vector of probabilities

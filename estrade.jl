@@ -111,7 +111,7 @@ function main()
         end
 
         batch_size = args["batch-size"]
-        θ, re = make_model(Symbol(args["model"]), (env.obs_size..., batch_size), env.num_actions) |> Flux.destructure
+        θ, re = make_model(args["model"]|>Symbol|>Val, (env.obs_size..., batch_size), env.num_actions) |> Flux.destructure
         model_size = length(θ)
     end
 
