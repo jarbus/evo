@@ -165,14 +165,16 @@ function main()
         @assert length(next_pop) == pop_size
         pop = next_pop 
 
-        futs = []
-        for p1 in i₀:pop_size
-            p2 = p1
-            push!(futs, remotecall(() -> fitness(pop[p1], pop[p2]), procs()[(p2%nprocs())+1]))
+        println(ts()*"pmapping")
+        fetches = pmap(i₀:nprocs()) do p
+            println(p)
+            fitness(pop[p], pop[p])
         end
-        println(ts()*"fetching")
-        fetches = [fetch(fut) for fut in futs]
-        println(ts()*"fetched")
+        println(ts()*"pmapped")
+
+
+
+
 
         if g==1
             F = [(fet[1]+fet[2])/2 for fet in fetches]
