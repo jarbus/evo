@@ -29,6 +29,7 @@ expname = args["exp-name"]
     using StableRNGs
 
 
+
     env_config = mk_env_config(args)
 
     function run_batch(::Val{trade}, batch_size::Int, models::Dict{String,<:Chain}; evaluation=false, render_str::Union{Nothing,String}=nothing)
@@ -78,6 +79,7 @@ expname = args["exp-name"]
 
 
     function fitness_pos(p1::Int, p2::Int)
+
         models = Dict("f0a0" => re(θ .+ get_noise(nt, p1)),
         "f1a0" => re(θ .+ get_noise(nt, p2)))
         rew_dict, _, _ = run_batch(env_type, batch_size, models)
@@ -162,19 +164,17 @@ function main()
         rands = [fetch(remotecall(() -> nt.noise[1], p)) for p in 1:nprocs()]
         @assert length(unique(rands)) == 1
 
-
-        fut_pos = []
-        fut_neg = []
-
-        for p1 in 1:pop_size
-            #for p2 in 1:pop_size
+        # run fitness_pos and fitness_neg in parallel
+        println("pmapping")
+        futs = pmap(1:pop_size) do p1
+            println(p1)
             p2 = p1
-            push!(fut_pos, remotecall(() -> fitness_pos(p1, p2), procs()[(p2%nprocs())+1]))
-            push!(fut_neg, remotecall(() -> fitness_neg(p1, p2), procs()[(p2%nprocs())+1]))
+            fitness_pos(p1, p2)[1], fitness_neg(p1, p2)[1]
         end
+        println("pmapped")
+        fut_pos = [f[1] for f in futs]
+        fut_neg = [f[2] for f in futs]
 
-        fut_pos = [fetch(f)[1] for f in fut_pos]
-        fut_neg = [fetch(f)[1] for f in fut_neg]
 
         # Log fitness distribution
         llog(islocal=args["local"], name=logname) do logfile
