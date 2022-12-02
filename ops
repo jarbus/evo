@@ -1,1 +1,1 @@
-{"author":{"id":"2925f8bae681ccf02a1c1ecc82cbb827e525744b16a0948b37a0b024362c4ec0"},"ops":[{"type":5,"timestamp":1669941578,"nonce":"jonCnjQK78Gf82+4ag6FNuVLxS8=","added":["todo"],"removed":null}]}
+{"author":{"id":"2925f8bae681ccf02a1c1ecc82cbb827e525744b16a0948b37a0b024362c4ec0"},"ops":[{"type":8,"timestamp":1669947503,"nonce":"aCMn3kRQvtbo/may2pSfVbACcL4=","target":"cf80db0157cb69c4de848e68f0808a11f7f01f94c320c5f1ab338f03a5e6c978","new_metadata":{"github-id":"I_kwDOITEkGs5Xm_7N","github-url":"https://github.com/jarbus/evotrade/issues/3"}}]}
