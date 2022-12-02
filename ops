@@ -1,1 +1,1 @@
-{"author":{"id":"2925f8bae681ccf02a1c1ecc82cbb827e525744b16a0948b37a0b024362c4ec0"},"ops":[{"type":1,"timestamp":1669941552,"nonce":"2GHeLXF4tMyyjn6/OEcr3JJ+y14=","title":"If you stick with neuro evo, make unifying api and a single run script","message":"","files":null}]}
+{"author":{"id":"2925f8bae681ccf02a1c1ecc82cbb827e525744b16a0948b37a0b024362c4ec0"},"ops":[{"type":3,"timestamp":1669947313,"nonce":"rxiFsuND987xwjDuioyO+dvU2jg=","message":"And make num workers an arg","files":null},{"type":4,"timestamp":1669947318,"nonce":"EjBXJwflorJHZqZrY1+NbZIKAoU=","status":2}]}
