@@ -5,6 +5,7 @@ using FileIO
 using Infiltrator
 
 @everywhere begin
+    ts() = Dates.format(now(), "HH:MM:SS")*" "
     args = $args
     args["local"] && using Revise
     inc = args["local"] ? includet : include
@@ -150,7 +151,7 @@ function main()
             # log mets and save gen
             avg_self_fit = round((rew_dict["f0a0"] + rew_dict["f1a0"]) / 2, digits=2)
             llog(islocal=args["local"], name=logname) do logfile
-                println(logfile, "Generation $i: $avg_self_fit")
+                println(logfile, ts() * "Generation $i: $avg_self_fit")
             end
             !args["local"] && save(check_name, Dict("theta"=>θ,"gen"=>i))
 
@@ -177,8 +178,11 @@ function main()
 
 
         # Log fitness distribution
-        llog(islocal=args["local"], name=logname) do logfile
-            println(logfile, "min=$(min(fut_pos...)) mean=$(mean(fut_pos)) max=$(max(fut_pos...)) std=$(std(fut_pos))")
+        if i % 3 == 0
+            llog(islocal=args["local"], name=logname) do logfile
+                println(logfile, ts()*"min=$(min(fut_pos...)) mean=$(mean(fut_pos)) max=$(max(fut_pos...)) std=$(std(fut_pos))")
+                println(logfile, ts()*"min=$(min(fut_neg...)) mean=$(mean(fut_neg)) max=$(max(fut_neg...)) std=$(std(fut_neg))")
+            end
         end
 
         F = fut_pos .- fut_neg
