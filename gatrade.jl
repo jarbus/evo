@@ -115,7 +115,7 @@ function main()
             env = Trade.PyTrade.Trade(env_config)
         end
         batch_size = args["batch-size"]
-        θ, re = make_model(args["model"]|>Symbol|>Val, (env.obs_size..., batch_size), env.num_actions, false) |> Flux.destructure
+        θ, re = make_model(args["model"]|>Symbol|>Val, (env.obs_size..., batch_size), env.num_actions, Val(false)) |> Flux.destructure
         model_size = length(θ)
     end
 
@@ -166,7 +166,7 @@ function main()
         pop = next_pop 
 
         println(ts()*"pmapping")
-        fetches = pmap(i₀:nprocs()) do p
+        fetches = pmap(i₀:pop_size) do p
             println(p)
             fitness(pop[p], pop[p])
         end
