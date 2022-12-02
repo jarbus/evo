@@ -107,7 +107,7 @@ function main()
         mut = args["mutation-rate"]
         α = args["alpha"]
         rng = StableRNG(0)
-        if "maze" in keys(args)
+        if !isnothing(args["maze"])
             env = maze_from_file(args["maze"])
         else
             env = Trade.PyTrade.Trade(env_config)
