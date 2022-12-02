@@ -24,7 +24,7 @@ using Infiltrator
     println(ts() * "maze done")
 
     @enum Env trade maze
-    env_type = !isempty(args["maze"]) ? Val(maze) : Val(trade)
+    env_type = !isnothing(args["maze"]) ? Val(maze) : Val(trade)
 
 end
 

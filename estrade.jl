@@ -15,7 +15,7 @@ using Infiltrator
     inc("utils.jl")
     inc("maze.jl")
     @enum Env trade maze
-    env_type = !isempty(args["maze"]) ? Val(maze) : Val(trade)
+    env_type = !isnothing(args["maze"]) ? Val(maze) : Val(trade)
 end
 
 expname = args["exp-name"]
