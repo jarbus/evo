@@ -192,6 +192,18 @@ function main()
             end
             best = (max_fit, pop[argmax(F)])
         end
+        if best[1] > 0 
+            # TODO: if GAs can fetch food and return at night, then they
+            # can get positive reward, and we will need to make this domain
+            # specific
+            best_bc = BC[argmax(F)]
+            llog(islocal=args["local"], name=logname) do logfile
+                println(logfile, ts()*"Returning: Best individal found with fitness $(best[1]) and BC $best_bc")
+            end
+            save("outs/$expname/best.jld2", Dict("best"=>best, "bc"=>best_bc))
+            return
+        end
+
         for i in 1:pop_size
             if i > 1 && rand() > 0.01
                 push!(archive, (BC[i], pop[i]))

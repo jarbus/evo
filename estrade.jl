@@ -154,6 +154,11 @@ function main()
                 println(logfile, ts() * "Generation $i: $avg_self_fit")
             end
             !args["local"] && save(check_name, Dict("theta"=>θ,"gen"=>i))
+            # TODO: remove if we can fix this
+            if avg_self_fit > 0
+                println("Returning: eval fitness > 0")
+                return
+            end
 
         end
 
