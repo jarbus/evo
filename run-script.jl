@@ -1,4 +1,5 @@
 include("args.jl")
 args = parse_args(s)
+make_procs(args)
 include(string("x/"*args["algo"],"trade.jl"))
 main()
