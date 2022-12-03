@@ -1,10 +1,10 @@
-using EvoTrade
 using Distributed
 using DataFrames
 using FileIO
 using Infiltrator
 
 @everywhere begin
+    using EvoTrade
     args = $args
     env_type = !isnothing(args["maze"]) ? Val(:maze) : Val(:trade)
     expname = args["exp-name"]
