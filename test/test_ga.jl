@@ -58,8 +58,6 @@ end
   @test [1, 2, 3, 4] in next_pop
 end
 
-function main()
-println("running d")
 @testset "add_to_archive" begin
   archive = Set()
   BC = [0.0 for _ in 1:100000]
@@ -68,4 +66,22 @@ println("running d")
   @test length(archive) > 0
 end
 
+@testset "reorder!" begin
+
+  novelties = [1, 0, 1, 2]
+  F         = [1, 1, 4, 3]
+  BC        = [1, 2, 3, 4]
+  pop       = [1, 2, 3, 4]
+  reorder!(novelties, F, BC, pop)
+  @test novelties[1] >= novelties[2] >= novelties[3] >= novelties[4]
+  @test BC[1] == 4 == pop[1]
+  @test BC[2] == 1 == pop[2]
+  @test BC[3] == 3 == pop[3]
+  @test BC[4] == 2 == pop[4]
+  @test F[1] == 3
+  @test F[2] == 1
+  @test F[3] == 4
+  @test F[4] == 1
+end
+function main()
 end

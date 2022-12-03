@@ -158,12 +158,7 @@ function main()
         @assert length(novelties) == pop_size
 
         ts("reordering")
-        order = sortperm(novelties, rev=true)
-        @assert novelties[order[1]] >= novelties[order[2]]
-        pop = pop[order]
-        BC = BC[order]
-        F =  F[order]
-        @assert length(pop) == length(BC) == length(F) == pop_size
+        reorder!(novelties, F, BC, pop, order)
         ts("reordered")
 
         # LOG

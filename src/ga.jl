@@ -1,7 +1,7 @@
 module GANS
 using StableRNGs
 using Flux
-export reconstruct, compute_novelty, bc1, create_next_pop, add_to_archive!
+export reconstruct, compute_novelty, bc1, create_next_pop, add_to_archive!, reorder!
 
 function reconstruct(x::Vector{<:UInt32}, len, ϵ=0.01)
   @assert length(x) > 0
@@ -25,6 +25,25 @@ end
 function compute_novelty(ind_bc::Tuple, archive_and_pop::Vector)::Float64 
     # Assumptions: Novelty against self is zero, ind_bc is in archive_and_pop
     sum(sum(sum((ind_bc .- bc) .^ 2) for bc in archive_and_pop)) / (length(archive_and_pop) - 1)
+end
+
+function reorder!(novelties, F, BC, pop)
+   # remove maximum element from list
+
+   order = sortperm(novelties, rev=true)
+   # elite_idx = argmax(F)
+   # move elite to the front
+   # deleteat!(order, findfirst(==(elite_idx), order))
+   # @assert elite_idx ∉ order
+   # pushfirst!(order, elite_idx)
+   @assert novelties[order[2]] >= novelties[order[3]]
+   # reorder lists in-place
+   F[:] = F[order]
+   BC[:] = BC[order]
+   pop[:] = pop[order]
+   novelties[:] = novelties[order]
+   # @assert argmax(F) == 1
+   @assert length(pop) == length(BC) == length(F)
 end
 
 function add_to_archive!(archive, BC, pop)
