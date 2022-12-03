@@ -1,4 +1,4 @@
-module DistributedES
+module ES
 
 export compute_centered_ranks, NoiseTable, compute_grad, get_noise
 

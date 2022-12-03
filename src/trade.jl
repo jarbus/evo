@@ -3,6 +3,7 @@ module Trade
 export batch_reset!, batch_step!, PyTrade, render, get_metrics
 
 using PyCall
+using Pathnames
 using StatsBase
 using Flux
 
@@ -11,7 +12,7 @@ using Flux
 #from the current directory), just run pushfirst!(pyimport("sys")."path",
 #"").
 
-pushfirst!(pyimport("sys")."path", "")
+pushfirst!(pyimport("sys")."path", dirname(@__FILE__))
 PyTrade = pyimport("trade_v4")
 
 step_return_type = Tuple{PyDict{String,PyArray},  # obs
@@ -98,4 +99,3 @@ function batch_step!(envs::Vector{PyObject}, models::Dict{String,<:Chain}, obs::
 end
 
 end
-

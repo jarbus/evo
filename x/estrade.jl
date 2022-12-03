@@ -1,12 +1,10 @@
 include("multiproc.jl")
-using Dates
 using DataFrames
 using CSV
 using FileIO
 using Infiltrator
 
 @everywhere begin
-    ts() = Dates.format(now(), "HH:MM:SS")*" "
     args = $args
     args["local"] && using Revise
     inc = args["local"] ? includet : include
@@ -15,13 +13,12 @@ using Infiltrator
     inc("trade.jl")
     inc("utils.jl")
     inc("maze.jl")
-    @enum Env trade maze
-    env_type = !isnothing(args["maze"]) ? Val(maze) : Val(trade)
+    env_type = !isnothing(args["maze"]) ? Val(:maze) : Val(:trade)
 end
 
 expname = args["exp-name"]
 @everywhere begin
-    using .DistributedES
+    using .ES
     using .Trade
     using .Net
     using .Utils

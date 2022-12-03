@@ -1,9 +1,3 @@
-module Utils
-using DataFrames
-
-export mk_env_config, llog, update_df
-
-
 mk_env_config(args) = Dict(
     "window" => args["window"],
     "grid" => (args["gx"], args["gy"]),
@@ -34,4 +28,8 @@ end
 
 update_df(df::Nothing, mets)   = DataFrame(mets)
 update_df(df::DataFrame, mets) = push!(df, mets)
-end
+write_mets(file_name::String, df::Nothing) = nothing
+write_mets(file_name::String, df::AbstractDataFrame) = CSV.write(file_name, df)
+
+ts(x) = println(Dates.format(now(), "HH:MM:SS")*" $x")
+ts(f, x) = println(f, Dates.format(now(), "HH:MM:SS")*" $x")
