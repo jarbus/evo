@@ -26,6 +26,7 @@ function llog(f; islocal::Bool, name::String)
     !islocal && close(logfile)
 end
 
+update_df(df::Nothing, mets::Nothing) = nothing
 update_df(df::Nothing, mets)   = DataFrame(mets)
 update_df(df::DataFrame, mets) = push!(df, mets)
 write_mets(file_name::String, df::Nothing) = nothing
