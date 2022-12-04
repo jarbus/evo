@@ -8,11 +8,10 @@
 #SBATCH --account=guest
 #SBATCH --time=24:00:00
 #SBATCH --partition=guest-compute
-#SBATCH --ntasks=100
+#SBATCH --ntasks=${NPROCS}
 #SBATCH --requeue
-#SBATCH --cpus-per-task=4
+#SBATCH --cpus-per-task=1
 #SBATCH --mem-per-cpu=3GB
-#SBATCH --exclude=compute-9-[5-7]
 
 source /home/garbus/.bashrc
 conda activate trade

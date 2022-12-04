@@ -82,5 +82,6 @@ function get_arg_table()
       "--food-types"
       "--checkpoint-interval"
       "--class-name"
+      "--nprocs"
     end
 end

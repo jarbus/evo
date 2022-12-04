@@ -6,10 +6,13 @@ for argbase in $argbases; do
     if [[ -f "$argbase" ]]; then
         name=$(basename $argbase ".arg")
         datime=$(date +"%m-%d_%H:%M")
+        nprocs=$(grep -- "--nprocs" $argbase | awk '{print $2}')
         echo $datime
+        echo $nprocs processors requested
         sed -e "s/\${JOB_NAME}/$datime-$name/gI" \
             -e "s/\${RUN_NAME}/$name/gI" \
             -e "s/\${DATIME}/$datime/gI" \
+            -e "s/\${NPROCS}/$nprocs/gI" \
             launch-template.sh > "runs/$datime-$name.sh"
         sbatch "runs/$datime-$name.sh"
     fi
