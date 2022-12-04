@@ -6,7 +6,7 @@ using Test
   @test length(z) == 4
 end
 
-@testset "test_compute_novelty" begin
+@testset "test_compute_novelty_trade" begin
     function gen_dist(len) 
         x = rand(len)
         x ./ sum(x)
@@ -15,13 +15,27 @@ end
     pop = [gen_dist(9) for _ in 1:1000]
     archive_and_pop = vcat(archive, pop)
     for ind_bc in pop
-        compute_novelty(ind_bc, archive_and_pop)
+        compute_novelty(ind_bc, archive_and_pop, k=25)
     end
     archive_and_pop = [[0.0, 1.0], [1.0, 0.0]]
     ind = [1.0, 0.0]
-    nov = compute_novelty(ind, archive_and_pop)
+    nov = compute_novelty(ind, archive_and_pop, k=1)
     @test nov isa Float64
     @test nov == 2.0
+end
+
+@testset "test_compute_novelty_maze" begin
+  k = 2
+  archive = [(1,0), (3,0), (4,0)]
+  pop = [(0,0), (1,0)]
+  archive_and_pop = vcat(archive, pop)
+  @test compute_novelty(pop[1], archive_and_pop, k=k) == (3^2 + 4^2) / k
+  @test compute_novelty(pop[2], archive_and_pop, k=k) == (2^2 + 3^2) / k
+  k = 25
+  archive = [(1,0) for i in 1:30]
+  pop = [(0,0) for i in 1:30]
+  archive_and_pop = vcat(archive, pop)
+  @test compute_novelty(pop[1], archive_and_pop, k=k) == 1.0
 end
 
 
@@ -44,9 +58,9 @@ end
     bca = bc1([1, 1, 1, 2], 3)
     bcb = bc1([1, 2, 2, 2], 3)
     bcc = bc1([3, 3, 3, 3], 3)
-    nov_a = compute_novelty(bca, [bca, bcb])
-    nov_b = compute_novelty(bcb, [bca, bcb])
-    nov_c = compute_novelty(bcc, [bca, bcb, bcc])
+    nov_a = compute_novelty(bca, [bca, bcb], k=1)
+    nov_b = compute_novelty(bcb, [bca, bcb], k=1)
+    nov_c = compute_novelty(bcc, [bca, bcb, bcc], k=2)
     @test nov_a == nov_b == 0.5
     @test nov_c > nov_a
 end

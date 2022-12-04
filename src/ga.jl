@@ -16,15 +16,24 @@ function reconstruct(x::Vector{<:UInt32}, len, ϵ=0.01)
 end
 
 
-function compute_novelty(ind_bc::Vector{<:Float64}, archive_and_pop::Vector{Vector{Float64}})::Float64
+function compute_novelty(ind_bc::Vector{<:Float64}, archive_and_pop::Vector{Vector{Float64}}; k::Int=25)::Float64
     # Assumptions: Novelty against self is zero, ind_bc is in archive_and_pop
-    sum(sum((ind_bc .- bc) .^ 2) for bc in archive_and_pop) / (length(archive_and_pop) - 1)
+    @assert k < length(archive_and_pop)
+    @assert length(ind_bc) == length(archive_and_pop[1])
+    # Assumptions: Novelty against self is zero, ind_bc is in archive_and_pop
+    dists = [sum((ind_bc .- bc) .^ 2f0) for bc in archive_and_pop]# / (length(archive_and_pop) - 1)
+    sum(sort(dists, rev=true)[1:k]) / k
 end
 
 
-function compute_novelty(ind_bc::Tuple, archive_and_pop::Vector)::Float64 
+function compute_novelty(ind_bc::Tuple, archive_and_pop::Vector; k::Int=25)::Float64 
+    # for mazes
+    @assert k < length(archive_and_pop)
+    @assert length(ind_bc) == length(archive_and_pop[1])
     # Assumptions: Novelty against self is zero, ind_bc is in archive_and_pop
-    sum(sum(sum((ind_bc .- bc) .^ 2) for bc in archive_and_pop)) / (length(archive_and_pop) - 1)
+    dists = [sum((ind_bc .- bc) .^ 2f0) for bc in archive_and_pop]# / (length(archive_and_pop) - 1)
+    sum(sort(dists, rev=true)[1:k]) / k
+
 end
 
 function reorder!(novelties, F, BC, pop)
