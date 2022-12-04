@@ -166,7 +166,7 @@ function main()
         ts("reordered")
 
         # LOG
-        if g % 10 == 0
+        if g % 1 == 0
             ts("log start")
             models = Dict("f0a0" => re(reconstruct(pop[1], model_size, args["mutation-rate"])),
             "f1a0" => re(reconstruct(pop[1], model_size, args["mutation-rate"])))
