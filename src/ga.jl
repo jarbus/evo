@@ -6,7 +6,7 @@ export reconstruct, compute_novelty, bc1, create_next_pop, add_to_archive!, reor
 function reconstruct(x::Vector{<:UInt32}, len, ϵ=0.01)
   @assert length(x) > 0
   @assert len > 0
-  theta = Flux.glorot_normal(StableRNG(x[1]), len)
+  theta = Flux.glorot_normal(StableRNG(x[1]), len) ./ 32f0
   for seed in x
     theta .+= ϵ .* Flux.glorot_normal(StableRNG(seed), len)
   end

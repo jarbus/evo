@@ -7,6 +7,7 @@ using FileIO
 
 export VirtualBatchNorm, make_model
 
+
 mutable struct VirtualBatchNorm
   ref::Union{AbstractArray,Nothing}
   γ::Union{AbstractArray,Nothing}
@@ -130,11 +131,11 @@ function gen_temporal_data()
 end
 
 function make_head(input_size::NTuple{4,Int}; vbn::Bool=false, scale::Int=1)
-  layers = Vector{Any}([Conv((3, 3), input_size[3] => 8*scale, pad=(1, 1), sigmoid, bias=randn(Float32, 8*scale))])
+  layers = Vector{Any}([Conv((3, 3), input_size[3] => 8*scale, pad=(1, 1), tanh_fast)])
   for _ in 2:scale
     vbn && push!(layers, VirtualBatchNorm())
     push!(layers, 
-      Conv((3, 3), 8*scale => 8*scale, pad=(1, 1), sigmoid, bias=randn(Float32, 8*scale)),
+      Conv((3, 3), 8*scale => 8*scale, pad=(1, 1), tanh_fast),
     )
   end
   push!(layers, Flux.flatten)
@@ -148,10 +149,9 @@ function make_tail(input_size::NTuple{2, Int},
     mem = lstm ? LSTM : Dense
     Chain(
         mem(input_size[1] => 64 * scale),
-        relu,
-        Dense(64 * scale => 32 * scale),
-        relu,
-        Dense(32 * scale => output_size),
+        tanh_fast,
+        Dense(64 * scale => 32 * scale, tanh_fast),
+        Dense(32 * scale => output_size, tanh_fast),
         softmax
       )
 end
