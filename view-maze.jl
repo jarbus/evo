@@ -24,7 +24,9 @@ using JLD2
 hm = heatmap(maze_matrix)
 check = load(checkfile)
 @assert "archive" in keys(check)
-archive = check["archive"]
-poses = [(pos[2], pos[1]) for (pos, _) in archive]
+@assert "BC" in keys(check)
+a_poses = [(pos[2], pos[1]) for (pos, _) in check["archive"]]
+bc_poses = [(pos[2], pos[1]) for pos in check["BC"]]
+poses = vcat(a_poses, bc_poses)
 p = scatter!(hm, poses, color=:blue)
 savefig(p, "outs/$file/maze.png")
