@@ -77,7 +77,11 @@ function main()
     @everywhere begin
         pop_size = args["pop-size"]
         env = !isnothing(args["maze"]) ? maze_from_file(args["maze"]) : Trade.PyTrade.Trade(env_config)
-        θ, re = make_model(args["model"]|>Symbol|>Val, (env.obs_size..., args["batch-size"]), env.num_actions, Val(false)) |> Flux.destructure
+        θ, re = make_model(Symbol(args["model"]),
+                (env.obs_size..., args["batch-size"]),
+                env.num_actions,
+                vbn=args["algo"]=="es",
+                lstm=args["lstm"]) |> Flux.destructure
         model_size = length(θ)
     end
 
@@ -158,7 +162,7 @@ function main()
         @assert length(novelties) == pop_size
 
         ts("reordering")
-        reorder!(novelties, F, BC, pop, order)
+        reorder!(novelties, F, BC, pop)
         ts("reordered")
 
         # LOG

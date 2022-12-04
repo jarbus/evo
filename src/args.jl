@@ -10,6 +10,8 @@ function get_arg_table()
       required = true
       "--local"
       action = :store_true
+      "--lstm"
+      action = :store_true
       "--maze"
       arg_type = String
       "--window"

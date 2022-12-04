@@ -60,8 +60,11 @@ end
 
 @testset "add_to_archive" begin
   archive = Set()
-  BC = [0.0 for _ in 1:100000]
-  pop = [0.0 for _ in 1:100000]
+  BC = [0.0 for _ in 1:1000000]
+  pop = [0.0 for _ in 1:1000000]
+  @test length(archive) == 0
+  @test length(BC) > 0
+  @test length(pop) > 0
   add_to_archive!(archive, BC, pop)
   @test length(archive) > 0
 end
@@ -82,6 +85,4 @@ end
   @test F[2] == 1
   @test F[3] == 4
   @test F[4] == 1
-end
-function main()
 end
