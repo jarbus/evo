@@ -131,13 +131,17 @@ function gen_temporal_data()
 end
 
 function make_head(input_size::NTuple{4,Int}; vbn::Bool=false, scale::Int=1)
-  layers = Vector{Any}([Conv((3, 3), input_size[3] => 8*scale, pad=(1, 1), tanh_fast)])
-  for _ in 2:scale
+  layers = Vector{Any}([Conv((3, 3), input_size[3] => 8*scale, pad=(1, 1), relu)])
+  function add_layer(chans, filter, stride)
+    println("adding layer")
     vbn && push!(layers, VirtualBatchNorm())
     push!(layers, 
-      Conv((3, 3), 8*scale => 8*scale, pad=(1, 1), tanh_fast),
+      Conv(filter, chans[1] => chans[2], pad=(1, 1), stride=stride, relu),
     )
   end
+  add_layer( 8*scale=>16*scale, (8, 8), 4)
+  add_layer(16*scale=>16*scale, (4, 4), 2)
+  add_layer(16*scale=>16*scale, (3, 3), 1)
   push!(layers, Flux.flatten)
   Chain(layers...)
 end
@@ -148,10 +152,10 @@ function make_tail(input_size::NTuple{2, Int},
   scale::Int=1)
     mem = lstm ? LSTM : Dense
     Chain(
-        mem(input_size[1] => 64 * scale),
-        tanh_fast,
-        Dense(64 * scale => 32 * scale, tanh_fast),
-        Dense(32 * scale => output_size, tanh_fast),
+        mem(input_size[1] => 128 * scale),
+        relu,
+        Dense(128 * scale => 64 * scale, relu),
+        Dense(64 * scale => output_size, relu),
         softmax
       )
 end
