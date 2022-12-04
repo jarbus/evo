@@ -1,6 +1,6 @@
 module Maze
 
-export maze_from_file, step!, reset!, test_maze, sample_batch, get_obs
+export maze_from_file, step!, reset!, sample_batch, get_obs
 using StatsBase
 
 mutable struct MazeEnv
@@ -90,21 +90,4 @@ function print_maze(env::MazeEnv)
         println()
     end
 end
-
-
-function test_maze()
-
-    env = maze_from_file("mazes/test_maze.txt")
-    reset!(env)
-    solution = [4, 4, 3, 3, 3, 3, 2, 2]
-    for i in 1:8
-        print_maze(env)
-        act = solution[i]
-        println("Act: ", act)
-        r, done = step!(env, act)
-        println("Player position: $(env.location)")
-        println("Reward: $r")
-    end
-end
-
 end
