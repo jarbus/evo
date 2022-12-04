@@ -133,7 +133,6 @@ end
 function make_head(input_size::NTuple{4,Int}; vbn::Bool=false, scale::Int=1)
   layers = Vector{Any}([Conv((3, 3), input_size[3] => 8*scale, pad=(1, 1), relu)])
   function add_layer(chans, filter, stride)
-    println("adding layer")
     vbn && push!(layers, VirtualBatchNorm())
     push!(layers, 
       Conv(filter, chans[1] => chans[2], pad=(1, 1), stride=stride, relu),
