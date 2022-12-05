@@ -42,7 +42,7 @@ using Infiltrator
 
     function run_batch(::Val{:trade}, batch_size::Int, models::Dict{String,<:Chain}; evaluation=false, render_str::Union{Nothing,String}=nothing)
 
-        b_env = [Trade.PyTrade.Trade(env_config) for _ in 1:batch_size]
+        b_env = [PyTrade().Trade(env_config) for _ in 1:batch_size]
         obs_size = (b_env[1].obs_size..., batch_size)
         num_actions = b_env[1].num_actions
         b_obs = batch_reset!(b_env, models)
@@ -76,7 +76,7 @@ function main()
     df = nothing
     @everywhere begin
         pop_size = args["pop-size"]
-        env = !isnothing(args["maze"]) ? maze_from_file(args["maze"]) : Trade.PyTrade.Trade(env_config)
+        env = !isnothing(args["maze"]) ? maze_from_file(args["maze"]) : PyTrade().Trade(env_config)
         θ, re = make_model(Symbol(args["model"]),
                 (env.obs_size..., args["batch-size"]),
                 env.num_actions,

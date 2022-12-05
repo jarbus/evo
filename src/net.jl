@@ -138,9 +138,17 @@ function make_head(input_size::NTuple{4,Int}; vbn::Bool=false, scale::Int=1)
       Conv(filter, chans[1] => chans[2], pad=(1, 1), stride=stride, relu),
     )
   end
-  add_layer( 8*scale=>16*scale, (8, 8), 4)
-  add_layer(16*scale=>16*scale, (4, 4), 2)
-  add_layer(16*scale=>16*scale, (3, 3), 1)
+  # TODO this is a disgusting hack to avoid parameterizing models based
+  # on domain
+  if input_size[1] > 15
+    add_layer( 8*scale=>16*scale, (8, 8), 4)
+    add_layer(16*scale=>16*scale, (4, 4), 2)
+    add_layer(16*scale=>16*scale, (3, 3), 1)
+  else
+    add_layer( 8*scale=>16*scale, (3, 3), 1)
+    add_layer(16*scale=>16*scale, (3, 3), 1)
+    add_layer(16*scale=>16*scale, (3, 3), 1)
+  end
   push!(layers, Flux.flatten)
   Chain(layers...)
 end

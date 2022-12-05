@@ -12,8 +12,10 @@ using Flux
 #from the current directory), just run pushfirst!(pyimport("sys")."path",
 #"").
 
-pushfirst!(pyimport("sys")."path", dirname(@__FILE__))
-PyTrade = pyimport("trade_v4")
+function PyTrade()
+  pushfirst!(pyimport("sys")."path", String(dirname(@__FILE__)))
+  pyimport("trade_v4")
+end
 
 step_return_type = Tuple{PyDict{String,PyArray},  # obs
   Dict{String,Float32},   # rewards

@@ -1,4 +1,3 @@
-from ray.rllib.env.multi_agent_env import MultiAgentEnv
 import numpy as np
 from math import floor
 from .utils import add_tup, directions, valid_pos, inv_dist, punish_region, matchup_shuffler

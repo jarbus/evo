@@ -16,7 +16,7 @@ function reconstruct(x::Vector{<:UInt32}, len, ϵ=0.01)
 end
 
 
-function compute_novelty(ind_bc::Vector{<:Float64}, archive_and_pop::Vector{Vector{Float64}}; k::Int=25)::Float64
+function compute_novelty(ind_bc::Vector{<:Float64}, archive_and_pop::Vector{<:Any}; k::Int=25)::Float64
     # Assumptions: Novelty against self is zero, ind_bc is in archive_and_pop
     @assert k < length(archive_and_pop)
     @assert length(ind_bc) == length(archive_and_pop[1])
