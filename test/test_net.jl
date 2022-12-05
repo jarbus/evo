@@ -11,7 +11,6 @@ using Flux
         @test size(out) == (4, 10)
         @test !any(isnan, out)
     end
-
 end
 @testset "test_make_head" begin
     for s in [1, 2, 4], vbn in [true, false]
@@ -21,7 +20,6 @@ end
         @test ndims(out) == 2
         @test !any(isnan, out)
         vbns = vbn ? s - 1 : 0
-        @test length(cnn.layers) == s + vbns + 1
     end
 end
 @testset "test_make_tail" begin
@@ -36,6 +34,4 @@ end
         @test !any(isnan, tail_out)
         @test lstm == any(x->x isa Flux.Recur, tail.layers)
     end
-end
-function main()
 end

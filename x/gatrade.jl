@@ -36,7 +36,7 @@ using Infiltrator
             done && break
         end
         rews = Dict("f0a0" => r, "f1a0"=> r)
-        bc = Dict("f0a0" => env.location, "f1a0"=> env.location)
+        bc = Dict("f0a0" => env.locations[4], "f1a0"=> env.locations[4])
         rews, nothing, bc
     end
 
@@ -158,7 +158,7 @@ function main()
         ts("computing novelties")
         pop_and_arch_bc = vcat([bc for (bc, _) in archive], BC)
         @assert length(pop_and_arch_bc) == length(archive) + pop_size
-        novelties = [compute_novelty(bc, pop_and_arch_bc) for bc in BC]
+        novelties = [compute_novelty(bc, pop_and_arch_bc, k=min(pop_size-1, 25)) for bc in BC]
         @assert length(novelties) == pop_size
 
         ts("reordering")

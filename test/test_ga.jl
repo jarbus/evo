@@ -1,6 +1,3 @@
-using EvoTrade
-using Test
-
 @testset "test_reconstruct" begin
   z = reconstruct(UInt32.([3, 4, 5]), 4)
   @test length(z) == 4
@@ -74,8 +71,8 @@ end
 
 @testset "add_to_archive" begin
   archive = Set()
-  BC = [0.0 for _ in 1:1000000]
-  pop = [0.0 for _ in 1:1000000]
+  BC = [0.0 for _ in 1:10000]
+  pop = [0.0 for _ in 1:10000]
   @test length(archive) == 0
   @test length(BC) > 0
   @test length(pop) > 0
