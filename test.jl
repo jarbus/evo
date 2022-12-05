@@ -1,12 +1,14 @@
 using Revise
 using EvoTrade
+using Test
 
-includet("test/test_ga.jl")
-includet("test/test_net.jl")
-includet("test/test_maze.jl")
 
 function t()
-    roc(["test/test_maze.jl"], [EvoTrade]) do
+# includet("test/test_ga.jl")
+# includet("test/test_net.jl")
+    file = "test/test_maze.jl"
+    includet(file)
+    roc([file], [EvoTrade]) do
         main()
     end
 end
