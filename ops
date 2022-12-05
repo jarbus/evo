@@ -1,1 +1,1 @@
-{"author":{"id":"2925f8bae681ccf02a1c1ecc82cbb827e525744b16a0948b37a0b024362c4ec0"},"ops":[{"type":3,"timestamp":1670211277,"nonce":"Kwir49kIdysC9qAnK8+rIbKFAcU=","message":"in the case of noisy evaluation, elites are chosen by evaluating the 10 best agents 30 times","files":null}]}
+{"author":{"id":"2925f8bae681ccf02a1c1ecc82cbb827e525744b16a0948b37a0b024362c4ec0"},"ops":[{"type":3,"timestamp":1670253849,"nonce":"8snkqdEeqAlNFDoxhbtOsxUX9dg=","message":"test with and without lstm","files":null}]}
