@@ -151,8 +151,8 @@ function main()
         # LOG
         if g % 1 == 0
             ts("log start")
-            models = Dict("f0a0" => re(reconstruct(pop[1], model_size, args["mutation-rate"])),
-            "f1a0" => re(reconstruct(pop[1], model_size, args["mutation-rate"])))
+            models = Dict("f0a0" => re(reconstruct(best[2], model_size, args["mutation-rate"])),
+            "f1a0" => re(reconstruct(best[2], model_size, args["mutation-rate"])))
 
             # Compute and write metrics
             outdir = "outs/$expname/$g"
