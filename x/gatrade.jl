@@ -121,7 +121,6 @@ function main()
         ts("pmapped")
 
 
-        ts("catting")
         if g==1
             F = [(fet[1]+fet[2])/2 for fet in fetches]
             BC = [fet[3] for fet in fetches]
@@ -129,7 +128,6 @@ function main()
             F  = vcat([F[1]],  [fet[1]+fet[2]/2 for fet in fetches])
             BC = vcat([BC[1]], [fet[3] for fet in fetches])
         end
-        ts("catted")
 
         @assert length(F) == length(BC) == pop_size
         max_fit = max(F...)
@@ -141,18 +139,14 @@ function main()
         end
         @assert best[1] >= maximum(F)
         
-        ts("adding to archive")
         add_to_archive!(archive, BC, pop)
 
-        ts("computing novelties")
         pop_and_arch_bc = vcat([bc for (bc, _) in archive], BC)
         @assert length(pop_and_arch_bc) == length(archive) + pop_size
         novelties = [compute_novelty(bc, pop_and_arch_bc, k=min(pop_size-1, 25)) for bc in BC]
         @assert length(novelties) == pop_size
 
-        ts("reordering")
         reorder!(novelties, F, BC, pop)
-        ts("reordered")
 
         # LOG
         if g % 1 == 0
