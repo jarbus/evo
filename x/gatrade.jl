@@ -118,7 +118,6 @@ function main()
         fetches = pmap(i₀:pop_size) do p
             fitness(pop[p], pop[p])
         end
-        ts("pmapped")
 
 
         if g==1
@@ -129,15 +128,31 @@ function main()
             BC = vcat([BC[1]], [fet[3] for fet in fetches])
         end
 
+        ts("computing elite by re-evaluating top performers")
         @assert length(F) == length(BC) == pop_size
-        max_fit = max(F...)
-        if max_fit > best[1]
-            llog(islocal=args["local"], name=logname) do logfile
-                ts(logfile, "New best ind found, F=$max_fit")
-            end
-            best = (max_fit, pop[argmax(F)])
+        top_F_idxs = sortperm(F, rev=true)[1:min(10, pop_size)]
+        @assert F[top_F_idxs[1]] >= F[top_F_idxs[2]]
+        num_evals = 30
+        rollout_Fs = pmap(1:10*num_evals) do rollout_idx
+            # get member ∈ [1,10] from rollout count
+            p = (rollout_idx % num_evals) + 1
+            @assert p in 1:10
+            fit = fitness(pop[top_F_idxs[p]], pop[top_F_idxs[p]])
+            fit[1] + fit[2]/2
         end
-        @assert best[1] >= maximum(F)
+        @assert rollout_Fs isa Vector{<:AbstractFloat}
+        accurate_Fs = [sum(rollout_Fs[i:i+num_evals-1])/num_evals for i in 1:num_evals:length(rollout_Fs)]
+        @assert length(accurate_Fs) == 10
+        best_gen_idx = argmax(accurate_Fs)
+        best_gen = maximum(accurate_Fs), pop[top_F_idxs[best_gen_idx]]
+
+        if best_gen[1] > best[1]
+            llog(islocal=args["local"], name=logname) do logfile
+                ts(logfile, "New best ind found, F=$(best_gen[1])")
+            end
+            best = best_gen
+        end
+        @assert best[1] >= maximum(accurate_Fs)
         
         add_to_archive!(archive, BC, pop)
 
