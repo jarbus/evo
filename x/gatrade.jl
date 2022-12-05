@@ -140,18 +140,7 @@ function main()
             best = (max_fit, pop[argmax(F)])
         end
         @assert best[1] >= maximum(F)
-        if best[1] > 0 
-            # TODO: if GAs can fetch food and return at night, then they
-            # can get positive reward, and we will need to make this domain
-            # specific
-            best_bc = BC[argmax(F)]
-            llog(islocal=args["local"], name=logname) do logfile
-                ts("Returning: Best individal found with fitness $(best[1]) and BC $best_bc")
-            end
-            save("outs/$expname/best.jld2", Dict("best"=>best, "bc"=>best_bc))
-            return
-        end
-
+        
         ts("adding to archive")
         add_to_archive!(archive, BC, pop)
 
@@ -186,6 +175,18 @@ function main()
 
             # Save checkpoint
             !args["local"] && save(check_name, Dict("gen"=>g, "pop"=>pop, "archive"=>archive, "BC"=> BC, "F"=>F, "best"=>best))
+
+            if best[1] > 0 
+                # TODO: if GAs can fetch food and return at night, then they
+                # can get positive reward, and we will need to make this domain
+                # specific
+                best_bc = BC[argmax(F)]
+                llog(islocal=args["local"], name=logname) do logfile
+                    ts("Returning: Best individal found with fitness $(best[1]) and BC $best_bc")
+                end
+                save("outs/$expname/best.jld2", Dict("best"=>best, "bc"=>best_bc))
+                return
+            end
             ts("log end")
         end
         pop = create_next_pop(g, pop, args["num-elites"])
