@@ -1,1 +1,1 @@
-{"author":{"id":"2925f8bae681ccf02a1c1ecc82cbb827e525744b16a0948b37a0b024362c4ec0"},"ops":[{"type":3,"timestamp":1670362098,"nonce":"lClYVXwjJKga/ohFwS1Duwfvmpk=","message":"extracted run_batch, fixed bugs","files":null}]}
+{"author":{"id":"2925f8bae681ccf02a1c1ecc82cbb827e525744b16a0948b37a0b024362c4ec0"},"ops":[{"type":3,"timestamp":1670362447,"nonce":"hAFarPInSSumLEFcJ9kxALqiVo4=","message":"todo: add tests for run batch\ntodo: extract parallel eval\ntodo: add tests for parallel eval","files":null}]}
