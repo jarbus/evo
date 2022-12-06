@@ -2,9 +2,11 @@ module GANS
 using StableRNGs
 using Flux
 using Statistics
+using Distributed
+using Infiltrator
 export reconstruct, compute_novelty, bc1,
 create_next_pop, add_to_archive!, reorder!, 
-average_bc
+average_bc, compute_elite
 
 function reconstruct(x::Vector{<:UInt32}, len, ϵ=0.01)
   @assert length(x) > 0
@@ -95,4 +97,23 @@ function average_bc(bcs::Vector)
   [mean(x) for x in zip(bcs...)]
 end
 
+function compute_elite(f, pop, F; k::Int=10, n::Int=30)
+  # run n evals in parallel on top k members to compute elite
+  top_F_idxs = sortperm(F, rev=true)[1:min(k, length(pop))]
+  @assert F[top_F_idxs[1]] >= maximum(F)
+  rollout_Fs = pmap(1:k*n) do rollout_idx
+      # get member ∈ [1,10] from rollout count
+      p = floor(Int, (rollout_idx-1) / n) + 1
+      @assert p in 1:k
+      fit = f(pop[top_F_idxs[p]], pop[top_F_idxs[p]])
+      (fit[1] + fit[2])/2
+  end
+  @assert rollout_Fs isa Vector{<:AbstractFloat}
+  accurate_Fs = [sum(rollout_Fs[i:i+n-1])/n for i in 1:n:length(rollout_Fs)]
+  @assert length(accurate_Fs) == k
+  elite_idx = argmax(accurate_Fs)
+  elite = maximum(accurate_Fs), pop[top_F_idxs[elite_idx]]
+  elite
+
+end
 end

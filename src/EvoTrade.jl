@@ -5,7 +5,8 @@ export mk_env_config, llog, update_df, write_mets, ts
 export maze_from_file, step!, reset!, sample_batch, get_obs, MazeEnv
 export batch_reset!, batch_step!, PyTrade, render, get_metrics
 export compute_centered_ranks, NoiseTable, compute_grad, get_noise
-export reconstruct, compute_novelty, bc1, create_next_pop, add_to_archive!, reorder!
+export reconstruct, compute_novelty, bc1, create_next_pop, add_to_archive!,
+reorder!, compute_elite
 export run_batch
 
 using ArgParse

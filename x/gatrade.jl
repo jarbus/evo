@@ -83,29 +83,14 @@ function main()
 
         ts("computing elite by re-evaluating top performers")
         @assert length(F) == length(BC) == pop_size
-        top_F_idxs = sortperm(F, rev=true)[1:min(10, pop_size)]
-        @assert F[top_F_idxs[1]] >= F[top_F_idxs[2]]
-        num_evals = 2
-        rollout_Fs = pmap(1:10*num_evals) do rollout_idx
-            # get member ∈ [1,10] from rollout count
-            p = floor(Int, (rollout_idx-1) / num_evals) + 1
-            @assert p in 1:10
-            fit = fitness(pop[top_F_idxs[p]], pop[top_F_idxs[p]])
-            (fit[1] + fit[2])/2
-        end
-        @assert rollout_Fs isa Vector{<:AbstractFloat}
-        accurate_Fs = [sum(rollout_Fs[i:i+num_evals-1])/num_evals for i in 1:num_evals:length(rollout_Fs)]
-        @assert length(accurate_Fs) == 10
-        best_gen_idx = argmax(accurate_Fs)
-        best_gen = maximum(accurate_Fs), pop[top_F_idxs[best_gen_idx]]
+        elite = compute_elite(fitness, pop, F, k=args["num-elites"], n=2)
 
-        if best_gen[1] > best[1]
+        if elite[1] > best[1]
             llog(islocal=args["local"], name=logname) do logfile
-                ts(logfile, "New best ind found, F=$(best_gen[1])")
+                ts(logfile, "New best ind found, F=$(elite[1])")
             end
-            best = best_gen
+            best = elite
         end
-        @assert best[1] >= maximum(accurate_Fs)
         
         add_to_archive!(archive, BC, pop)
 

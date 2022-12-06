@@ -97,3 +97,10 @@ end
   @test F[3] == 4
   @test F[4] == 1
 end
+
+@testset "compute_elite" begin
+  f(a,b) = a,b
+  elite = compute_elite(f, collect(1:4), [1f0, 2f0, 3f0, 4f0], k=2, n=2)
+  @test elite[1] == 4
+  @test elite[2] == 4
+end
