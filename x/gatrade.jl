@@ -65,21 +65,13 @@ function main()
 
     for g in start_gen:args["num-gens"]
 
-        i₀ = g==1 ? 1 : 2
-
         ts("pmapping")
-        fetches = pmap(i₀:pop_size) do p
+        fetches = pmap(1:pop_size) do p
             fitness(pop[p], pop[p])
         end
 
-
-        if g==1
-            F = [(fet[1]+fet[2])/2 for fet in fetches]
-            BC = [fet[3] for fet in fetches]
-        else
-            F  = vcat([F[1]],  [fet[1]+fet[2]/2 for fet in fetches])
-            BC = vcat([BC[1]], [fet[3] for fet in fetches])
-        end
+        F = [(fet[1]+fet[2])/2 for fet in fetches]
+        BC = [fet[3] for fet in fetches]
 
         ts("computing elite by re-evaluating top performers")
         @assert length(F) == length(BC) == pop_size
