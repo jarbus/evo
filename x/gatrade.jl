@@ -136,7 +136,7 @@ function main()
         num_evals = 30
         rollout_Fs = pmap(1:10*num_evals) do rollout_idx
             # get member ∈ [1,10] from rollout count
-            p = (rollout_idx % num_evals) + 1
+            p = round(Int, (rollout_idx-1) / num_evals)
             @assert p in 1:10
             fit = fitness(pop[top_F_idxs[p]], pop[top_F_idxs[p]])
             fit[1] + fit[2]/2
