@@ -122,17 +122,16 @@ function main()
 
             # Save checkpoint
             !args["local"] && save(check_name, Dict("gen"=>g, "pop"=>pop, "archive"=>archive, "BC"=> BC, "F"=>F, "best"=>best))
-
-            # TODO: CHANGE IF GA EVER WORKS
-            if best[1] > 0 
-                best_bc = BC[argmax(F)]
-                llog(islocal=args["local"], name=logname) do logfile
-                    ts("Returning: Best individal found with fitness $(best[1]) and BC $best_bc")
-                end
-                save("outs/$expname/best.jld2", Dict("best"=>best, "bc"=>best_bc))
-                return
-            end
             ts("log end")
+        end
+        # TODO: CHANGE IF GA EVER WORKS
+        if best[1] > 0 
+            best_bc = BC[argmax(F)]
+            llog(islocal=args["local"], name=logname) do logfile
+                ts("Returning: Best individal found with fitness $(best[1]) and BC $best_bc")
+            end
+            save("outs/$expname/best.jld2", Dict("best"=>best, "bc"=>best_bc))
+            return
         end
         pop = create_next_pop(g, pop, args["num-elites"])
     end
