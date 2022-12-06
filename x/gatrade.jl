@@ -7,7 +7,6 @@ using Infiltrator
 @everywhere begin
     using EvoTrade
     args = $args
-    env_type = !isnothing(args["maze"]) ? Val(:maze) : Val(:trade)
     expname = args["exp-name"]
     using Flux
     using Statistics
@@ -15,58 +14,11 @@ using Infiltrator
 
     env_config = mk_env_config(args)
 
-
     function fitness(p1::T, p2::T) where T<:Vector{<:UInt32}
         models = Dict("f0a0" => re(reconstruct(p1, model_size, args["mutation-rate"])),
         "f1a0" => re(reconstruct(p2, model_size, args["mutation-rate"])))
-        rew_dict, _, bc = run_batch(env_type, args["batch-size"], models)
+        rew_dict, _, bc = run_batch(env, models, args)
         rew_dict["f0a0"], rew_dict["f1a0"], bc["f0a0"], bc["f1a0"]
-    end
-
-
-    function run_batch(::Val{:maze}, batch_size::Int, models::Dict{String,<:Chain}; evaluation=false, render_str::Union{Nothing,String}=nothing)
-
-        reset!(env)
-        r = -Inf
-        for i in 1:args["episode-length"]
-            obs = get_obs(env)
-            probs = models["f0a0"](obs)
-            acts = sample_batch(probs)
-            @assert length(acts) == 1
-            r, done = step!(env, acts[1])
-            done && break
-        end
-        rews = Dict("f0a0" => r, "f1a0"=> r)
-        bc = Dict("f0a0" => env.locations[4], "f1a0"=> env.locations[4])
-        rews, nothing, bc
-    end
-
-    function run_batch(::Val{:trade}, batch_size::Int, models::Dict{String,<:Chain}; evaluation=false, render_str::Union{Nothing,String}=nothing)
-
-        b_env = [PyTrade().Trade(env_config) for _ in 1:batch_size]
-        obs_size = (b_env[1].obs_size..., batch_size)
-        num_actions = b_env[1].num_actions
-        b_obs = batch_reset!(b_env, models)
-        max_steps = args["episode-length"] * args["num-agents"]
-        rews = Dict(key => 0.0f0 for key in keys(models))
-        total_acts = Dict(key => Vector{UInt32}() for key in keys(models))
-        for _ in 1:max_steps
-            b_obs, b_rew, b_dones, b_acts = batch_step!(b_env, models, b_obs, evaluation=evaluation)
-            for (b, rew_dict) in enumerate(b_rew)
-                for (name, rew) in rew_dict
-                    total_acts[name] = vcat(total_acts[name], b_acts)
-                    rews[name] += rew
-                    if render_str isa String && name == first(models).first
-                        renderfile = "$render_str/b$b.out"
-                        render(b_env[b], renderfile)
-                    end
-                end
-            end
-        end
-        rew_dict = Dict(name => rew / batch_size for (name, rew) in rews)
-        mets = get_metrics(b_env)
-        bc = Dict(name => bc1(total_acts[name], num_actions) for (name, _) in models)
-        rew_dict, mets, bc
     end
 end
 
@@ -84,6 +36,9 @@ function main()
                 vbn=args["algo"]=="es",
                 lstm=args["lstm"]) |> Flux.destructure
         model_size = length(θ)
+        # pass mazeenv struct or trade config dict
+        env = env isa MazeEnv ? env : env_config
+
     end
 
     pop = [[rand(UInt32)] for _ in 1:pop_size]
@@ -103,10 +58,7 @@ function main()
         df = isfile(met_csv_name) ? CSV.read(met_csv_name, DataFrame) : nothing
         check = load(check_name)
         start_gen = check["gen"] + 1
-        F = check["F"]
-        BC = check["BC"]
-        best = check["best"]
-        archive = check["archive"]
+        F, BC, best, archive = getindex.((check,), ["F", "BC", "best","archive"])
         pop = create_next_pop(start_gen, check["pop"], args["num-elites"])
         ts("resuming from gen $start_gen")
     end
@@ -133,13 +85,13 @@ function main()
         @assert length(F) == length(BC) == pop_size
         top_F_idxs = sortperm(F, rev=true)[1:min(10, pop_size)]
         @assert F[top_F_idxs[1]] >= F[top_F_idxs[2]]
-        num_evals = 30
+        num_evals = 2
         rollout_Fs = pmap(1:10*num_evals) do rollout_idx
             # get member ∈ [1,10] from rollout count
             p = floor(Int, (rollout_idx-1) / num_evals) + 1
             @assert p in 1:10
             fit = fitness(pop[top_F_idxs[p]], pop[top_F_idxs[p]])
-            fit[1] + fit[2]/2
+            (fit[1] + fit[2])/2
         end
         @assert rollout_Fs isa Vector{<:AbstractFloat}
         accurate_Fs = [sum(rollout_Fs[i:i+num_evals-1])/num_evals for i in 1:num_evals:length(rollout_Fs)]
@@ -173,7 +125,7 @@ function main()
             # Compute and write metrics
             outdir = "outs/$expname/$g"
             run(`mkdir -p $outdir`)
-            rew_dict, mets, _ = run_batch(env_type, args["batch-size"], models, evaluation=false, render_str=outdir)
+            rew_dict, mets, _ = run_batch(env, models, args, evaluation=false, render_str=outdir)
             df = update_df(df, mets)
             write_mets(met_csv_name, df)
 
@@ -186,10 +138,8 @@ function main()
             # Save checkpoint
             !args["local"] && save(check_name, Dict("gen"=>g, "pop"=>pop, "archive"=>archive, "BC"=> BC, "F"=>F, "best"=>best))
 
+            # TODO: CHANGE IF GA EVER WORKS
             if best[1] > 0 
-                # TODO: if GAs can fetch food and return at night, then they
-                # can get positive reward, and we will need to make this domain
-                # specific
                 best_bc = BC[argmax(F)]
                 llog(islocal=args["local"], name=logname) do logfile
                     ts("Returning: Best individal found with fitness $(best[1]) and BC $best_bc")

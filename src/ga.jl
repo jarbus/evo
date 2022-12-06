@@ -1,7 +1,10 @@
 module GANS
 using StableRNGs
 using Flux
-export reconstruct, compute_novelty, bc1, create_next_pop, add_to_archive!, reorder!
+using Statistics
+export reconstruct, compute_novelty, bc1,
+create_next_pop, add_to_archive!, reorder!, 
+average_bc
 
 function reconstruct(x::Vector{<:UInt32}, len, ϵ=0.01)
   @assert length(x) > 0
@@ -85,6 +88,11 @@ function bc1(x::Vector{<:Integer}, num_actions=9)::Vector{Float64}
         counts[i] += 1
     end
     counts ./ length(x)
+end
+
+function average_bc(bcs::Vector)
+  @assert Set(length.(bcs)) |> length == 1
+  [mean(x) for x in zip(bcs...)]
 end
 
 end

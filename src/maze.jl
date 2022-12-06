@@ -1,6 +1,6 @@
 module Maze
 
-export maze_from_file, step!, reset!, sample_batch, get_obs
+export maze_from_file, step!, reset!, sample_batch, get_obs, MazeEnv
 using StatsBase
 
 mutable struct MazeEnv
