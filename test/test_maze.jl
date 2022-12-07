@@ -32,6 +32,11 @@ function main()
     sleep(0.1)
     env = maze_from_file("$root_dir/mazes/test_maze.txt")
     plot_bcs("test", env, [(2, 2), (2, 3), (3,4)])
-    @test isfile("outs/test/maze.png")
+    @test isfile("$root_dir/outs/test/maze.png")
+
+    run(`rm $root_dir/outs/test/maze.png`, wait=false)
+    env = maze_from_file("$root_dir/mazes/hard-maze.txt")
+    plot_bcs("test", env, [(2, 2), (2, 3), (3,4)])
+    @test isfile("$root_dir/outs/test/maze.png")
 end
 end
