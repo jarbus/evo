@@ -1,0 +1,26 @@
+--maze mazes/hard-maze.txt
+--l2 0.005
+--alpha 0.01
+--mutation-rate 0.1
+--model large
+--window 3 3
+--pop-size 10
+--num-agents 2
+--num-elites 1
+--gx 11
+--gy 11
+--food-types 2
+--num-agents 2
+--fires 5 5
+--foods 0 0 0 0 10 0 1 0 10 1 10 10
+--num-gens 8
+--checkpoint-interval 500
+--day-steps 24
+--food-agent-start 0
+--food-env-spawn 5
+--episode-length 150
+--light-coeff 10.0
+--batch-size 1
+--pickup-coeff 1.0
+--algo ga
+--lstm
