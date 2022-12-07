@@ -1,6 +1,7 @@
+root_dir = dirname(@__FILE__)  |> dirname |> String
 @testset "test_rollout_maze" begin
     println("test_rollout")
-    env = maze_from_file("mazes/test_maze.txt")
+    env = maze_from_file("$root_dir/mazes/test_maze.txt")
     batch_size = 1
     θ, re = make_model(:large,
             (env.obs_size..., batch_size),
