@@ -1,1 +1,1 @@
-{"author":{"id":"2925f8bae681ccf02a1c1ecc82cbb827e525744b16a0948b37a0b024362c4ec0"},"ops":[{"type":1,"timestamp":1670428036,"nonce":"d0c0He6LQxECvb/lWJfS850ZGCI=","title":"idea: include fitness as a dimension in bc metric","message":"this should optimize over different fitnesses and novelties","files":null}]}
+{"author":{"id":"2925f8bae681ccf02a1c1ecc82cbb827e525744b16a0948b37a0b024362c4ec0"},"ops":[{"type":5,"timestamp":1670428051,"nonce":"sRsZjzWKpADliKqLqjX/WLKJgLs=","added":["idea"],"removed":null}]}
