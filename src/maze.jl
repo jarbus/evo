@@ -1,7 +1,9 @@
 module Maze
 
-export maze_from_file, step!, reset!, sample_batch, get_obs, MazeEnv
+export maze_from_file, step!, reset!, sample_batch, get_obs, MazeEnv, plot_bcs
 using StatsBase
+using Plots
+using JLD2
 
 mutable struct MazeEnv
     grid::Array{Int64,2}
@@ -23,7 +25,7 @@ function maze_from_file(name::String)
         end
     end
     # cast grid to matrix
-    grid = hcat(grid...)
+    grid = hcat(grid...)[end:-1:1,:]
     @assert 2 in grid
     @assert 3 in grid
     # find the start location
@@ -95,5 +97,14 @@ function print_maze(env::MazeEnv)
         end
         println()
     end
+end
+
+
+function plot_bcs(expname::String, env::MazeEnv, bcs::Vector)
+    maze_matrix = env.grid'[end:-1:1,:]
+    hm = heatmap(maze_matrix)
+    poses = [(pos[1], pos[2]) for pos in bcs]
+    p = scatter!(hm, poses, color=:blue)
+    savefig(p, "outs/$expname/maze.png")
 end
 end

@@ -23,3 +23,13 @@ end
     @test obs[env.locations[3]..., 4] != obs[env.locations[3]..., 3]
     @test sum(obs.==1) == 4
 end
+function main()
+println("running")
+@testset "test_plot_bcs" begin
+    run(`rm outs/test/maze.png`, wait=false)
+    sleep(0.1)
+    env = maze_from_file("mazes/test_maze.txt")
+    plot_bcs("test", env, [(2, 2), (2, 3)])
+    @test isfile("outs/test/maze.png")
+end
+end

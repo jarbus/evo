@@ -111,6 +111,7 @@ function main()
             llog(islocal=args["local"], name=logname) do logfile
                 ts(logfile, "Generation $g: $avg_self_fit")
             end
+            plot_bcs(expname, env, vcat([bc for (bc,_) in archive], BC))
 
             # Save checkpoint
             !args["local"] && save(check_name, Dict("gen"=>g, "pop"=>pop, "archive"=>archive, "BC"=> BC, "F"=>F, "best"=>best))
