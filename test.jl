@@ -15,4 +15,5 @@ function t()
         main()
     end
 end
+main()
 t()
