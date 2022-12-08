@@ -10,11 +10,12 @@ root_dir = dirname(@__FILE__)  |> dirname |> String
 end
 
 @testset "test_plot_bcs" begin
-    println("fsdfdsf")
-    plot_bcs("$root_dir", [[0.9, 0.1], [0.5, 0.5]])
+    plot_bcs("$root_dir", Dict(), [[0.99, 0.11], [0.5, 0.5], [0.00, 0.0]])
     bc_file = read("$root_dir/stats.txt", String) |> split
-    @test bc_file[7] == "0.5"
-    @test bc_file[8] == "0.9"
-    @test bc_file[9] == "0.7"
+    @test bc_file[7] == "0.0"
+    @test bc_file[8] == "0.99"
+    @test bc_file[9] == "0.5"
+    @test bc_file[10] == "0.5"
+    @test bc_file[12] == "0.0"
     run(`rm $root_dir/stats.txt`)
 end

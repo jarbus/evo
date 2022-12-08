@@ -1,6 +1,6 @@
 module Maze
 
-export maze_from_file, step!, reset!, sample_batch, get_obs, MazeEnv, plot_bcs, print_maze
+export maze_from_file, step!, reset!, sample_batch, get_obs, MazeEnv, print_maze
 using StatsBase
 using Plots
 
@@ -99,11 +99,4 @@ function print_maze(env::MazeEnv)
 end
 
 
-function plot_bcs(expname::String, env::MazeEnv, bcs::Vector)
-    maze_matrix = env.grid'
-    hm = heatmap(maze_matrix)
-    poses = [(pos[1], pos[2]) for pos in bcs]
-    p = scatter!(hm, poses, color=:blue)
-    savefig(p, "outs/$expname/maze.png")
-end
 end
