@@ -67,7 +67,9 @@ function main()
 
     for g in start_gen:args["num-gens"]
 
-        ts("pmapping")
+        llog(islocal=args["local"], name=logname) do logfile
+            ts(logfile, "pmapping")
+        end
         fetches = pmap(1:pop_size) do p
             fitness(pop[p], pop[p])
         end
@@ -75,7 +77,9 @@ function main()
         F = [(fet[1]+fet[2])/2 for fet in fetches]
         BC = [fet[3] for fet in fetches]
 
-        ts("computing elite by re-evaluating top performers")
+        llog(islocal=args["local"], name=logname) do logfile
+            ts(logfile, "computing elite by re-evaluating top performers")
+        end
         @assert length(F) == length(BC) == pop_size
         elite = compute_elite(fitness, pop, F, k=args["num-elites"], n=2)
 
@@ -96,6 +100,9 @@ function main()
         @assert size(inds, 1) == size(BC[1], 1)
         # @assert
 
+        llog(islocal=args["local"], name=logname) do logfile
+            ts(logfile, "computing novelties")
+        end
         novelties = compute_novelties(bc_matrix, pop_and_arch, k=min(pop_size-1, 25))
         @assert length(novelties) == pop_size
 
