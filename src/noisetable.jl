@@ -1,6 +1,7 @@
 module NoiseTables
 export NoiseTable, compute_grad, get_noise, refresh_noise!, reconstruct
 using StableRNGs
+using Flux
 mutable struct NoiseTable
   rng::StableRNGs.LehmerRNG
   noise::Vector{Float32}
@@ -9,8 +10,12 @@ mutable struct NoiseTable
   σ::Float32
 end
 
-NoiseTable(rng::StableRNGs.LehmerRNG, nparams::Int, pop_size::Int, σ::Float32) = NoiseTable(rng, σ * randn(rng, Float32, nparams + pop_size), nparams, pop_size, σ)
-get_noise(nt::NoiseTable, idx::UInt) = @view nt.noise[idx:idx+nt.nparams-1]
+NoiseTable(rng::StableRNGs.LehmerRNG, nparams::Int, pop_size::Int, σ::Float32) = NoiseTable(rng, σ .* Flux.glorot_normal(rng, nparams + pop_size), nparams, pop_size, σ)
+get_noise(nt::NoiseTable, idx::Int) = get_noise(nt, UInt32(idx))
+function get_noise(nt::NoiseTable, idx::UInt32)
+  idx = idx % UInt32(nt.pop_size) + 1
+  @view nt.noise[idx:idx+nt.nparams-1]
+end
 function refresh_noise!(nt::NoiseTable)
   nt.noise = randn(nt.rng, Float32, nt.nparams + nt.pop_size) * nt.σ
 end
@@ -24,7 +29,7 @@ function compute_grad(nt::NoiseTable, centered_ranks::Vector{Float32})
   grad
 end
 
-function reconstruct(nt::NoiseTable, x::Vector{UInt}, ϵ::Float32=0.01f0)
+function reconstruct(nt::NoiseTable, x::Vector{<:UInt32}, ϵ::Float32=0.01f0)
   theta = zeros(Float32, nt.nparams)
   theta .+= get_noise(nt, x[1]) ./ 32f0
   for seed in x[2:end]

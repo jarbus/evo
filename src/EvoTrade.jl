@@ -6,7 +6,7 @@ export maze_from_file, step!, reset!, sample_batch, get_obs, MazeEnv, print_maze
 export batch_reset!, batch_step!, PyTrade, render, get_metrics, plot_bcs
 export compute_centered_ranks
 export NoiseTable, compute_grad, get_noise, refresh_noise!
-export reconstruct, compute_novelty, bc1, create_next_pop, add_to_archive!,
+export reconstruct, compute_novelty, compute_novelties, bc1, create_next_pop, add_to_archive!,
 reorder!, compute_elite
 export run_batch
 

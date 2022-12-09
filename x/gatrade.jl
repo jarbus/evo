@@ -15,8 +15,8 @@ using Infiltrator
     env_config = mk_env_config(args)
 
     function fitness(p1::T, p2::T) where T<:Vector{<:UInt32}
-        models = Dict("f0a0" => re(reconstruct(p1, model_size, args["mutation-rate"])),
-        "f1a0" => re(reconstruct(p2, model_size, args["mutation-rate"])))
+        models = Dict("f0a0" => re(reconstruct(nt, p1, args["mutation-rate"])),
+        "f1a0" => re(reconstruct(nt, p2, args["mutation-rate"])))
         rew_dict, _, bc = run_batch(env, models, args)
         rew_dict["f0a0"], rew_dict["f1a0"], bc["f0a0"], bc["f1a0"]
     end
@@ -36,8 +36,10 @@ function main()
                 vbn=args["algo"]=="es",
                 lstm=args["lstm"]) |> Flux.destructure
         model_size = length(θ)
+        println("model has $model_size params")
         # pass mazeenv struct or trade config dict
         env = env isa MazeEnv ? env : env_config
+        nt = NoiseTable(StableRNG(123), model_size, args["pop-size"], 1f0)
 
     end
 
@@ -86,18 +88,24 @@ function main()
         
         add_to_archive!(archive, BC, pop)
 
-        pop_and_arch_bc = vcat([bc for (bc, _) in archive], BC)
-        @assert length(pop_and_arch_bc) == length(archive) + pop_size
-        novelties = [compute_novelty(bc, pop_and_arch_bc, k=min(pop_size-1, 25)) for bc in BC]
+        bc_matrix = hcat(BC...)
+        pop_and_arch = hcat([bc for (bc, _) in archive]..., bc_matrix)
+        @assert size(pop_and_arch, 2) == pop_size + length(archive)
+        inds = hcat(BC...)
+        @assert size(inds, 2) == pop_size
+        @assert size(inds, 1) == size(BC[1], 1)
+        # @assert
+
+        novelties = compute_novelties(bc_matrix, pop_and_arch, k=min(pop_size-1, 25))
         @assert length(novelties) == pop_size
 
         reorder!(novelties, F, BC, pop)
 
         # LOG
-        if g % 1 == 0
+        if g % 100 == 0
             ts("log start")
-            models = Dict("f0a0" => re(reconstruct(best[2], model_size, args["mutation-rate"])),
-            "f1a0" => re(reconstruct(best[2], model_size, args["mutation-rate"])))
+            models = Dict("f0a0" => re(reconstruct(nt, best[2], args["mutation-rate"])),
+            "f1a0" => re(reconstruct(nt, best[2], args["mutation-rate"])))
 
             # Compute and write metrics
             outdir = "outs/$expname/$g"

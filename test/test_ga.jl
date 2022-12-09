@@ -1,35 +1,65 @@
+using EvoTrade
+using Test
+using NearestNeighbors
+
+
+@testset "test_average_bc" begin
+  @test EvoTrade.average_bc([[1,2,3], [1,2,3]]) == [1,2,3]
+  @test EvoTrade.average_bc([[1,2,3], [3,4,5]]) == [2,3,4]
+end
+
 @testset "test_compute_novelty_trade" begin
-    function gen_dist(len) 
-        x = rand(len)
+    function gen_dist(len...) 
+        x = rand(len...)
         x ./ sum(x)
     end
-    archive = [gen_dist(9) for _ in 1:1000]
-    pop = [gen_dist(9) for _ in 1:1000]
-    archive_and_pop = vcat(archive, pop)
-    for ind_bc in pop
-        compute_novelty(ind_bc, archive_and_pop, k=25)
+    archive = gen_dist(9,1000)
+    pop = gen_dist(9,1000)
+    archive_and_pop = hcat(archive, pop)
+    for ind_bc in eachcol(pop)
+      compute_novelty(Vector(ind_bc), archive_and_pop, k=25)
     end
-    archive_and_pop = [[0.0, 1.0], [1.0, 0.0]]
+    archive_and_pop = [0.0 1.0 ; 1.0 0.0]
     ind = [1.0, 0.0]
     nov = compute_novelty(ind, archive_and_pop, k=1)
     @test nov isa Float64
-    @test nov == 2.0
+    @test nov == sqrt(2.0)
 end
 
 @testset "test_compute_novelty_maze" begin
   k = 2
-  archive = [(1,0), (3,0), (4,0)]
-  pop = [(0,0), (1,0)]
-  archive_and_pop = vcat(archive, pop)
-  @test compute_novelty(pop[1], archive_and_pop, k=k) == (3^2 + 4^2) / k
-  @test compute_novelty(pop[2], archive_and_pop, k=k) == (2^2 + 3^2) / k
-  k = 25
-  archive = [(1,0) for i in 1:30]
-  pop = [(0,0) for i in 1:30]
-  archive_and_pop = vcat(archive, pop)
-  @test compute_novelty(pop[1], archive_and_pop, k=k) == 1.0
+  # make a function that computes euclidean distance
+  function euclidist(v1::Vector, v2::Vector)::Float64
+      return sqrt(sum((v1 .- v2).^2))
+  end
+
+  archive = Float32.([1 0; 3 0; 4 0]')
+  pop = Float32.([0 4 ;1 4])
+  archive_and_pop = hcat(archive, pop)
+  kdtree = KDTree(archive_and_pop, leafsize=100000)
+
+  nov1 = compute_novelty(pop[:,1], archive_and_pop, k=k)
+  nov2 = compute_novelty(pop[:,2], archive_and_pop, k=k)
+  @test nov1 - ((euclidist([0,1], [1,0]) + euclidist([0, 1],[3, 0]))/ k) < 0.01
+  @test nov2 - ((euclidist([4,4], [4,0]) + euclidist([4, 4],[3, 0]))/ k) < 0.01
 end
 
+
+@testset "test_compute_novelties_maze" begin
+  k = 2
+  # make a function that computes euclidean distance
+  function euclidist(v1::Vector, v2::Vector)::Float64
+      return sqrt(sum((v1 .- v2).^2))
+  end
+
+  archive = Float32.([1 0; 3 0; 4 0]')
+  pop = Float32.([0 4 ;1 4])
+  archive_and_pop = hcat(archive, pop)
+
+  nov1, nov2 = compute_novelties(pop, archive_and_pop, k=k)
+  @test nov1 - ((euclidist([0,1], [1,0]) + euclidist([0, 1],[3, 0]))/ k) < 0.01
+  @test nov2 - ((euclidist([4,4], [4,0]) + euclidist([4, 4],[3, 0]))/ k) < 0.01
+end
 
 
 @testset "test_bc1" begin
@@ -47,13 +77,16 @@ end
 end
 
 @testset "test_bc_novelty" begin
+    function euclidist(v1::Vector, v2::Vector)::Float64
+        return sqrt(sum((v1 .- v2).^2))
+    end
     bca = bc1([1, 1, 1, 2], 3)
     bcb = bc1([1, 2, 2, 2], 3)
     bcc = bc1([3, 3, 3, 3], 3)
-    nov_a = compute_novelty(bca, [bca, bcb], k=1)
-    nov_b = compute_novelty(bcb, [bca, bcb], k=1)
-    nov_c = compute_novelty(bcc, [bca, bcb, bcc], k=2)
-    @test nov_a == nov_b == 0.5
+    nov_a = compute_novelty(bca, hcat(bca, bcb), k=1)
+    nov_b = compute_novelty(bcb, hcat(bca, bcb), k=1)
+    nov_c = compute_novelty(bcc, hcat(bca, bcb, bcc), k=2)
+    @test nov_a == nov_b == sqrt(0.5)
     @test nov_c > nov_a
 end
 

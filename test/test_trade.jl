@@ -1,3 +1,5 @@
+using EvoTrade
+using Test
 using PyCall
 root_dir = dirname(@__FILE__)  |> dirname |> String
 @testset "test_trade" begin

@@ -1,3 +1,5 @@
+using EvoTrade
+using Test
 using StableRNGs
 @testset "test_NoiseTable" begin
   rng = StableRNG(123)
@@ -14,7 +16,7 @@ end
 
 @testset "test_nt_reconstruct" begin
   nt = NoiseTable(StableRNG(123), 2_460_000, 20_000, 0.1f0)
-  seeds = UInt.([rand([3,4,5]) for _ in 1:30])
+  seeds = UInt32.([rand([3,4,5]) for _ in 1:30])
   θ1 =  EvoTrade.NoiseTables.reconstruct(nt, seeds)
   θ2 =  EvoTrade.NoiseTables.reconstruct(nt, seeds)
   @test θ1 == θ2

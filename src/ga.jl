@@ -4,29 +4,37 @@ using Flux
 using Statistics
 using Distributed
 using Infiltrator
-export reconstruct, compute_novelty, bc1,
-create_next_pop, add_to_archive!, reorder!, 
-average_bc, compute_elite
+using NearestNeighbors
+export reconstruct, compute_novelty, compute_novelties,
+bc1, create_next_pop, add_to_archive!,
+reorder!, average_bc, compute_elite
 
-function compute_novelty(ind_bc::Vector{<:Float64}, archive_and_pop::Vector{<:Any}; k::Int=25)::Float64
-    # Assumptions: Novelty against self is zero, ind_bc is in archive_and_pop
-    @assert k < length(archive_and_pop)
-    @assert length(ind_bc) == length(archive_and_pop[1])
-    # Assumptions: Novelty against self is zero, ind_bc is in archive_and_pop
-    dists = [sum((ind_bc .- bc) .^ 2f0) for bc in archive_and_pop]# / (length(archive_and_pop) - 1)
-    sum(sort(dists, rev=true)[1:k]) / k
-end
-
-
-function compute_novelty(ind_bc::Tuple, archive_and_pop::Vector; k::Int=25)::Float64 
+function compute_novelty(ind_bc::Vector, archive_and_pop::Matrix; k::Int=25)::Float64 
     # for mazes
-    @assert k < length(archive_and_pop)
-    @assert length(ind_bc) == length(archive_and_pop[1])
+    @assert k < size(archive_and_pop, 2)
+    @assert size(ind_bc,1) == size(archive_and_pop, 1)
     # Assumptions: Novelty against self is zero, ind_bc is in archive_and_pop
-    dists = [sum((ind_bc .- bc) .^ 2f0) for bc in archive_and_pop]# / (length(archive_and_pop) - 1)
-    sum(sort(dists, rev=true)[1:k]) / k
-
+    kdtree = KDTree(archive_and_pop, leafsize=100000)
+    inds, dists = knn(kdtree, ind_bc, k+1)
+    # @assert length(dists) == length(archive_and_pop) - k
+    return sum(dists) / k
 end
+
+
+function compute_novelties(ind_bc::Matrix, archive_and_pop::Matrix; k::Int=25) 
+    # for mazes
+    @assert k < size(archive_and_pop, 2)
+    @assert size(ind_bc, 2) <= size(archive_and_pop, 2)
+    @assert size(ind_bc, 1) == size(archive_and_pop, 1)
+    @assert size(ind_bc, 1) == size(archive_and_pop, 1)
+    # Assumptions: Novelty against self is zero, ind_bc is in archive_and_pop
+    kdtree = KDTree(archive_and_pop, leafsize=100000)
+    inds, dists = knn(kdtree, ind_bc, k+1)
+    # @assert length(dists) == length(archive_and_pop) - k
+    return [sum(d) / k for d in dists]
+end
+
+
 
 function reorder!(novelties, F, BC, pop)
    # remove maximum element from list

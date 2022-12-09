@@ -1,4 +1,5 @@
-
+using EvoTrade
+using Test
 left, up, right, down = 1, 2, 3, 4
 root_dir = dirname(@__FILE__)  |> dirname |> String
 @testset "test_maze" begin
