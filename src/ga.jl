@@ -8,19 +8,6 @@ export reconstruct, compute_novelty, bc1,
 create_next_pop, add_to_archive!, reorder!, 
 average_bc, compute_elite
 
-function reconstruct(x::Vector{<:UInt32}, len, ϵ=0.01)
-  @assert length(x) > 0
-  @assert len > 0
-  theta = Flux.glorot_normal(StableRNG(x[1]), len) ./ 32f0
-  for seed in x
-    theta .+= ϵ .* Flux.glorot_normal(StableRNG(seed), len)
-  end
-
-  @assert theta .|> isnan |> any |> !
-  theta
-end
-
-
 function compute_novelty(ind_bc::Vector{<:Float64}, archive_and_pop::Vector{<:Any}; k::Int=25)::Float64
     # Assumptions: Novelty against self is zero, ind_bc is in archive_and_pop
     @assert k < length(archive_and_pop)

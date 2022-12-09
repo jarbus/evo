@@ -1,8 +1,3 @@
-@testset "test_reconstruct" begin
-  z = reconstruct(UInt32.([3, 4, 5]), 4)
-  @test length(z) == 4
-end
-
 @testset "test_compute_novelty_trade" begin
     function gen_dist(len) 
         x = rand(len)
