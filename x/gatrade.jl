@@ -15,8 +15,13 @@ using Infiltrator
     env_config = mk_env_config(args)
 
     function fitness(p1::T, p2::T) where T<:Vector{<:UInt32}
-        models = Dict("f0a0" => re(reconstruct(nt, p1, args["mutation-rate"])),
-        "f1a0" => re(reconstruct(nt, p2, args["mutation-rate"])))
+        if p1 == p2
+            params = reconstruct(nt, p1, args["mutation-rate"])
+            models = Dict("f0a0" => re(params), "f1a0" => re(params))
+        else
+            models = Dict("f0a0" => re(reconstruct(nt, p1, args["mutation-rate"])),
+            "f1a0" => re(reconstruct(nt, p2, args["mutation-rate"])))
+        end
         rew_dict, _, bc = run_batch(env, models, args)
         rew_dict["f0a0"], rew_dict["f1a0"], bc["f0a0"], bc["f1a0"]
     end
