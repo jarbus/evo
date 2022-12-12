@@ -6,12 +6,6 @@ using StableRNGs
   nt = NoiseTable(rng, 2, 4, 0.1f0)
   @test get_noise(nt, 1) == get_noise(nt, 1)
   @test get_noise(nt, 1) != get_noise(nt, 2)
-
-  old_noise = get_noise(nt, 1)
-  refresh_noise!(nt)
-  @test get_noise(nt, 1) != old_noise 
-  @test get_noise(nt, 1) == get_noise(nt, 1)
-  @test get_noise(nt, 1) != get_noise(nt, 2)
 end
 
 @testset "test_nt_reconstruct" begin
