@@ -1,1 +1,1 @@
-{"author":{"id":"2925f8bae681ccf02a1c1ecc82cbb827e525744b16a0948b37a0b024362c4ec0"},"ops":[{"type":3,"timestamp":1670787894,"nonce":"yVzXH1y5716B5j3UNoCH8ruDMds=","message":"it's the fucking global\n\nglobal var, even an int, takes the function from 15ms to 5s","files":null}]}
+{"author":{"id":"2925f8bae681ccf02a1c1ecc82cbb827e525744b16a0948b37a0b024362c4ec0"},"ops":[{"type":3,"timestamp":1670872043,"nonce":"ok420A5uh0FrH+7oPo88eepBZ9I=","message":"it's not the global","files":null}]}
