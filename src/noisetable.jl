@@ -29,45 +29,47 @@ end
 
 function reconstruct(nt::NoiseTable, seeds::Vector{<:UInt32}, ϵ::Float32=0.01f0)
   theta = zeros(Float32, nt.nparams)
-  theta .+= get_noise(nt, seeds[1]) ./ 32f0
+  theta .+= @inline @views @inbounds get_noise(nt, seeds[1])
   for seed in seeds[2:end]
-    noise = get_noise(nt, seed)
-    for i in 1:nt.nparams
-      theta[i] += ϵ * noise[i]
-    end
+    @inline @views @inbounds theta .+= get_noise(nt, seed)
   end
-  theta .* ϵ
+  theta *= ϵ
+  theta
 end
 
 SeedCache = LRU{Vector{UInt32},Vector{Float32}}
 
 function reconstruct(param_cache::SeedCache, nt::NoiseTable, seeds::Vector{UInt32}, ϵ::Float32=0.01f0)
-  @inbounds length(seeds) == 1 && return copy(get_noise(nt, seeds[1]))
-  if seeds[1:end-1] in keys(param_cache)
-    @inbounds elite = copy(param_cache[seeds[1:end-1]])
+  if length(seeds) == 1
+    elite = copy(get_noise(nt, seeds[1]))
+    elite *= ϵ
+    return elite
+  # Get cached elite
+  elseif seeds[1:end-1] in keys(param_cache)
+    @inline @inbounds elite = copy(param_cache[seeds[1:end-1]])
+    @inline @inbounds elite .+= get_noise(nt, seeds[end]) * ϵ
+    return elite
+  # Recurse if not cached
   else
-    @inbounds elite = reconstruct(nt, seeds[1:end-1], ϵ)
+    @inline @inbounds elite = reconstruct(param_cache, nt, seeds[1:end-1], ϵ)
     @inbounds param_cache[seeds[1:end-1]] = copy(elite) # add elite to cache
+    @inline @inbounds elite .+= get_noise(nt, seeds[end]) * ϵ
+    return elite
   end
-  @inbounds elite .+= get_noise(nt, seeds[end]) 
-  return elite
 end
 
 
-
-
-
-function reconstruct(nt::NoiseTable, x::Vector{<:UInt32}, ϵ::Float32=0.01f0)
-  theta = zeros(Float32, nt.nparams)
-  @inline @views @inbounds theta .+= get_noise(nt, x[1]) ./ 32f0
-  for seed in x[2:end]
-    @inline @inbounds @views noise = get_noise(nt, seed)
-    @simd for i in 1:nt.nparams
-      @views @inbounds theta[i] += noise[i]
-    end
-  end
-  theta .* ϵ
-end
+# function reconstruct(nt::NoiseTable, x::Vector{<:UInt32}, ϵ::Float32=0.01f0)
+#   theta = zeros(Float32, nt.nparams)
+#   @inline @views @inbounds theta .+= get_noise(nt, x[1]) ./ 32f0
+#   for seed in x[2:end]
+#     @inline @inbounds @views noise = get_noise(nt, seed)
+#     @simd for i in 1:nt.nparams
+#       @views @inbounds theta[i] += noise[i]
+#     end
+#   end
+#   theta .* ϵ
+# end
 
 
 
