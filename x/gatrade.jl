@@ -16,11 +16,11 @@ using Infiltrator
 
     function fitness(p1::T, p2::T) where T<:Vector{<:UInt32}
         if p1 == p2
-            params = reconstruct(nt, p1, args["mutation-rate"])
+            params = reconstruct(sc, nt, p1, args["mutation-rate"])
             models = Dict("f0a0" => re(params), "f1a0" => re(params))
         else
-            models = Dict("f0a0" => re(reconstruct(nt, p1, args["mutation-rate"])),
-            "f1a0" => re(reconstruct(nt, p2, args["mutation-rate"])))
+            models = Dict("f0a0" => re(reconstruct(sc, nt, p1, args["mutation-rate"])),
+            "f1a0" => re(reconstruct(sc, nt, p2, args["mutation-rate"])))
         end
         rew_dict, _, bc = run_batch(env, models, args)
         rew_dict["f0a0"], rew_dict["f1a0"], bc["f0a0"], bc["f1a0"]
@@ -45,6 +45,7 @@ function main()
         # pass mazeenv struct or trade config dict
         env = env isa MazeEnv ? env : env_config
         nt = NoiseTable(StableRNG(123), model_size, args["pop-size"], 1f0)
+        sc = SeedCache(maxsize=round(Int, args["num-elites"]*1.2))
 
     end
 
@@ -116,8 +117,8 @@ function main()
         # LOG
         if g % 100 == 0
             ts("log start")
-            models = Dict("f0a0" => re(reconstruct(nt, best[2], args["mutation-rate"])),
-            "f1a0" => re(reconstruct(nt, best[2], args["mutation-rate"])))
+            models = Dict("f0a0" => re(reconstruct(sc, nt, best[2], args["mutation-rate"])),
+            "f1a0" => re(reconstruct(sc, nt, best[2], args["mutation-rate"])))
 
             # Compute and write metrics
             outdir = "outs/$expname/$g"

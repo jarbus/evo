@@ -5,7 +5,7 @@ using Statistics
 using Distributed
 using Infiltrator
 using NearestNeighbors
-export reconstruct, compute_novelty, compute_novelties,
+export compute_novelty, compute_novelties,
 bc1, create_next_pop, add_to_archive!,
 reorder!, average_bc, compute_elite
 
