@@ -29,19 +29,21 @@ end
 end
 @testset "test_plot_bcs" begin
     run(`rm $root_dir/outs/test/maze.png`, wait=false)
+    test_dir = joinpath(root_dir, "test")
+    maze_png = joinpath(test_dir, "maze.png")
     sleep(0.1)
     env = maze_from_file("$root_dir/mazes/test_maze.txt")
-    plot_bcs("$root_dir/outs/test", env, [(2, 2), (2, 3), (3,4)])
-    @test isfile("$root_dir/outs/test/maze.png")
+    plot_bcs(test_dir, env, [(2, 2), (2, 3), (3,4)])
+    @test isfile(maze_png)
 
     run(`rm $root_dir/outs/test/maze.png`, wait=false)
     sleep(0.1)
     env = maze_from_file("$root_dir/mazes/hard-maze.txt")
-    plot_bcs("$root_dir/outs/test", env, [(2, 2), (2, 3), (3,4)])
-    @test isfile("$root_dir/outs/test/maze.png")
+    plot_bcs(test_dir, env, [(2, 2), (2, 3), (3,4)])
+    @test isfile(maze_png)
 
     run(`rm $root_dir/outs/test/maze.png`, wait=false)
     env = maze_from_file("$root_dir/mazes/hard-maze.txt")
-    plot_bcs("$root_dir/outs/test", env, [(2, 2), (2, 3), (3,4)], [500,3,2])
-    @test isfile("$root_dir/outs/test/maze.png")
+    plot_bcs(test_dir, env, [(2, 2), (2, 3), (3,4)], [500,3,2])
+    @test isfile(maze_png)
 end

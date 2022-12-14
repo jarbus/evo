@@ -6,7 +6,6 @@ function plot_bcs(dirname::String, env::MazeEnv, bcs::Vector, novs::Vector=[])
         max_nov = maximum(novs)
         colors = [colorant"blue"*0.8 + colorant"yellow" * nov/max_nov for nov in novs]
     end
-    println(colors)
     hm = heatmap(maze_matrix)
     p = scatter!(hm, poses, color=colors)
     savefig(p, joinpath(dirname, "maze.png"))
