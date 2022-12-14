@@ -1,5 +1,5 @@
 module NoiseTables
-export NoiseTable, compute_grad, get_noise, reconstruct, SeedCache
+export NoiseTable, compute_grad, get_noise, reconstruct, SeedCache, cache_elites!
 using StableRNGs
 using Flux
 using LRUCache
@@ -39,7 +39,20 @@ end
 
 SeedCache = LRU{Vector{UInt32},Vector{Float32}}
 
+function cache_elites!(param_cache::SeedCache, nt::NoiseTable, elites::Vector{Vector{UInt32}}, ϵ::Float32=0.01)
+  """On each processor, cache the parameters for all elites used to create the next 
+  generation this makes reconstruction per generation O(T), where T is the truncation size
+  """
+  for elite in elites
+    @inbounds param_cache[elite] = reconstruct(param_cache, nt, elite, ϵ)
+  end
+end
+
 function reconstruct(param_cache::SeedCache, nt::NoiseTable, seeds::Vector{UInt32}, ϵ::Float32=0.01f0)
+  """Reconstruction function that finds the nearest cached ancestor and
+  reconstructs all future generations. Creates a new parameter vector if
+  no ancestor is found.
+  """
   if length(seeds) == 1
     elite = copy(get_noise(nt, seeds[1]))
     elite *= ϵ
@@ -52,7 +65,6 @@ function reconstruct(param_cache::SeedCache, nt::NoiseTable, seeds::Vector{UInt3
   # Recurse if not cached
   else
     @inline @inbounds elite = reconstruct(param_cache, nt, seeds[1:end-1], ϵ)
-    @inbounds param_cache[seeds[1:end-1]] = copy(elite) # add elite to cache
     @inline @inbounds elite .+= get_noise(nt, seeds[end]) * ϵ
     return elite
   end

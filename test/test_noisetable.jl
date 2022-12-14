@@ -20,7 +20,7 @@ end
 
 
   function create_next_gen(pop::Vector{Vector{UInt32}}, num_elites::Int=60)
-    elites = rand(pop, num_elites)
+    elites = pop[1:num_elites]
     next_gen = [vcat(rand(elites), UInt32.(rand(1:length(pop), 1))) for _ in 1:length(pop)]
     next_gen
   end
@@ -33,10 +33,11 @@ end
 
   pop = [UInt32.(rand(1:pop_size, 1)) for _ in 1:pop_size]
   reconstruct(param_cache, nt, pop[1])
-  for i in 1:5
+  for i in 1:50
+    cache_elites!(param_cache, nt, pop[1:n_elites], 0.01f0)
     pop = create_next_gen(pop, n_elites)
     hits = 0
-    for j in 1:pop_size
+    @time for j in 1:pop_size
       theta = reconstruct(param_cache, nt, pop[j])
       if rand() < 0.01
         theta2 = reconstruct(nt, pop[j])

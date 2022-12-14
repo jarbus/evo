@@ -80,6 +80,9 @@ function main()
             fitness(pop[p], pop[p])
         end
 
+        llog(islocal=args["local"], name=logname) do logfile
+            ts(logfile, "cache_elites")
+        end
         F = [(fet[1]+fet[2])/2 for fet in fetches]
         BC = [fet[3] for fet in fetches]
 
@@ -147,6 +150,7 @@ function main()
             save("outs/$expname/best.jld2", Dict("best"=>best, "bc"=>best_bc))
             return
         end
+        @everywhere cache_elites!(sc, nt, $pop[1:args["num-elites"]], args["mutation-rate"])
         pop = create_next_pop(g, pop, args["num-elites"])
     end
 end
