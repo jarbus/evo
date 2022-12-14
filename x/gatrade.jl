@@ -84,14 +84,6 @@ function main()
             fitness(pop[p], pop[p])
         end
 
-<<<<<<< HEAD
-
-||||||| parent of c29b25b (mv: proper elite log)
-        llog(islocal=args["local"], name=logname) do logfile
-            ts(logfile, "cache_elites")
-        end
-=======
->>>>>>> c29b25b (mv: proper elite log)
         F = [(fet[1]+fet[2])/2 for fet in fetches]
         BC = [fet[3] for fet in fetches]
 
