@@ -1,2 +1,4 @@
 #!/bin/bash
-python ts.py $(ls runs/*.log | fzf --tac)   
+file="$(ls runs/*.log | fzf --tac)"
+echo "$file"
+python ts.py "$file"
