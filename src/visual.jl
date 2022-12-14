@@ -1,10 +1,18 @@
-function plot_bcs(dirname::String, env::MazeEnv, bcs::Vector)
+function plot_bcs(dirname::String, env::MazeEnv, bcs::Vector, novs::Vector=[])
     maze_matrix = env.grid'
-    hm = heatmap(maze_matrix)
     poses = [(pos[1], pos[2]) for pos in bcs]
-    p = scatter!(hm, poses, color=:blue)
+    colors = :blue
+    if length(novs) > 0
+        max_nov = maximum(novs)
+        colors = [colorant"blue"*0.8 + colorant"yellow" * nov/max_nov for nov in novs]
+    end
+    println(colors)
+    hm = heatmap(maze_matrix)
+    p = scatter!(hm, poses, color=colors)
     savefig(p, joinpath(dirname, "maze.png"))
 end
+
+
 
 r2(x) = @sprintf "%6.6s" string(round(x, digits=2))
 function plot_bcs(dirname::String, ::Dict, bcs::Vector)

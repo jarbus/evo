@@ -27,17 +27,21 @@ end
     @test obs[env.locations[3]..., 4] != obs[env.locations[3]..., 3]
     @test sum(obs.==1) == 4
 end
-function main()
 @testset "test_plot_bcs" begin
     run(`rm $root_dir/outs/test/maze.png`, wait=false)
     sleep(0.1)
     env = maze_from_file("$root_dir/mazes/test_maze.txt")
-    plot_bcs("test", env, [(2, 2), (2, 3), (3,4)])
+    plot_bcs("$root_dir/outs/test", env, [(2, 2), (2, 3), (3,4)])
+    @test isfile("$root_dir/outs/test/maze.png")
+
+    run(`rm $root_dir/outs/test/maze.png`, wait=false)
+    sleep(0.1)
+    env = maze_from_file("$root_dir/mazes/hard-maze.txt")
+    plot_bcs("$root_dir/outs/test", env, [(2, 2), (2, 3), (3,4)])
     @test isfile("$root_dir/outs/test/maze.png")
 
     run(`rm $root_dir/outs/test/maze.png`, wait=false)
     env = maze_from_file("$root_dir/mazes/hard-maze.txt")
-    plot_bcs("test", env, [(2, 2), (2, 3), (3,4)])
+    plot_bcs("$root_dir/outs/test", env, [(2, 2), (2, 3), (3,4)], [500,3,2])
     @test isfile("$root_dir/outs/test/maze.png")
-end
 end
