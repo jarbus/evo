@@ -68,8 +68,8 @@ function create_next_pop(gen::Int, pop::Vector{Vector{UInt32}}, num_elites::Int)
     @assert pop_size > 0
     @assert num_elites != pop_size
 
-    next_pop = [copy(pop[k]) for k in 1:num_elites] # copy elites
-    for i in (num_elites+1):pop_size
+    next_pop = [copy(pop[1])] # copy elites
+    for i in 2:pop_size
         parent_idx = (rand(UInt) % num_elites) + 1 # select parent
         push!(next_pop, copy(pop[parent_idx])) # copy parent to next pop
         push!(next_pop[i], rand(UInt32)) # mutate parent into child
