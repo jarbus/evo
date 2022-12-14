@@ -13,7 +13,9 @@ using Test
 # file = "test/test_rollout.jl"
 # file = "test/test_ga.jl"
 function t()
-    file = read(pipeline(`ls test`, `fzf`), String) |> strip
+    file = joinpath("test/",read(pipeline(`ls test`, `fzf`), String)) |> strip
+    println(file)
+    include(file)
     roc([file], [EvoTrade]) do
         println("Running main()")
         include(file)
