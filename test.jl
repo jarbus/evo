@@ -12,7 +12,8 @@ using Test
 # file = "test/test_trade.jl"
 # file = "test/test_rollout.jl"
 # file = "test/test_ga.jl"
-function t(file::String)
+function t()
+    file = read(pipeline(`ls test`, `fzf`), String) |> strip
     roc([file], [EvoTrade]) do
         println("Running main()")
         include(file)
