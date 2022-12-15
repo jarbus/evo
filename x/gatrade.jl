@@ -79,11 +79,19 @@ function main()
         llog(islocal=args["local"], name=logname) do logfile
             ts(logfile, "pmapping")
         end
+
         fetches = pmap(1:pop_size) do p
             fitness(pop[p], pop[p])
         end
 
+<<<<<<< HEAD
 
+||||||| parent of c29b25b (mv: proper elite log)
+        llog(islocal=args["local"], name=logname) do logfile
+            ts(logfile, "cache_elites")
+        end
+=======
+>>>>>>> c29b25b (mv: proper elite log)
         F = [(fet[1]+fet[2])/2 for fet in fetches]
         BC = [fet[3] for fet in fetches]
 
@@ -150,7 +158,6 @@ function main()
             save("outs/$expname/best.jld2", Dict("best"=>best, "bc"=>best_bc))
             return
         end
-
         llog(islocal=args["local"], name=logname) do logfile
             ts(logfile, "cache_elites")
         end
