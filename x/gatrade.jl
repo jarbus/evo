@@ -99,7 +99,7 @@ function main()
             best = elite
         end
         
-        add_to_archive!(archive, BC, pop)
+        add_to_archive!(archive, BC, pop, args["archive-prob"])
 
         bc_matrix = hcat(BC...)
         pop_and_arch = hcat([bc for (bc, _) in archive]..., bc_matrix)

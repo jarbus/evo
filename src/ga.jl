@@ -55,9 +55,9 @@ function reorder!(novelties, F, BC, pop)
    @assert length(pop) == length(BC) == length(F)
 end
 
-function add_to_archive!(archive, BC, pop)
+function add_to_archive!(archive, BC, pop, prob)
   for i in 1:length(pop)
-      if i > 1 && rand() <= 0.01
+      if i > 1 && rand() <= prob
           push!(archive, (BC[i], pop[i]))
       end
   end

@@ -79,6 +79,9 @@ function get_arg_table()
       "--pickup-coeff"
       arg_type = Float32
       required = true
+      "--archive-prob"
+      arg_type = Float32
+      required = true
       "--food-types"
       "--checkpoint-interval"
       "--class-name"
