@@ -16,11 +16,11 @@ using Infiltrator
 
     function fitness(p1::T, p2::T) where T<:Vector{<:UInt32}
         if p1 == p2
-            params = reconstruct(sc, nt, p1, args["mutation-rate"])
+            params = reconstruct(sc, mi, p1, args["mutation-rate"])
             models = Dict("f0a0" => re(params), "f1a0" => re(params))
         else
-            models = Dict("f0a0" => re(reconstruct(sc, nt, p1, args["mutation-rate"])),
-            "f1a0" => re(reconstruct(sc, nt, p2, args["mutation-rate"])))
+            models = Dict("f0a0" => re(reconstruct(sc, mi, p1, args["mutation-rate"])),
+            "f1a0" => re(reconstruct(sc, mi, p2, args["mutation-rate"])))
         end
         rew_dict, _, bc = run_batch(env, models, args)
         rew_dict["f0a0"], rew_dict["f1a0"], bc["f0a0"], bc["f1a0"]
@@ -35,16 +35,18 @@ function main()
     @everywhere begin
         pop_size = args["pop-size"]
         env = !isnothing(args["maze"]) ? maze_from_file(args["maze"]) : PyTrade().Trade(env_config)
-        θ, re = make_model(Symbol(args["model"]),
-                (env.obs_size..., args["batch-size"]),
-                env.num_actions,
-                vbn=args["algo"]=="es",
-                lstm=args["lstm"]) |> Flux.destructure
+        m = make_model(Symbol(args["model"]),
+            (env.obs_size..., args["batch-size"]),
+            env.num_actions,
+            vbn=args["algo"]=="es",
+            lstm=args["lstm"])
+        θ, re = Flux.destructure(m)
+        mi = ModelInfo(m)
         model_size = length(θ)
         println("model has $model_size params")
         # pass mazeenv struct or trade config dict
         env = env isa MazeEnv ? env : env_config
-        nt = NoiseTable(StableRNG(123), model_size, args["pop-size"], 1f0)
+        # nt = NoiseTable(StableRNG(123), model_size, args["pop-size"], 1f0)
         sc = SeedCache(maxsize=round(Int, args["num-elites"]*1.2))
 
     end
@@ -80,9 +82,7 @@ function main()
             fitness(pop[p], pop[p])
         end
 
-        llog(islocal=args["local"], name=logname) do logfile
-            ts(logfile, "cache_elites")
-        end
+
         F = [(fet[1]+fet[2])/2 for fet in fetches]
         BC = [fet[3] for fet in fetches]
 
@@ -104,9 +104,8 @@ function main()
         bc_matrix = hcat(BC...)
         pop_and_arch = hcat([bc for (bc, _) in archive]..., bc_matrix)
         @assert size(pop_and_arch, 2) == pop_size + length(archive)
-        inds = hcat(BC...)
-        @assert size(inds, 2) == pop_size
-        @assert size(inds, 1) == size(BC[1], 1)
+        @assert size(bc_matrix, 2) == pop_size
+        @assert size(bc_matrix, 1) == size(BC[1], 1)
         # @assert
 
         llog(islocal=args["local"], name=logname) do logfile
@@ -120,8 +119,8 @@ function main()
         # LOG
         if g % 100 == 0
             ts("log start")
-            models = Dict("f0a0" => re(reconstruct(sc, nt, best[2], args["mutation-rate"])),
-            "f1a0" => re(reconstruct(sc, nt, best[2], args["mutation-rate"])))
+            models = Dict("f0a0" => re(reconstruct(sc, mi, best[2], args["mutation-rate"])),
+            "f1a0" => re(reconstruct(sc, mi, best[2], args["mutation-rate"])))
 
             # Compute and write metrics
             outdir = "outs/$expname/$g"
@@ -150,7 +149,10 @@ function main()
             save("outs/$expname/best.jld2", Dict("best"=>best, "bc"=>best_bc))
             return
         end
-        @everywhere cache_elites!(sc, nt, $pop[1:args["num-elites"]], args["mutation-rate"])
+        llog(islocal=args["local"], name=logname) do logfile
+            ts(logfile, "cache_elites")
+        end
+        @everywhere cache_elites!(sc, mi, $pop[1:args["num-elites"]], args["mutation-rate"])
         pop = create_next_pop(g, pop, args["num-elites"])
     end
 end

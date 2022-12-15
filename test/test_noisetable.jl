@@ -1,12 +1,59 @@
 using EvoTrade
+using Flux
 using Test
 using StableRNGs
+
+@testset "test_new_gen" begin
+    obs_size = (30,32,4, 1)
+    n_actions = 4
+    pop_size = 200
+    m = make_model(:small,
+        obs_size,
+        n_actions,
+        vbn=false,
+        lstm=false)
+    θ, re = Flux.destructure(m)
+    model_size = length(θ)
+    rng = StableRNG(123)
+
+    mi = ModelInfo(m)
+    z = gen_params(rng, mi, 1)
+    @test length(findall(x->x==0f0, z)) > 1
+    z = gen_params(rng, mi, 2)
+    @test length(findall(x->x==0f0, z)) <= 1
+    re(z)
+    sc = SeedCache(maxsize=10)
+    a = reconstruct(sc, mi, UInt32.([1,2,3]))
+    b = reconstruct(sc, mi, UInt32.([1,2,3,4]))
+    @test !all(a .== b)
+    a = reconstruct(sc, mi, UInt32.([1]))
+    @test length(findall(x->x==0f0, a)) > 1
+    a = reconstruct(sc, mi, UInt32.([1, 2]))
+    @test length(findall(x->x==0f0, a)) <= 1
+
+    seeds = UInt32.([1, 2])
+    a = gen_params(StableRNG(seeds[1]), mi, 1) + gen_params(StableRNG(seeds[2]), mi, 2)
+    b = gen_params(StableRNG(seeds[1]), mi, 1) + gen_params(StableRNG(seeds[2]), mi, 2)
+    @test all(isapprox.(a, b; atol=0.0001))
+    a = reconstruct(sc, mi, UInt32.([1, 2]))
+    b = reconstruct(sc, mi, UInt32.([1, 2]))
+    @test all(isapprox.(a, b; atol=0.0001))
+    a = gen_params(StableRNG(seeds[1]), mi, 1) + gen_params(StableRNG(seeds[2]), mi, 2)
+    b = reconstruct(sc, mi, UInt32.([1, 2]), 1f0)
+    @test all(isapprox.(a, b; atol=0.0001))
+    a = gen_params(StableRNG(seeds[1]), mi, 1) + gen_params(StableRNG(seeds[2]), mi, 2)
+    b = reconstruct(sc, mi, UInt32.([1, 2]), 0.01f0)
+    @test !all(isapprox.(a, b; atol=0.0001))
+
+end
+
 @testset "test_NoiseTable" begin
   rng = StableRNG(123)
   nt = NoiseTable(rng, 2, 4, 0.1f0)
   @test get_noise(nt, 1) == get_noise(nt, 1)
   @test get_noise(nt, 1) != get_noise(nt, 2)
 end
+
 
 @testset "test_nt_reconstruct" begin
   nt = NoiseTable(StableRNG(123), 2_460_000, 20_000, 0.1f0)
