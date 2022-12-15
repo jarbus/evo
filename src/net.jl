@@ -162,7 +162,7 @@ function make_tail(input_size::NTuple{2, Int},
         mem(input_size[1] => 128 * scale),
         relu,
         Dense(128 * scale => 64 * scale, relu),
-        Dense(64 * scale => output_size, relu),
+        Dense(64 * scale => output_size),
         softmax
       )
 end

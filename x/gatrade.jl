@@ -15,6 +15,7 @@ using Infiltrator
     env_config = mk_env_config(args)
 
     function fitness(p1::T, p2::T) where T<:Vector{<:UInt32}
+
         if p1 == p2
             params = reconstruct(sc, mi, p1, args["mutation-rate"])
             models = Dict("f0a0" => re(params), "f1a0" => re(params))
@@ -22,7 +23,7 @@ using Infiltrator
             models = Dict("f0a0" => re(reconstruct(sc, mi, p1, args["mutation-rate"])),
             "f1a0" => re(reconstruct(sc, mi, p2, args["mutation-rate"])))
         end
-        rew_dict, _, bc = run_batch(env, models, args)
+        rew_dict, _, bc = run_batch(env, models, args, evaluation=false)
         rew_dict["f0a0"], rew_dict["f1a0"], bc["f0a0"], bc["f1a0"]
     end
 end
@@ -117,7 +118,7 @@ function main()
         reorder!(novelties, F, BC, pop)
 
         # LOG
-        if g % 100 == 0
+        if g % 1 == 0
             ts("log start")
             models = Dict("f0a0" => re(reconstruct(sc, mi, best[2], args["mutation-rate"])),
             "f1a0" => re(reconstruct(sc, mi, best[2], args["mutation-rate"])))
@@ -125,7 +126,7 @@ function main()
             # Compute and write metrics
             outdir = "outs/$expname/$g"
             run(`mkdir -p $outdir`)
-            rew_dict, mets, _ = run_batch(env, models, args, evaluation=false, render_str=outdir)
+            rew_dict, mets, _ = run_batch(env, models, args, evaluation=true, render_str=outdir)
             df = update_df(df, mets)
             write_mets(met_csv_name, df)
 
@@ -149,6 +150,7 @@ function main()
             save("outs/$expname/best.jld2", Dict("best"=>best, "bc"=>best_bc))
             return
         end
+
         llog(islocal=args["local"], name=logname) do logfile
             ts(logfile, "cache_elites")
         end

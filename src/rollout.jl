@@ -3,12 +3,13 @@ function run_batch(env::MazeEnv, models::Dict{String,<:Chain}, args; evaluation=
     batch_size = args["batch-size"]
     reset!(env)
     rewards, bcs = [], []
+    sample_act_func = evaluation ? x->[argmax(c) for c in eachcol(x)] : sample_batch
     for i in 1:batch_size 
         r = -Inf
         for i in 1:args["episode-length"]
             obs = get_obs(env)
             probs = models["f0a0"](obs)
-            acts = sample_batch(probs)
+            acts = sample_act_func(probs)
             @assert length(acts) == 1
             r, done = step!(env, acts[1])
             done && break

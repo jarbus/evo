@@ -93,7 +93,7 @@ function reconstruct(param_cache::SeedCache, mi::ModelInfo, seeds::Vector{UInt32
   """
   if length(seeds) == 1
     elite = gen_params(StableRNG(seeds[1]), mi, 1)
-    elite *= ϵ
+    # elite *= ϵ
     return elite
   # Get cached elite
   elseif seeds[1:end-1] in keys(param_cache)
@@ -132,7 +132,7 @@ function gen_params(rng, lens, biases, gen)
 end
 
 function gen_params(rng, mi::ModelInfo, gen::Int)
-    gen == 1 && return init_params(rng, mi.lengths, mi.biases) 
+    gen == 1 && return non_init_params(rng, mi.lengths, mi.biases) 
     non_init_params(rng, mi.lengths, mi.biases)
 end
 
