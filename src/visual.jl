@@ -1,9 +1,10 @@
 function plot_bcs(dirname::String, env::MazeEnv, bcs::Vector, novs::Vector=[])
+    @assert length(bcs) == length(novs) || length(novs) == 0
     maze_matrix = env.grid'
     poses = [(pos[1], pos[2]) for pos in bcs]
     colors = :blue
     if length(novs) > 0
-        max_nov = maximum(novs)
+        max_nov = max(maximum(novs), 0.1)
         colors = [colorant"blue"*0.8 + colorant"yellow" * nov/max_nov for nov in novs]
     end
     hm = heatmap(maze_matrix)
