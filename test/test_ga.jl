@@ -110,7 +110,7 @@ end
   @test length(archive) == 0
   @test length(BC) > 0
   @test length(pop) > 0
-  add_to_archive!(archive, BC, pop)
+  add_to_archive!(archive, BC, pop, 0.01)
   @test length(archive) > 0
 end
 
