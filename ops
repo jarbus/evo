@@ -1,1 +1,1 @@
-{"author":{"id":"2925f8bae681ccf02a1c1ecc82cbb827e525744b16a0948b37a0b024362c4ec0"},"ops":[{"type":3,"timestamp":1671079650,"nonce":"QCCRXthMA3LRRZ3pdtEkBlgF1vQ=","message":"biases don't get initialized to zero with reconstruct","files":null}]}
+{"author":{"id":"2925f8bae681ccf02a1c1ecc82cbb827e525744b16a0948b37a0b024362c4ec0"},"ops":[{"type":3,"timestamp":1671090610,"nonce":"TJ6YtdwHaWY7bQKzOFwG4NYQCeg=","message":"implemented gen_params to create new params of appropriate distribution","files":null}]}
