@@ -115,7 +115,6 @@ end
 end
 
 @testset "reorder!" begin
-
   novelties = [1, 0, 1, 2]
   F         = [1, 1, 4, 3]
   BC        = [1, 2, 3, 4]

@@ -18,7 +18,7 @@ end
     env = maze_from_file("$root_dir/mazes/test_maze.txt")
     reset!(env)
     obs = get_obs(env)
-    @test sum(obs.==1) == 4
+    @test sum(obs.==1) == 4 # check that each of 4 frames has a player pos
     @test ndims(obs) == 4
     r, done = step!(env, up)
     @test env.locations[4] != env.locations[3]
@@ -35,15 +35,14 @@ end
     env = maze_from_file("$root_dir/mazes/test_maze.txt")
     plot_bcs(test_dir, env, [(2, 2), (2, 3), (3,4)])
     @test isfile(maze_png)
-
     run(`rm $root_dir/outs/test/maze.png`, wait=false)
     sleep(0.1)
     env = maze_from_file("$root_dir/mazes/hard-maze.txt")
     plot_bcs(test_dir, env, [(2, 2), (2, 3), (3,4)])
     @test isfile(maze_png)
-
     run(`rm $root_dir/outs/test/maze.png`, wait=false)
     env = maze_from_file("$root_dir/mazes/hard-maze.txt")
     plot_bcs(test_dir, env, [(2, 2), (2, 3), (3,4)], [500,3,2])
     @test isfile(maze_png)
+    run(`rm $root_dir/outs/test/maze.png`, wait=false)
 end

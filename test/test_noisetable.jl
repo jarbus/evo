@@ -84,7 +84,7 @@ end
     cache_elites!(param_cache, nt, pop[1:n_elites], 0.01f0)
     pop = create_next_gen(pop, n_elites)
     hits = 0
-    @time for j in 1:pop_size
+    for j in 1:pop_size
       theta = reconstruct(param_cache, nt, pop[j])
       if rand() < 0.01
         theta2 = reconstruct(nt, pop[j])
