@@ -1,1 +1,1 @@
-{"author":{"id":"2925f8bae681ccf02a1c1ecc82cbb827e525744b16a0948b37a0b024362c4ec0"},"ops":[{"type":1,"timestamp":1671215370,"nonce":"atQiuQovbhFkZg6fcWwj5kaFTRI=","title":"todo: create population-level visualization for trade","message":"trace paths of agents\n  thickness of path corresponds to something\ncircle pick/place actions","files":null}]}
+{"author":{"id":"2925f8bae681ccf02a1c1ecc82cbb827e525744b16a0948b37a0b024362c4ec0"},"ops":[{"type":5,"timestamp":1671215460,"nonce":"dOwbfMfgkMO8SMP4B2TfAscSBEg=","added":["todo"],"removed":null}]}
