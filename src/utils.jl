@@ -17,6 +17,7 @@ mk_env_config(args) = Dict(
     "food_env_spawn" => args["food-env-spawn"],
     "day_night_cycle" => true,
     "day_steps" => args["day-steps"],
+    "seed" => args["seed"],
     "vocab_size" => 0)
 
 # logs to stdout if islocal is true, else logs to name

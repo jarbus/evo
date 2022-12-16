@@ -35,6 +35,9 @@ function get_arg_table()
       "--exp-name"
       arg_type = String
       required = true
+      "--cls-name"
+      arg_type = String
+      required = true
       "--model"
       arg_type = String
       required = true
@@ -82,6 +85,8 @@ function get_arg_table()
       "--archive-prob"
       arg_type = Float32
       required = true
+      "--seed"
+      arg_type = Int
       "--food-types"
       "--checkpoint-interval"
       "--class-name"
