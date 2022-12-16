@@ -1,4 +1,5 @@
 import numpy as np
+import random
 from math import floor
 from .utils import add_tup, directions, valid_pos, inv_dist, punish_region, matchup_shuffler
 from .light import Light
@@ -130,6 +131,8 @@ class Trade:
         self.food_agent_start      = env_config.get("food_agent_start", 0)
         self.padded_grid_size      = add_tup(self.grid_size, add_tup(self.window_size, self.window_size))
         self.light                 = Light(self.grid_size, self.fires, 2/self.day_steps)
+        if "seed" in env_config:
+            self.seed(env_config["seed"])
         super().__init__()
 
 
@@ -165,9 +168,9 @@ class Trade:
         self.matchup_iterator = matchup_shuffler(self.matchups)
         self.reset()
 
-    def seed(self, seed=None):
-        if seed:
-            np.random.seed(seed)
+    def seed(self, seed):
+        np.random.seed(seed)
+        random.seed(seed)
 
     def generate_food(self):
         fc = self.food_env_spawn if self.respawn else 10

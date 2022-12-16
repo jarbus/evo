@@ -85,6 +85,8 @@ function get_arg_table()
       "--archive-prob"
       arg_type = Float32
       required = true
+      "--seed"
+      arg_type = Int
       "--food-types"
       "--checkpoint-interval"
       "--class-name"

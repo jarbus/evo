@@ -1,6 +1,6 @@
 module Trade
 
-export batch_reset!, batch_step!, PyTrade, render, get_metrics
+export batch_reset!, batch_step!, PyTrade, render, get_metrics, reset!, step!
 
 using PyCall
 using Pathnames
