@@ -35,6 +35,9 @@ function get_arg_table()
       "--exp-name"
       arg_type = String
       required = true
+      "--cls-name"
+      arg_type = String
+      required = true
       "--model"
       arg_type = String
       required = true

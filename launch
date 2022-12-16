@@ -1,19 +1,24 @@
 #!/bin/bash
 ulimit -u 10000
-argbases=$(ls ./afiles/*.arg | fzf --multi)
+argbases=$(ls ./afiles/*/*.arg | fzf --multi)
 echo $argbases
 for argbase in $argbases; do
     if [[ -f "$argbase" ]]; then
-        name=$(basename $argbase ".arg")
+
+        cls_name=$(basename "$(dirname \"$argbase\")")
+        exp_name=$(basename $argbase ".arg")
+
         datime=$(date +"%m-%d_%H:%M")
         nprocs=$(grep -- "--nprocs" $argbase | awk '{print $2}')
-        echo $datime
-        echo $nprocs processors requested
-        sed -e "s/\${JOB_NAME}/$datime-$name/gI" \
-            -e "s/\${RUN_NAME}/$name/gI" \
+        echo "$datime"
+        echo "$nprocs processors requested"
+        mkdir -p "./runs/$cls_name/"
+        sed -e "s/\${JOB_NAME}/$datime-$exp_name/gI" \
+            -e "s/\${RUN_NAME}/$exp_name/gI" \
+            -e "s/\${CLS_NAME}/$cls_name/gI" \
             -e "s/\${DATIME}/$datime/gI" \
             -e "s/\${NPROCS}/$nprocs/gI" \
-            launch-template.sh > "runs/$datime-$name.sh"
-        sbatch "runs/$datime-$name.sh"
+            launch-template.sh > "runs/$cls_name/$datime-$exp_name.sh"
+        sbatch "runs/$cls_name/$datime-$exp_name.sh"
     fi
 done

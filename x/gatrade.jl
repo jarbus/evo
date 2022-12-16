@@ -8,6 +8,7 @@ using Infiltrator
     using EvoTrade
     args = $args
     expname = args["exp-name"]
+    clsname = args["cls-name"]
     using Flux
     using Statistics
     using StableRNGs
@@ -30,8 +31,8 @@ end
 
 function main()
     dt_str = args["datime"]
-    logname="runs/$dt_str-$expname.log"
-    println("$expname")
+    logname="runs/$clsname/$dt_str-$expname.log"
+    println("cls: $clsname\nexp: $expname")
     df = nothing
     @everywhere begin
         pop_size = args["pop-size"]
@@ -61,8 +62,8 @@ function main()
     # ###############
     # load checkpoint
     # ###############
-    check_name = "outs/$expname/check.jld2"
-    met_csv_name = "outs/$expname/metrics.csv"
+    check_name = "outs/$clsname/$expname/check.jld2"
+    met_csv_name = "outs/$clsname/$expname/metrics.csv"
     start_gen = 1
     # check if check exists on the file system
     if isfile(check_name)
@@ -113,6 +114,10 @@ function main()
             ts(logfile, "computing novelties")
         end
         novelties = compute_novelties(bc_matrix, pop_and_arch, k=min(pop_size-1, 25))
+        # println("printing pop and novelties")
+        # for i in 1:10
+        #     println(round(novelties[i], digits=2),"--", pop[i])
+        # end
         @assert length(novelties) == pop_size
 
         reorder!(novelties, F, BC, pop)
@@ -124,7 +129,7 @@ function main()
             "f1a0" => re(reconstruct(sc, mi, best[2], args["mutation-rate"])))
 
             # Compute and write metrics
-            outdir = "outs/$expname/$g"
+            outdir = "outs/$clsname/$expname/$g"
             run(`mkdir -p $outdir`)
             rew_dict, mets, _ = run_batch(env, models, args, evaluation=true, render_str=outdir)
             df = update_df(df, mets)
@@ -147,7 +152,7 @@ function main()
             llog(islocal=args["local"], name=logname) do logfile
                 ts("Returning: Best individal found with fitness $(best[1]) and BC $best_bc")
             end
-            save("outs/$expname/best.jld2", Dict("best"=>best, "bc"=>best_bc))
+            save("outs/$clsname/$expname/best.jld2", Dict("best"=>best, "bc"=>best_bc))
             return
         end
         llog(islocal=args["local"], name=logname) do logfile
