@@ -92,14 +92,21 @@ end
 
 @testset "create_next_pop" begin
   pop = [UInt32.([1, 2, 3, 4]), UInt32.([5, 6, 7, 8])]
+  for i in 1:1000
+    push!(pop, UInt32.([0,0,0,0]))
+  end
   next_pop = create_next_pop(1, pop, 1)
-  @test length(next_pop) == 2
+  @test length(next_pop) == length(pop)
   @test [1, 2, 3, 4] in next_pop
+  @test [1, 2, 3, 4] in [x[1:4] for x in next_pop]
+  @test [5,6,7,8] ∉ [x[1:4] for x in next_pop]
   pop = [UInt32.([1, 2]), UInt32.([3, 4]), UInt32.([5, 6]), UInt32.([7, 8])]
+  for i in 1:1000
+    push!(pop, UInt32.([0,0]))
+  end
   next_pop = create_next_pop(2, pop, 2)
   @test UInt32.([1, 2]) in next_pop
   @test any(pop[1] == np[1:2] for np in next_pop)
-  println(next_pop)
   @test any(pop[2] == np[1:2] for np in next_pop)
 end
 
