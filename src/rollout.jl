@@ -1,7 +1,7 @@
 function run_batch(env::MazeEnv, models::Dict{String,<:Chain}, args; evaluation=false, render_str::Union{Nothing,String}=nothing)
 
     batch_size = args["batch-size"]
-    reset!(env)
+    EvoTrade.Maze.reset!(env)
     rewards, bcs = [], []
     sample_act_func = evaluation ? x->[argmax(c) for c in eachcol(x)] : sample_batch
     for i in 1:batch_size 
@@ -11,7 +11,7 @@ function run_batch(env::MazeEnv, models::Dict{String,<:Chain}, args; evaluation=
             probs = models["f0a0"](obs)
             acts = sample_act_func(probs)
             @assert length(acts) == 1
-            r, done = step!(env, acts[1])
+            r, done = EvoTrade.Maze.step!(env, acts[1])
             done && break
         end
         push!(rewards, r)
@@ -41,6 +41,7 @@ function run_batch(env_config::Dict, models::Dict{String,<:Chain}, args; evaluat
                 rews[name] += rew
                 if render_str isa String && name == first(models).first
                     renderfile = "$render_str/b$b.out"
+                    # calls trade render for each step
                     render(b_env[b], renderfile)
                 end
             end
