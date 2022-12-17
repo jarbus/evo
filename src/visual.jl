@@ -12,10 +12,27 @@ function plot_bcs(dirname::String, env::MazeEnv, bcs::Vector, novs::Vector=[])
     savefig(p, joinpath(dirname, "maze.png"))
 end
 
+plot_walks(::String, ::Nothing, ::Any) = nothing
+function plot_walks(name::String, initial_table::AbstractArray{Float32}, walks::Vector{Vector{NTuple{2, Float64}}})
+    food_1 = initial_table[:,:,1,end]
+    food_2 = initial_table[:,:,2,end] * 4
+    food_mat = food_1 .+ food_2
+    food_mat *= 100
+
+    hm = heatmap(food_mat, colorbar = false, background_color=colorant"black", foreground_color=colorant"white")
+    xlims!(0.5, size(food_mat, 1))
+    ylims!(0.5, size(food_mat, 2))
+    for walk in walks
+        offset_walk = [1.5 .+ p for p in walk]
+        plot!(hm, offset_walk, legend = false, xticks=[], yticks=[])
+    end
+    savefig(hm, name)
+end
+
 
 
 r2(x) = @sprintf "%6.6s" string(round(x, digits=2))
-function plot_bcs(dirname::String, ::Dict, bcs::Vector)
+function plot_bcs(dirname::String, ::Dict, bcs::Vector, ::Vector)
     # compute mins, max, means, and stds for each dimension in 
     @assert length(bcs) > 0
     mins  = r2.([minimum([(bc[i]) for bc in bcs]) for i in 1:length(bcs[1])])

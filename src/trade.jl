@@ -1,6 +1,6 @@
 module Trade
 
-export batch_reset!, batch_step!, PyTrade, render, get_metrics, reset!, step!
+export batch_reset!, batch_step!, PyTrade, render, get_metrics, reset!, step!, batch_pos!
 
 using PyCall
 using Pathnames
@@ -29,6 +29,7 @@ end
 function reset!(env::PyObject)
   pycall(env.reset, PyDict{String,PyArray})
 end
+
 
 function render(env::PyObject, filename::String)
   pycall(env.render, Nothing, filename)
@@ -68,6 +69,24 @@ function batch_dict(d::Vector{<:AbstractDict})
   Dict([key => ecat([di[key] for di in d]...) for key in keys(d[1])]...)
 end
 
+
+function batch_pos!(envs::Vector{PyObject})
+  agents = collect(keys(envs[1].agent_positions))
+  poses::Dict{Any, Any} = Dict(a=>Vector() for a in agents)
+  for env in envs
+    apos = env.agent_positions
+    for key in keys(apos)
+      push!(poses[key], apos[key])
+    end
+  end
+  for key in keys(poses)
+    avg_pos = Tuple(mean(d) for d in zip(poses[key]...))
+    @assert length(avg_pos) == 2
+    poses[key] = avg_pos
+  end
+  poses
+end
+
 function batch_reset!(envs::Vector{PyObject}, models::Dict{String,<:Chain})
   obss = [reset!(env, models) for env in envs]
   @assert all(keys(obssi) == keys(obss[1]) for obssi in obss)
@@ -77,6 +96,8 @@ end
 # TODO test batch size 1 on virtual batch normalization
 
 function batch_step!(envs::Vector{PyObject}, models::Dict{String,<:Chain}, obs::Dict{String,<:AbstractArray}; evaluation=false)
+  """Perform a batch step on a vector of environments and models. Actions begin at 1, and are
+    converted to 0 for python inside this function."""
   @assert length(obs) == 1
   name, ob = first(obs)
   probs = models[name](ob) # bottleneck

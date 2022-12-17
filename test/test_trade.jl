@@ -55,8 +55,4 @@ end
 
     @test seed_table_1 != no_seed_table
     @test seed_table_1 == seed_table_2
-    println("seed table 1")
-    display(sum(seed_table_1, dims=3) |> x->sum(x, dims=4))
-    println("seed table 2")
-    display(sum(seed_table_2, dims=3) |> x->sum(x, dims=4))
 end

@@ -45,7 +45,7 @@ function reorder!(novelties, F, BC, pop)
    # deleteat!(order, findfirst(==(elite_idx), order))
    # @assert elite_idx ∉ order
    # pushfirst!(order, elite_idx)
-   @assert novelties[order[2]] >= novelties[order[3]]
+   length(order) > 2 && @assert novelties[order[2]] >= novelties[order[3]]
    # reorder lists in-place
    F[:] = F[order]
    BC[:] = BC[order]

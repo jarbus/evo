@@ -3,7 +3,8 @@ module EvoTrade
 export get_arg_table, parse_args, make_procs, make_model
 export mk_env_config, llog, update_df, write_mets, ts
 export maze_from_file, step!, reset!, sample_batch, get_obs, MazeEnv, print_maze
-export reset!, step!, batch_reset!, batch_step!, PyTrade, render, get_metrics, plot_bcs
+export reset!, step!, batch_reset!, batch_step!, PyTrade, render, get_metrics, batch_pos!
+export plot_bcs, plot_walks
 export compute_centered_ranks
 export NoiseTable, compute_grad, get_noise, reconstruct, SeedCache, cache_elites!
 export ModelInfo, gen_params

@@ -24,8 +24,8 @@ using Infiltrator
             models = Dict("f0a0" => re(reconstruct(sc, mi, p1, args["mutation-rate"])),
             "f1a0" => re(reconstruct(sc, mi, p2, args["mutation-rate"])))
         end
-        rew_dict, _, bc = run_batch(env, models, args, evaluation=false)
-        rew_dict["f0a0"], rew_dict["f1a0"], bc["f0a0"], bc["f1a0"]
+        rew_dict, _, bc, infos = run_batch(env, models, args, evaluation=false)
+        rew_dict["f0a0"], rew_dict["f1a0"], bc["f0a0"], bc["f1a0"], infos
     end
 end
 
@@ -36,7 +36,15 @@ function main()
     df = nothing
     @everywhere begin
         pop_size = args["pop-size"]
-        env = !isnothing(args["maze"]) ? maze_from_file(args["maze"]) : PyTrade().Trade(env_config)
+        if !isnothing(args["maze"])
+            table = nothing 
+            env = maze_from_file(args["maze"])
+        else
+            env = PyTrade().Trade(env_config)
+            EvoTrade.Trade.reset!(env)
+            table = env.table 
+        end
+
         m = make_model(Symbol(args["model"]),
             (env.obs_size..., args["batch-size"]),
             env.num_actions,
@@ -87,6 +95,9 @@ function main()
 
         F = [(fet[1]+fet[2])/2 for fet in fetches]
         BC = [fet[3] for fet in fetches]
+        walks::Vector{Vector{NTuple{2, Float64}}} = [fet[5]["avg_walks"]["f0a0"] for fet in fetches]
+        walks = vcat(walks, [fet[5]["avg_walks"]["f1a0"] for fet in fetches])
+
 
         llog(islocal=args["local"], name=logname) do logfile
             ts(logfile, "computing elite by re-evaluating top performers")
@@ -131,7 +142,8 @@ function main()
             # Compute and write metrics
             outdir = "outs/$clsname/$expname/$g"
             run(`mkdir -p $outdir`)
-            rew_dict, mets, _ = run_batch(env, models, args, evaluation=true, render_str=outdir)
+            plot_walks("$outdir/pop.png", table, walks)
+            rew_dict, mets, _, _ = run_batch(env, models, args, evaluation=true, render_str=outdir)
             df = update_df(df, mets)
             write_mets(met_csv_name, df)
 
@@ -161,4 +173,5 @@ function main()
         @everywhere cache_elites!(sc, mi, $pop[1:args["num-elites"]], args["mutation-rate"])
         pop = create_next_pop(g, pop, args["num-elites"])
     end
+
 end

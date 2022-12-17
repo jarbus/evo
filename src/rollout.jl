@@ -19,7 +19,7 @@ function run_batch(env::MazeEnv, models::Dict{String,<:Chain}, args; evaluation=
     end
     rews = Dict("f0a0" => mean(rewards), "f1a0"=> mean(rewards))
     bc = Dict("f0a0" => average_bc(bcs), "f1a0"=> average_bc(bcs))
-    rews, nothing, bc
+    rews, nothing, bc, nothing
 end
 
 # Run trade
@@ -32,9 +32,13 @@ function run_batch(env_config::Dict, models::Dict{String,<:Chain}, args; evaluat
     b_obs = batch_reset!(b_env, models)
     max_steps = args["episode-length"] * args["num-agents"]
     rews = Dict(key => 0.0f0 for key in keys(models))
+    avg_walks = Dict(key => Vector{NTuple{2,Float64}}() for key in keys(models))
     total_acts = Dict(key => Vector{UInt32}() for key in keys(models))
     for _ in 1:max_steps
         b_obs, b_rew, b_dones, b_acts = batch_step!(b_env, models, b_obs, evaluation=evaluation)
+        for (agent, avg_pos) in batch_pos!(b_env)
+            push!(avg_walks[agent], avg_pos)
+        end
         for (b, rew_dict) in enumerate(b_rew)
             for (name, rew) in rew_dict
                 total_acts[name] = vcat(total_acts[name], b_acts)
@@ -50,5 +54,6 @@ function run_batch(env_config::Dict, models::Dict{String,<:Chain}, args; evaluat
     rew_dict = Dict(name => rew / batch_size for (name, rew) in rews)
     mets = get_metrics(b_env)
     bc = Dict(name => bc1(total_acts[name], num_actions) for (name, _) in models)
-    rew_dict, mets, bc
+    info = Dict("avg_walks"=>avg_walks)
+    rew_dict, mets, bc, info
 end
