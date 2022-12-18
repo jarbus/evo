@@ -1,1 +1,1 @@
-{"author":{"id":"2925f8bae681ccf02a1c1ecc82cbb827e525744b16a0948b37a0b024362c4ec0"},"ops":[{"type":1,"timestamp":1671384193,"nonce":"tgm/633ziZoGiT2WKiRQs1axhz4=","title":"gesmr","message":"","files":null}]}
+{"author":{"id":"2925f8bae681ccf02a1c1ecc82cbb827e525744b16a0948b37a0b024362c4ec0"},"ops":[{"type":2,"timestamp":1671384199,"nonce":"3V77MQdb706GWp4SqQT3bqIDwh8=","title":"todo: gesmr","was":"gesmr"},{"type":5,"timestamp":1671384204,"nonce":"q9Wu2rSUovqFxai+faUDx6+TgN0=","added":["todo"],"removed":null}]}
