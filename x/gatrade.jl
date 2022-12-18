@@ -103,7 +103,7 @@ function main()
             ts(logfile, "computing elite by re-evaluating top performers")
         end
         @assert length(F) == length(BC) == pop_size
-        elite = compute_elite(fitness, pop, F, k=args["num-elites"], n=2)
+        elite = compute_elite(fitness, pop, F, k=args["num-elites"], n=30)
 
         # update elite and modify exploration rate
         Δγ = 0.02
@@ -162,7 +162,7 @@ function main()
             ts("log end")
         end
         # TODO: CHANGE IF GA EVER WORKS
-        if best[1] > 0 
+        if best[1] > 5
             best_bc = BC[argmax(F)]
             llog(islocal=args["local"], name=logname) do logfile
                 ts("Returning: Best individal found with fitness $(best[1]) and BC $best_bc")
