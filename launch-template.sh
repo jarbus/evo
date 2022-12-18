@@ -4,7 +4,7 @@
 #SBATCH --mail-type=END
 #SBATCH --mail-user=9147037394@vtext.com
 #SBATCH --job-name=${RUN_NAME}
-#SBATCH --output=/home/garbus/evotrade/runs/${JOB_NAME}.std
+#SBATCH --output=/home/garbus/evotrade/runs/${CLS_NAME}/${JOB_NAME}.std
 #SBATCH --account=guest
 #SBATCH --time=24:00:00
 #SBATCH --partition=guest-compute
