@@ -36,23 +36,19 @@ end
 
 
 
-function reorder!(novelties, F, BC, pop)
-   # remove maximum element from list
+function reorder!(to_sort, vecs...)
+   """sorts all vecs according to the order
+   specified by to_sort"""
 
-   order = sortperm(novelties, rev=true)
-   # elite_idx = argmax(F)
-   # move elite to the front
-   # deleteat!(order, findfirst(==(elite_idx), order))
-   # @assert elite_idx ∉ order
-   # pushfirst!(order, elite_idx)
-   length(order) > 2 && @assert novelties[order[2]] >= novelties[order[3]]
+
+   order = sortperm(to_sort, rev=true)
+   length(order) > 2 && @assert to_sort[order[2]] >= to_sort[order[3]]
    # reorder lists in-place
-   F[:] = F[order]
-   BC[:] = BC[order]
-   pop[:] = pop[order]
-   novelties[:] = novelties[order]
-   # @assert argmax(F) == 1
-   @assert length(pop) == length(BC) == length(F)
+   for vec in vecs
+       @assert length(vec) == length(order)
+       vec[:] = vec[order]
+   end
+   to_sort[:] = to_sort[order]
 end
 
 function add_to_archive!(archive, BC, pop, prob)
