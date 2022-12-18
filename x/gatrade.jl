@@ -146,7 +146,7 @@ function main()
             outdir = "outs/$clsname/$expname/$g"
             run(`mkdir -p $outdir`)
             plot_walks("$outdir/pop.png", table, walks)
-            rew_dict, mets, _, _ = run_batch(env, models, args, evaluation=true, render_str=outdir)
+            rew_dict, mets, _, _ = run_batch(env, models, args, evaluation=false, render_str=outdir)
             df = update_df(df, mets)
             write_mets(met_csv_name, df)
 
