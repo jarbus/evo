@@ -131,7 +131,11 @@ function main()
         # end
         @assert length(novelties) == pop_size
 
-        reorder!(novelties, F, BC, pop)
+        if args["exploration-rate"] == 1.0
+            reorder!(novelties, F, BC, pop)
+        else
+            reorder!(F, novelties, BC, pop)
+        end
 
         # LOG
         if g % 1 == 0

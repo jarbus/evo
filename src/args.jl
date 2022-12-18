@@ -8,6 +8,9 @@ function get_arg_table()
       "--algo"
       arg_type = String
       required = true
+      "--exploration-rate"
+      arg_type = Float64
+      required = true
       "--local"
       action = :store_true
       "--lstm"
