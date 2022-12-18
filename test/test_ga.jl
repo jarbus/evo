@@ -140,6 +140,11 @@ end
   @test all([[5,6,7,8] == x[1:4] for x in next_pop])
   @test [1,2,3,4] ∉ [x[1:4] for x in next_pop]
   @test [0,0,0,0] ∉ [x[1:4] for x in next_pop]
+
+  γ=0.999
+  next_pop, _ = create_next_pop(1, pop, fitnesses, novelties, γ, 2)
+  γ=0.001
+  next_pop, _ = create_next_pop(1, pop, fitnesses, novelties, γ, 2)
 end
 @testset "add_to_archive" begin
   archive = Set()

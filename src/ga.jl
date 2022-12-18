@@ -84,9 +84,9 @@ function create_next_pop(gen::Int,
     @assert length(pop) == length(fitnesses) == length(novelties)
     @assert num_elites < pop_size
     @assert pop_size > 0
-    num_elite_explorers = Int(round(γ * num_elites))
+    num_elite_explorers = round(Int, γ * num_elites)
     num_elite_exploiters = num_elites - num_elite_explorers
-    num_next_explorers = round(Int, pop_size * γ)
+    num_next_explorers = round(Int, pop_size*(num_elite_explorers / num_elites))
     num_next_exploiters  = pop_size - num_next_explorers
     exploiter_elites = pop[sortperm(fitnesses, rev=true)][1:num_elite_exploiters]
     explorer_elites  = pop[sortperm(novelties, rev=true)][1:num_elite_explorers]
