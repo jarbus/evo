@@ -78,6 +78,7 @@ function main()
         df = isfile(met_csv_name) ? CSV.read(met_csv_name, DataFrame) : nothing
         check = load(check_name)
         start_gen = check["gen"] + 1
+        γ = check["gamma"]
         F, BC, best, archive = getindex.((check,), ["F", "BC", "best","archive"])
         pop = create_next_pop(start_gen, check["pop"], args["num-elites"])
         ts("resuming from gen $start_gen")
@@ -158,7 +159,7 @@ function main()
             plot_bcs(outdir, env, BC, novelties)
 
             # Save checkpoint
-            !args["local"] && save(check_name, Dict("gen"=>g, "pop"=>pop, "archive"=>archive, "BC"=> BC, "F"=>F, "best"=>best))
+            !args["local"] && save(check_name, Dict("gen"=>g, "gamma"=>γ, "pop"=>pop, "archive"=>archive, "BC"=> BC, "F"=>F, "best"=>best))
             ts("log end")
         end
         # TODO: CHANGE IF GA EVER WORKS
