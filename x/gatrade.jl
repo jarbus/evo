@@ -58,7 +58,6 @@ function main()
         env = env isa MazeEnv ? env : env_config
         # nt = NoiseTable(StableRNG(123), model_size, args["pop-size"], 1f0)
         sc = SeedCache(maxsize=round(Int, args["num-elites"]*1.2))
-
     end
 
     pop = [[rand(UInt32)] for _ in 1:pop_size]
@@ -66,6 +65,7 @@ function main()
     archive = Set()
     BC = nothing
     F = nothing
+    γ = args["exploration-rate"]
 
     # ###############
     # load checkpoint
@@ -105,12 +105,21 @@ function main()
         @assert length(F) == length(BC) == pop_size
         elite = compute_elite(fitness, pop, F, k=args["num-elites"], n=2)
 
+        # update elite and modify exploration rate
+        Δγ = 0.02
         if elite[1] > best[1]
+            γ = clamp(γ - Δγ, 0, 1)
             llog(islocal=args["local"], name=logname) do logfile
-                ts(logfile, "New best ind found, F=$(elite[1])")
+                ts(logfile, "New best ind found, F=$(elite[1]), γ decreased to $γ")
             end
             best = elite
+        else
+            γ = clamp(γ + Δγ, 0, 1)
+            llog(islocal=args["local"], name=logname) do logfile
+                ts(logfile, "no better elite found, increasing γ to $γ")
+            end
         end
+        # clamp γ between 0 and 1
         
         add_to_archive!(archive, BC, pop, args["archive-prob"])
 
@@ -125,17 +134,7 @@ function main()
             ts(logfile, "computing novelties")
         end
         novelties = compute_novelties(bc_matrix, pop_and_arch, k=min(pop_size-1, 25))
-        # println("printing pop and novelties")
-        # for i in 1:10
-        #     println(round(novelties[i], digits=2),"--", pop[i])
-        # end
         @assert length(novelties) == pop_size
-
-        if args["exploration-rate"] == 1.0
-            reorder!(novelties, F, BC, pop)
-        else
-            reorder!(F, novelties, BC, pop)
-        end
 
         # LOG
         if g % 1 == 0
@@ -174,8 +173,9 @@ function main()
         llog(islocal=args["local"], name=logname) do logfile
             ts(logfile, "cache_elites")
         end
-        @everywhere cache_elites!(sc, mi, $pop[1:args["num-elites"]], args["mutation-rate"])
-        pop = create_next_pop(g, pop, args["num-elites"])
+
+        pop, elites = create_next_pop(g, pop, F, novelties, γ, args["num-elites"])
+        @everywhere cache_elites!(sc, mi, $elites, args["mutation-rate"])
     end
 
 end

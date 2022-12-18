@@ -2,7 +2,6 @@ using EvoTrade
 using Test
 using NearestNeighbors
 
-
 @testset "test_average_bc" begin
   @test EvoTrade.average_bc([[1,2,3], [1,2,3]]) == [1,2,3]
   @test EvoTrade.average_bc([[1,2,3], [3,4,5]]) == [2,3,4]
@@ -90,7 +89,7 @@ end
     @test nov_c > nov_a
 end
 
-@testset "create_next_pop" begin
+@testset "create_next_pop_single_met" begin
   pop = [UInt32.([1, 2, 3, 4]), UInt32.([5, 6, 7, 8])]
   for i in 1:1000
     push!(pop, UInt32.([0,0,0,0]))
@@ -109,7 +108,39 @@ end
   @test any(pop[1] == np[1:2] for np in next_pop)
   @test any(pop[2] == np[1:2] for np in next_pop)
 end
+@testset "create_next_pop_adaptive" begin
+  pop = [UInt32.([1, 2, 3, 4]), UInt32.([5, 6, 7, 8])]
+  for i in 1:1000
+    push!(pop, UInt32.([0,0,0,0]))
+  end
+  fitnesses = zeros(Float32, length(pop))
+  novelties = zeros(length(pop))
+  fitnesses[1] = 1.0f0
+  novelties[2] = 1.0f0
+  γ=0.5
+  next_pop, _ = create_next_pop(1, pop, fitnesses, novelties, γ, 2)
+  @test length(next_pop) == length(pop)
+  @test [1, 2, 3, 4] ∉ next_pop
+  @test [1, 2, 3, 4] in [x[1:4] for x in next_pop]
+  @test [5,6,7,8] ∈ [x[1:4] for x in next_pop]
+  @test [0,0,0,0] ∉ [x[1:4] for x in next_pop]
+  γ=0.0
+  next_pop, _ = create_next_pop(1, pop, fitnesses, novelties, γ, 1)
+  @test length(next_pop) == length(pop)
+  @test [1, 2, 3, 4] ∉ next_pop
+  @test all([[1, 2, 3, 4] == x[1:4] for x in next_pop])
+  @test [5,6,7,8] ∉ [x[1:4] for x in next_pop]
+  @test [0,0,0,0] ∉ [x[1:4] for x in next_pop]
 
+
+  γ=1.0
+  next_pop, _ = create_next_pop(1, pop, fitnesses, novelties, γ, 1)
+  @test length(next_pop) == length(pop)
+  @test [5,6,7,8] ∉ next_pop
+  @test all([[5,6,7,8] == x[1:4] for x in next_pop])
+  @test [1,2,3,4] ∉ [x[1:4] for x in next_pop]
+  @test [0,0,0,0] ∉ [x[1:4] for x in next_pop]
+end
 @testset "add_to_archive" begin
   archive = Set()
   BC = [0.0 for _ in 1:10000]
