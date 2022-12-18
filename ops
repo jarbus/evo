@@ -1,1 +1,1 @@
-{"author":{"id":"2925f8bae681ccf02a1c1ecc82cbb827e525744b16a0948b37a0b024362c4ec0"},"ops":[{"type":1,"timestamp":1671344413,"nonce":"bfiMdrZEmT+IiZDcMKFJn3yR3WM=","title":"x: no-ns","message":"testing if a GA can learn to forage. may need to do an hparam sweep","files":null}]}
+{"author":{"id":"2925f8bae681ccf02a1c1ecc82cbb827e525744b16a0948b37a0b024362c4ec0"},"ops":[{"type":5,"timestamp":1671344416,"nonce":"aePY7BhZqelR2Vq18KjOzNf7qJs=","added":["x"],"removed":null}]}
