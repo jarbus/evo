@@ -8,8 +8,7 @@ export plot_bcs, plot_walks
 export compute_centered_ranks
 export NoiseTable, compute_grad, get_noise, reconstruct, SeedCache, cache_elites!
 export ModelInfo, gen_params
-export compute_novelty, compute_novelties, bc1, create_next_pop, add_to_archive!,
-reorder!, compute_elite
+export compute_novelty, compute_novelties, bc1, create_next_pop, add_to_archive!, M, reorder!, compute_elite
 export run_batch
 
 using ArgParse

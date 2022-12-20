@@ -12,7 +12,6 @@ struct NoiseTable
   σ::Float32
 end
 
-
 struct ModelInfo
   lengths::Vector{Int64}
   biases::Vector{Bool}
@@ -43,7 +42,7 @@ function reconstruct(nt::NoiseTable, seeds::Vector{<:UInt32}, ϵ::Float32=0.01f0
   theta
 end
 
-SeedCache = LRU{Vector{UInt32},Vector{Float32}}
+SeedCache = LRU{Vector{Float64},Dict}
 
 function cache_elites!(param_cache::SeedCache, nt::NoiseTable, elites::Vector{Vector{UInt32}}, ϵ::Float32=0.01)
   """On each processor, cache the parameters for all elites used to create the next 
@@ -108,6 +107,36 @@ function reconstruct(param_cache::SeedCache, mi::ModelInfo, seeds::Vector{UInt32
   end
 end
 
+function cache_elites!(param_cache::SeedCache, mi::ModelInfo, elites::Vector{<:AbstractDict})
+  for elite in elites
+    elite[:params] = reconstruct(param_cache, mi, elite[:seeds])
+    @inbounds param_cache[elite[:seeds]] = elite
+  end
+end
+
+
+function reconstruct(param_cache::SeedCache, mi::ModelInfo, seeds_and_muts::Vector{Float64})
+  """Reconstruction function that finds the nearest cached ancestor and
+  reconstructs all future generations. Creates a new parameter vector if
+  no ancestor is found.
+  """
+  if length(seeds_and_muts) == 1
+    elite = gen_params(StableRNG(Int(seeds_and_muts[1])), mi, 1)
+    # elite *= ϵ
+    return elite
+  @assert isodd(length(seeds_and_muts))
+  # Get cached elite
+  elseif seeds_and_muts[1:end-2] in keys(param_cache)
+    @inline @inbounds elite = copy(param_cache[seeds_and_muts[1:end-2]][:params])
+    @inline @inbounds elite .+= gen_params(StableRNG(Int(seeds_and_muts[end])), mi, 2) * seeds_and_muts[end-1]
+    return elite
+  # Recurse if not cached
+  else
+    @inline @inbounds elite = reconstruct(param_cache, mi, seeds_and_muts[1:end-2])
+    @inline @inbounds elite .+= gen_params(StableRNG(Int(seeds_and_muts[end])), mi, 2) * seeds_and_muts[end-1]
+    return elite
+  end
+end
 
 # function reconstruct(nt::NoiseTable, x::Vector{<:UInt32}, ϵ::Float32=0.01f0)
 #   theta = zeros(Float32, nt.nparams)

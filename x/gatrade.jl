@@ -15,14 +15,14 @@ using Infiltrator
 
     env_config = mk_env_config(args)
 
-    function fitness(p1::T, p2::T) where T<:Vector{<:UInt32}
+    function fitness(p1::T, p2::T) where T<:Vector{<:Float64}
 
         if p1 == p2
-            params = reconstruct(sc, mi, p1, args["mutation-rate"])
+            params = reconstruct(sc, mi, p1)
             models = Dict("f0a0" => re(params), "f1a0" => re(params))
         else
-            models = Dict("f0a0" => re(reconstruct(sc, mi, p1, args["mutation-rate"])),
-            "f1a0" => re(reconstruct(sc, mi, p2, args["mutation-rate"])))
+            models = Dict("f0a0" => re(reconstruct(sc, mi, p1)),
+            "f1a0" => re(reconstruct(sc, mi, p2)))
         end
         rew_dict, _, bc, infos = run_batch(env, models, args, evaluation=false)
         rew_dict["f0a0"], rew_dict["f1a0"], bc["f0a0"], bc["f1a0"], infos
@@ -60,7 +60,7 @@ function main()
         sc = SeedCache(maxsize=round(Int, args["num-elites"]*1.2))
     end
 
-    pop = [[rand(UInt32)] for _ in 1:pop_size]
+    pop = [Vector{Float64}([rand(UInt32)]) for _ in 1:pop_size]
     best = (-Inf, [])
     archive = Set()
     BC = nothing
@@ -80,7 +80,8 @@ function main()
         start_gen = check["gen"] + 1
         γ = check["gamma"]
         F, BC, best, archive = getindex.((check,), ["F", "BC", "best","archive"])
-        pop = create_next_pop(start_gen, check["pop"], args["num-elites"])
+        pop, elites = create_next_pop(start_gen, sc, check["check"], F, novelties, bcs, γ, args["num-elites"])
+        @everywhere cache_elites!(sc, mi, elites)
         ts("resuming from gen $start_gen")
     end
 
@@ -120,7 +121,6 @@ function main()
                 ts(logfile, "no better elite found, increasing γ to $γ")
             end
         end
-        # clamp γ between 0 and 1
         
         add_to_archive!(archive, BC, pop, args["archive-prob"])
 
@@ -140,8 +140,8 @@ function main()
         # LOG
         if g % 1 == 0
             ts("log start")
-            models = Dict("f0a0" => re(reconstruct(sc, mi, best[2], args["mutation-rate"])),
-            "f1a0" => re(reconstruct(sc, mi, best[2], args["mutation-rate"])))
+            models = Dict("f0a0" => re(reconstruct(sc, mi, best[2])),
+            "f1a0" => re(reconstruct(sc, mi, best[2])))
 
             # Compute and write metrics
             outdir = "outs/$clsname/$expname/$g"
@@ -162,7 +162,6 @@ function main()
             !args["local"] && save(check_name, Dict("gen"=>g, "gamma"=>γ, "pop"=>pop, "archive"=>archive, "BC"=> BC, "F"=>F, "best"=>best))
             ts("log end")
         end
-        # TODO: CHANGE IF GA EVER WORKS
         if best[1] > 5
             best_bc = BC[argmax(F)]
             llog(islocal=args["local"], name=logname) do logfile
@@ -175,8 +174,8 @@ function main()
             ts(logfile, "cache_elites")
         end
 
-        pop, elites = create_next_pop(g, pop, F, novelties, γ, args["num-elites"])
-        @everywhere cache_elites!(sc, mi, $elites, args["mutation-rate"])
+        pop, elites = create_next_pop(g, sc, pop, F, novelties, BC, γ, args["num-elites"])
+        @everywhere cache_elites!(sc, mi, $elites)
     end
 
 end
