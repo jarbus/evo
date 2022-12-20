@@ -110,7 +110,7 @@ end
 function cache_elites!(param_cache::SeedCache, mi::ModelInfo, elites::Vector{<:AbstractDict})
   for elite in elites
     elite[:params] = reconstruct(param_cache, mi, elite[:seeds])
-    @inbounds param_cache[elite[:seeds]] = elite
+    param_cache[elite[:seeds]] = elite
   end
 end
 
