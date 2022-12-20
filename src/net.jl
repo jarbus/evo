@@ -159,7 +159,8 @@ function make_tail(input_size::NTuple{2, Int},
   scale::Int=1)
     mem = lstm ? LSTM : Dense
     Chain(
-        mem(input_size[1] => 128 * scale),
+        Dense(input_size[1], 128*scale),
+        mem(128*scale => 128 * scale),
         relu,
         Dense(128 * scale => 64 * scale, relu),
         Dense(64 * scale => output_size),
