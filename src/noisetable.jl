@@ -126,7 +126,7 @@ function reconstruct(param_cache::SeedCache, mi::ModelInfo, seeds_and_muts::Vect
     return elite
   @assert isodd(length(seeds_and_muts))
   # Get cached elite
-  elseif seeds_and_muts[1:end-2] in keys(param_cache)
+  elseif seeds_and_muts[1:end-2] in keys(param_cache) && haskey(param_cache[seeds_and_muts[1:end-2]], :params)
     @inline @inbounds elite = copy(param_cache[seeds_and_muts[1:end-2]][:params])
     @inline @inbounds elite .+= gen_params(StableRNG(Int(seeds_and_muts[end])), mi, 2) * seeds_and_muts[end-1]
     return elite

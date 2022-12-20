@@ -57,7 +57,7 @@ function main()
         # pass mazeenv struct or trade config dict
         env = env isa MazeEnv ? env : env_config
         # nt = NoiseTable(StableRNG(123), model_size, args["pop-size"], 1f0)
-        sc = SeedCache(maxsize=args["num-elites"]*2)
+        global sc = SeedCache(maxsize=args["num-elites"]*2)
     end
 
     pop = [Vector{Float64}([rand(UInt32)]) for _ in 1:pop_size]
@@ -72,6 +72,7 @@ function main()
     # ###############
     check_name = "outs/$clsname/$expname/check.jld2"
     met_csv_name = "outs/$clsname/$expname/metrics.csv"
+    sc_name = "outs/$clsname/$expname/sc.jld2"
     start_gen = 1
     # check if check exists on the file system
     if isfile(check_name)
@@ -79,9 +80,10 @@ function main()
         check = load(check_name)
         start_gen = check["gen"] + 1
         γ = check["gamma"]
-        F, BC, best, archive = getindex.((check,), ["F", "BC", "best","archive"])
-        pop, elites = create_next_pop(start_gen, sc, check["check"], F, novelties, bcs, γ, args["num-elites"])
-        @everywhere cache_elites!(sc, mi, elites)
+        F, BC, best, archive, novelties = getindex.((check,), ["F", "BC", "best","archive", "novelties"])
+        global sc = load(sc_name)["sc"]
+        pop, elites = create_next_pop(start_gen-1, sc, check["pop"], F, novelties, BC, γ, args["num-elites"])
+        @everywhere cache_elites!(sc, mi, $elites)
         ts("resuming from gen $start_gen")
     end
 
@@ -165,7 +167,7 @@ function main()
             plot_bcs(outdir, env, BC, novelties)
 
             # Save checkpoint
-            !args["local"] && save(check_name, Dict("gen"=>g, "gamma"=>γ, "pop"=>pop, "archive"=>archive, "BC"=> BC, "F"=>F, "best"=>best))
+            save(check_name, Dict("gen"=>g, "gamma"=>γ, "pop"=>pop, "archive"=>archive, "BC"=> BC, "F"=>F, "best"=>best, "novelties"=>novelties))
             ts("log end")
         end
         if best[1] > 5
@@ -182,6 +184,12 @@ function main()
 
         pop, elites = create_next_pop(g, sc, pop, F, novelties, BC, γ, args["num-elites"])
         @everywhere cache_elites!(sc, mi, $elites)
+        # Save seed cache without parameters
+        sc_no_params = SeedCache(maxsize=2*args["num-elites"])
+        for (k,v) in sc
+            sc_no_params[k] = Dict(ke=>ve for (ke,ve) in v if ke != :params)
+        end
+        save(sc_name, Dict("sc"=>sc_no_params))
     end
 
 end
