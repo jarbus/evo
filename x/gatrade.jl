@@ -57,7 +57,7 @@ function main()
         # pass mazeenv struct or trade config dict
         env = env isa MazeEnv ? env : env_config
         # nt = NoiseTable(StableRNG(123), model_size, args["pop-size"], 1f0)
-        sc = SeedCache(maxsize=round(Int, args["num-elites"]*1.2))
+        sc = SeedCache(maxsize=args["num-elites"]*2)
     end
 
     pop = [Vector{Float64}([rand(UInt32)]) for _ in 1:pop_size]

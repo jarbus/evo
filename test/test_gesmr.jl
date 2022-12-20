@@ -164,3 +164,31 @@ end
        end
    end
 end
+
+
+@testset "test_large_pop" begin
+    obs_size = (30,32,4, 1)
+    n_actions = 4
+    pop_size = 2000
+    num_elites = 15
+    m = make_model(:small,
+        obs_size,
+        n_actions,
+        vbn=false,
+        lstm=false)
+
+    sc = SeedCache(maxsize=num_elites*2)
+    mi = ModelInfo(m)
+    pop = [Vector{Float64}([rand(UInt32)]) for i in 1:pop_size]
+    γ = 0.5
+    for g in 1:9
+        fitnesses = [rand() for i in 1:pop_size]
+        novelties = [rand() for i in 1:pop_size]
+        bcs = [[rand()] for i in 1:pop_size]
+        pop, elites = create_next_pop(g, sc, pop, fitnesses, novelties, bcs, γ, num_elites)
+        cache_elites!(sc, mi, elites)
+        elite_seeds = [e[:seeds] for e in elites]
+        @test elites[1][:seeds] in keys(sc)
+        @test all(p[1:end-2] in keys(sc) for p in pop)
+    end
+end
