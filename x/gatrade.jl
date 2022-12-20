@@ -148,6 +148,12 @@ function main()
             run(`mkdir -p $outdir`)
             plot_walks("$outdir/pop.png", table, walks)
             rew_dict, mets, _, _ = run_batch(env, models, args, evaluation=false, render_str=outdir)
+
+            muts = g > 1 ? [pop[i][end-1] for i in 1:pop_size] : [0.0]
+            mets["gamma"] = γ
+            log_mmm(mets, "mutation_rate", muts)
+            log_mmm(mets, "fitness", F)
+            log_mmm(mets, "novelty", novelties)
             df = update_df(df, mets)
             write_mets(met_csv_name, df)
 
