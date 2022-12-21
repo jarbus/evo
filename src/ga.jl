@@ -108,7 +108,7 @@ function create_next_pop(gen::Int,
 end
 
 
-M(x) = clamp(x*(2^(rand()*2-1)), 0, 0.1)
+M(x) = clamp(x*(2^(rand()*2-1)), 0.00001, 0.1)
 function create_next_pop(gen::Int,
         sc,
         pop::Vector{Vector{Float64}},
