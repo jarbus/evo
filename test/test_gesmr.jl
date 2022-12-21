@@ -180,10 +180,11 @@ end
     sc = SeedCache(maxsize=num_elites*2)
     mi = ModelInfo(m)
     pop = [Vector{Float64}([rand(UInt32)]) for i in 1:pop_size]
-    γ = 0.5
-    for g in 1:9
-        fitnesses = [rand() for i in 1:pop_size]
-        novelties = [rand() for i in 1:pop_size]
+    γ = 0.5 
+
+    for g in 1:300
+        fitnesses = rand(pop_size)
+        novelties = rand(pop_size)
         bcs = [[rand()] for i in 1:pop_size]
         pop, elites = create_next_pop(g, sc, pop, fitnesses, novelties, bcs, γ, num_elites)
         cache_elites!(sc, mi, elites)
