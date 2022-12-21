@@ -75,6 +75,33 @@ end
     @test bc == [1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
 end
 
+@testset "test_bc2" begin
+    x = [1, 2, 3, 4, 5, 6, 7, 8, 9]
+    bc = bc2(x, 9)
+    @test bc isa Vector{Float64}
+    @test length(bc) == 9
+    @test bc |> sum |> isapprox(1.0)
+    @test all(bc .== 1/9)
+    
+    x = [1, 2, 3, 4, 5, 6, 7, 8, 9, 1, 2]
+    bc = bc2(x, 9)
+    @test length(bc) == 18
+    @test isapprox((sum(bc)), 2.0)
+    @test all(bc[1:9] .== 1/9)
+    @test all(bc[10:18] .== [1/2, 1/2, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0])
+
+    x = [1,1,1,1,1,1,1,1,1]
+    bc = bc2(x, 9)
+    @test bc == [1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
+    
+    x2 = vcat(x, x, x, x, x, x, x, x, x)
+    bc = bc2(x2, 9)
+    @test length(bc) == 81
+    for i in 1:9:81
+        @test bc[i:i+8] == [1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
+    end
+end
+
 @testset "test_bc_novelty" begin
     function euclidist(v1::Vector, v2::Vector)::Float64
         return sqrt(sum((v1 .- v2).^2))

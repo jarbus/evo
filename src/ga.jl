@@ -6,7 +6,7 @@ using Distributed
 using Infiltrator
 using NearestNeighbors
 export compute_novelty, compute_novelties,
-bc1, create_next_pop, add_to_archive!,
+bc1, bc2, create_next_pop, add_to_archive!,
 reorder!, average_bc, compute_elite, dist, M
 
 dist(a, b) = sum((a .- b).^2)
@@ -164,12 +164,30 @@ function create_next_pop(gen::Int,
 end
 
 function bc1(x::Vector{<:Integer}, num_actions=9)::Vector{Float64}
-    # count number of each element in x
+    # percentage of each action
     counts = zeros(Int, num_actions)
     for i in x
         counts[i] += 1
     end
     counts ./ length(x)
+end
+
+
+function bc2(x::Vector{<:Integer}, num_actions=9)::Vector{Float64}
+    # percentage of each action for num_actions windows
+    bcs = []
+    i = 1
+    while i <= length(x)
+        counts = zeros(Int, num_actions)
+        for j in x[i:min(i+num_actions-1, length(x))]
+            counts[j] += 1
+        end
+        push!(bcs, counts ./ sum(counts))
+        i += num_actions
+    end
+    bc = vcat(bcs...)
+    # @assert length(bc) == floor(Int, length(x) / num_actions) 
+    bc 
 end
 
 function average_bc(bcs::Vector)
