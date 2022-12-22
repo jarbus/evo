@@ -7,7 +7,8 @@ using Infiltrator
 using NearestNeighbors
 export compute_novelty, compute_novelties,
 bc1, bc2, create_next_pop, add_to_archive!,
-reorder!, average_bc, compute_elite, dist, M
+reorder!, average_bc, compute_elite, dist, M,
+elite, mr
 
 dist(a, b) = sum((a .- b).^2)
 

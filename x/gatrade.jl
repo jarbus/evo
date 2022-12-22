@@ -151,7 +151,7 @@ function main()
             plot_walks("$outdir/pop.png", table, walks)
             rew_dict, mets, _, _ = run_batch(env, models, args, evaluation=false, render_str=outdir)
 
-            muts = g > 1 ? [pop[i][end-1] for i in 1:pop_size] : [0.0]
+            muts = g > 1 ? [mr(pop[i]) for i in 1:pop_size] : [0.0]
             mets["gamma"] = γ
             log_mmm(mets, "mutation_rate", muts)
             log_mmm(mets, "fitness", F)
