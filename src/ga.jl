@@ -108,6 +108,8 @@ function create_next_pop(gen::Int,
 end
 
 
+elite(x) = length(x) > 2 ? x[1:end-2] : x
+mr(x) = length(x) > 1 ? x[end-1] : 10.0 ^ rand([-1,-2,-3,-4,-5])
 M(x) = clamp(x*(2^(rand()*2-1)), 0.00001, 0.1)
 function create_next_pop(gen::Int,
         sc,
@@ -118,14 +120,18 @@ function create_next_pop(gen::Int,
         γ::Float64,
         num_elites::Int)
     pop_size = length(pop)
-    @assert length(pop[1]) == 1 + (gen-1)*2
     @assert length(pop) == length(fitnesses) == length(novelties) == length(bcs)
-    @assert num_elites < pop_size
+    @assert 0 < num_elites < pop_size
     @assert pop_size > 0
-    num_elite_explorers = round(Int, γ * num_elites)
+    num_elite_explorers = floor(Int, γ * num_elites)
     num_elite_exploiters = num_elites - num_elite_explorers
-    num_next_explorers = round(Int, pop_size*(num_elite_explorers / num_elites))
+    if num_elite_exploiters == 0
+        num_elite_explorers -= 1
+        num_elite_exploiters += 1
+    end
+    num_next_explorers = floor(Int, pop_size*(num_elite_explorers / num_elites))
     num_next_exploiters  = pop_size - num_next_explorers
+    @assert num_next_exploiters >= 1
     function make_elites(order_metric, num)
         order = sortperm(order_metric, rev=true)
         elites = [Dict(
@@ -141,17 +147,17 @@ function create_next_pop(gen::Int,
         exploiter_elites = make_elites(fitnesses, num_elite_exploiters)
         explorer_elites  = make_elites(novelties, num_elite_explorers)
     else
-        σs = [pop[i][end-1] for i in 1:pop_size]
-        ΔFs = [f - sc[pop[i][1:end-2]][:fitness] for (i,f) in enumerate(fitnesses)]
-        ΔNs = [dist(bc, sc[pop[i][1:end-2]][:bc]) for (i,bc) in enumerate(bcs)]
+        σs = [mr(pop[i]) for i in 1:pop_size]
+        ΔFs = [f - sc[elite(pop[i])][:fitness] for (i,f) in enumerate(fitnesses)]
+        ΔNs = [dist(bc, sc[elite(pop[i])][:bc]) for (i,bc) in enumerate(bcs)]
         Fσs = σs[sortperm(ΔFs, rev=true)][1:num_elite_exploiters]
         Nσs = σs[sortperm(ΔNs, rev=true)][1:num_elite_explorers]
         exploiter_elites = make_elites(ΔFs, num_elite_exploiters)
         explorer_elites  = make_elites(ΔNs, num_elite_explorers)
     end
 
-    next_pop = Vector{Vector{Float64}}() # copy elites
-    num_next_exploiters > 0 && for i in 1:num_next_exploiters
+    next_pop = [copy(exploiter_elites[1][:seeds])] # copy elite
+    num_next_exploiters > 0 && for i in 2:num_next_exploiters
         push!(next_pop, copy(rand(exploiter_elites)[:seeds]))
         push!(next_pop[end], M(rand(Fσs)), rand(UInt32))
     end
@@ -159,8 +165,11 @@ function create_next_pop(gen::Int,
         push!(next_pop, copy(rand(explorer_elites)[:seeds]))
         push!(next_pop[end], M(rand(Nσs)), rand(UInt32))
     end
+    elites = vcat(exploiter_elites, explorer_elites)
     @assert length(next_pop) == pop_size
-    next_pop, vcat(exploiter_elites, explorer_elites)
+    @assert length(elites) == num_elites
+
+    next_pop, elites
 end
 
 function bc1(x::Vector{<:Integer}, num_actions=9)::Vector{Float64}
