@@ -107,7 +107,7 @@ function main()
             ts(logfile, "computing elite by re-evaluating top performers")
         end
         @assert length(F) == length(BC) == pop_size
-        elite = compute_elite(fitness, pop, F, k=args["num-elites"], n=30)
+        elite = (maximum(F), pop[argmax(F)])
 
         # update elite and modify exploration rate
         Δγ = 0.02
