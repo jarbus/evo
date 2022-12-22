@@ -2,9 +2,6 @@ using EvoTrade
 using Test
 using Flux
 
-elite(x) = length(x) > 2 ? x[1:end-2] : x
-mr(x) = length(x) > 1 ? x[end-1] : 10.0 ^ rand([-1,-2,-3,-4,-5])
-
 @testset "test_reconstruct_with_σ" begin
     obs_size = (30,32,4, 1)
     n_actions = 4
@@ -98,21 +95,21 @@ end
         fitnesses = [2., 1., 0., 0., 0., 0., 0.0, 0.0, 0.0, 0.0]
         novelties = [1., 2., 0., 0., 0., 0., 0.0, 0.0, 0.0, 0.0]
         bcs = [[0.0], [0.0], [0.0], [0.0], [0.0], [0.0], [0.0], [0.0], [0.0], [0.0]]
-        pop, elites = create_next_pop(1, sc, pop, fitnesses, novelties, bcs, γ, 2)
+        pop, elites = create_next_pop(1, sc, pop, fitnesses, novelties, bcs, γ, n_elites)
         cache_elites!(sc, mi, elites)
-        for g in 2:5
+        for g in 2:10
             fitnesses .+= fitnesses
             novelties .+= novelties
-            next_pop, elites = create_next_pop(g, sc, pop, fitnesses, novelties, bcs, γ, 3)
+            next_pop, elites = create_next_pop(g, sc, pop, fitnesses, novelties, bcs, γ, n_elites)
             cache_elites!(sc, mi, elites)
 
             @test p1 == next_pop[1] == elites[1][:seeds]
             @test next_pop[1] == elites[1][:seeds]
-            # @test next_pop[2][1:end-2] == elites[1][:seeds] || next_pop[2][1:end-2] == elites[2][:seeds]
-            # @test next_pop[3][1:end-2] == elites[1][:seeds] || next_pop[3][1:end-2] == elites[2][:seeds]
-            # @test next_pop[4][1:end-2] == elites[1][:seeds] || next_pop[4][1:end-2] == elites[2][:seeds]
-            # @test next_pop[5][1:end-2] == elites[3][:seeds]
-            # @test next_pop[6][1:end-2] == elites[3][:seeds]
+            if γ == 0.001
+                @test all(elite(np) ∈ [e[:seeds] for e in elites] for np in next_pop[2:end])
+            else
+                @test all(elite(np) ∈ [e[:seeds] for e in elites[2:end]] for np in next_pop[2:end])
+            end
             pop = next_pop
         end
     end
