@@ -110,15 +110,14 @@ function main()
         elite = (maximum(F), pop[argmax(F)])
 
         # update elite and modify exploration rate
-        Δγ = 0.02
         if elite[1] > best[1]
-            γ = clamp(γ - Δγ, 0, 0.9)
+            γ = clamp(γ / 2, 0, 0.9)
             llog(islocal=args["local"], name=logname) do logfile
                 ts(logfile, "New best ind found, F=$(elite[1]), γ decreased to $γ")
             end
             best = elite
         else
-            γ = clamp(γ + Δγ, 0, 0.9)
+            γ = clamp(γ + 0.02, 0, 0.9)
             llog(islocal=args["local"], name=logname) do logfile
                 ts(logfile, "no better elite found, increasing γ to $γ")
             end
