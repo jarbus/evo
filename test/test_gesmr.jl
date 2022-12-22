@@ -2,6 +2,8 @@ using EvoTrade
 using Test
 using Flux
 
+elite(x) = length(x) > 2 ? x[1:end-2] : x
+mr(x) = length(x) > 1 ? x[end-1] : 10.0 ^ rand([-1,-2,-3,-4,-5])
 
 @testset "test_reconstruct_with_σ" begin
     obs_size = (30,32,4, 1)
@@ -26,6 +28,7 @@ using Flux
     @test !all(a .== b)
     @test all(a .== c)
 end
+
 
 @testset "test_multi_gen_γ=0.5" begin
     obs_size = (30,32,4, 1)
@@ -54,21 +57,24 @@ end
     @test elites[2][:seeds] ∈ keys(sc)
     @test elites[2][:seeds] == [2.]
     @test elites[1][:seeds] != [0.0] != elites[2][:seeds]
-    @test all(length.(pop) .== 3)
-    for g in 2:2
+    for g in 2:10
         bcs[2] = bcs[2] .+ 1 # make sure that the second seed is always novel
-        pop, elites = create_next_pop(g, sc, pop, fitnesses, novelties, bcs, γ, 2)
-        best_f_mr = elites[1][:seeds][end-1]
-        best_n_mr = elites[2][:seeds][end-1]
+        fitnesses .+= fitnesses
+        novelties .+= novelties
+        next_pop, elites = create_next_pop(g, sc, pop, fitnesses, novelties, bcs, γ, 3)
+        best_f_mr = mr(elites[1][:seeds])
+        best_n_mr = mr(elites[2][:seeds])
         cache_elites!(sc, mi, elites)
-        # offspring mutation rates are between 0.5 and 2x the parent
-        @test all(length.(pop) .== 1+2g)
-        for i in 1:3
-            @test 0.5*best_f_mr<= pop[i][end-1] <= 2.0*best_f_mr
-        end
-        for i in 4:6
-            @test 0.5*best_n_mr<= pop[i][end-1] <= 2.0*best_n_mr < g
-        end
+
+        @test p1 == next_pop[1] == elites[1][:seeds]
+        @test next_pop[1] == elites[1][:seeds]
+        @test next_pop[2][1:end-2] == elites[1][:seeds] || next_pop[2][1:end-2] == elites[2][:seeds]
+        @test next_pop[3][1:end-2] == elites[1][:seeds] || next_pop[3][1:end-2] == elites[2][:seeds]
+        @test next_pop[4][1:end-2] == elites[1][:seeds] || next_pop[4][1:end-2] == elites[2][:seeds]
+        @test next_pop[5][1:end-2] == elites[3][:seeds]
+        @test next_pop[6][1:end-2] == elites[3][:seeds]
+
+        pop = next_pop
     end
 end
 
@@ -76,34 +82,46 @@ end
     # assure there are no crashes at weird γ values
     obs_size = (30,32,4, 1)
     n_actions = 4
-    pop_size = 6
+    pop_size = 10
+    n_elites = 3
     m = make_model(:small,
         obs_size,
         n_actions,
         vbn=false,
         lstm=false)
-    for γ in [0.001, 0.999]
-        sc = SeedCache(maxsize=4)
+    for γ in [0.001, 0.90]
+        sc = SeedCache(maxsize=2*n_elites)
         mi = ModelInfo(m)
         p1 = [1.]
         p2 = [2.]
-        pop = [p1, p2, [0.0], [0.0], [0.0], [0.0]]
-        fitnesses = [2., 1., 0., 0., 0., 0.]
-        novelties = [1., 2., 0., 0., 0., 0.]
-        bcs = [[0.0], [0.0], [0.0], [0.0], [0.0], [0.0]]
+        pop = [p1, p2, [0.0], [0.0], [0.0], [0.0], [0.0], [0.0], [0.0], [0.0]]
+        fitnesses = [2., 1., 0., 0., 0., 0., 0.0, 0.0, 0.0, 0.0]
+        novelties = [1., 2., 0., 0., 0., 0., 0.0, 0.0, 0.0, 0.0]
+        bcs = [[0.0], [0.0], [0.0], [0.0], [0.0], [0.0], [0.0], [0.0], [0.0], [0.0]]
         pop, elites = create_next_pop(1, sc, pop, fitnesses, novelties, bcs, γ, 2)
         cache_elites!(sc, mi, elites)
         for g in 2:5
-            pop, elites = create_next_pop(g, sc, pop, fitnesses, novelties, bcs, γ, 2)
+            fitnesses .+= fitnesses
+            novelties .+= novelties
+            next_pop, elites = create_next_pop(g, sc, pop, fitnesses, novelties, bcs, γ, 3)
             cache_elites!(sc, mi, elites)
+
+            @test p1 == next_pop[1] == elites[1][:seeds]
+            @test next_pop[1] == elites[1][:seeds]
+            # @test next_pop[2][1:end-2] == elites[1][:seeds] || next_pop[2][1:end-2] == elites[2][:seeds]
+            # @test next_pop[3][1:end-2] == elites[1][:seeds] || next_pop[3][1:end-2] == elites[2][:seeds]
+            # @test next_pop[4][1:end-2] == elites[1][:seeds] || next_pop[4][1:end-2] == elites[2][:seeds]
+            # @test next_pop[5][1:end-2] == elites[3][:seeds]
+            # @test next_pop[6][1:end-2] == elites[3][:seeds]
+            pop = next_pop
         end
     end
 end
 
 @testset "test_mutation" begin
-    for i in rand(10)
+    for i in rand(10) * 0.1
         m = M(i)
-        @test 0.5i <= m <= 2i
+        @test 0.5i <= m <= min(2i, 0.1)
     end
 end
 
@@ -130,38 +148,29 @@ end
    cache_elites!(sc, mi, elites)
    @test elites[1][:seeds] == p1
    @test elites[2][:seeds] == [0.0]
+   @test length(findall(x->x==p1, pop)) == 1
    for g in 2:5
        bcs[2] = bcs[2] .+ 1 # make sure that the second seed is always novel
        pop, elites = create_next_pop(g, sc, pop, fitnesses, novelties, bcs, γ, 2)
-       f_mr = elites[1][:seeds][end-1]
-       f_mr2 = elites[2][:seeds][end-1]
+       f_mr = mr(elites[1][:seeds])
+       f_mr2 = mr(elites[2][:seeds])
        cache_elites!(sc, mi, elites)
-       # offspring mutation rates are between 0.5 and 2x the parent
-       @test all(length.(pop) .== 1+2g)
-       for i in 1:6
-           @test (0.5*f_mr<= pop[i][end-1] <= 2.0*f_mr) ||
-           (0.5*f_mr2<= pop[i][end-1] <= 2.0*f_mr2)
-       end
    end
    sc = SeedCache(maxsize=4)
-   γ = 1.0
+   γ = 0.9
    pop = [p1, p2, [0.0], [0.0], [0.0], [0.0]]
-   pop, elites = create_next_pop(1, sc, pop, fitnesses, novelties, bcs, γ, 2)
+   pop, elites = create_next_pop(1, sc, pop, fitnesses, novelties, bcs, γ, 3)
    cache_elites!(sc, mi, elites)
-   @test elites[1][:seeds] == p2
-   @test elites[2][:seeds] == p1
+   @test elites[1][:seeds] == p1
+   @test elites[2][:seeds] == p2
+   @test elites[3][:seeds] == p1
+   @test length(findall(x->x==p1, pop)) == 1
    for g in 2:5
        bcs[2] = bcs[2] .+ 1 # make sure that the second seed is always novel
        pop, elites = create_next_pop(g, sc, pop, fitnesses, novelties, bcs, γ, 2)
-       n_mr = elites[1][:seeds][end-1]
-       n_mr2 = elites[2][:seeds][end-1]
+       n_mr = mr(elites[1][:seeds])
+       n_mr2 = mr(elites[2][:seeds])
        cache_elites!(sc, mi, elites)
-       # offspring mutation rates are between 0.5 and 2x the parent
-       @test all(length.(pop) .== 1+2g)
-       for i in 1:6
-           @test 0.5*n_mr<= pop[i][end-1] <= 2.0*n_mr ||
-           0.5*n_mr2<= pop[i][end-1] <= 2.0*n_mr2
-       end
    end
 end
 
@@ -182,7 +191,7 @@ end
     pop = [Vector{Float64}([rand(UInt32)]) for i in 1:pop_size]
     γ = 0.5 
 
-    for g in 1:300
+    for g in 1:1
         fitnesses = rand(pop_size)
         novelties = rand(pop_size)
         bcs = [[rand()] for i in 1:pop_size]
@@ -190,6 +199,8 @@ end
         cache_elites!(sc, mi, elites)
         elite_seeds = [e[:seeds] for e in elites]
         @test elites[1][:seeds] in keys(sc)
-        @test all(p[1:end-2] in keys(sc) for p in pop)
+        @test all(elite(p) in keys(sc) for p in pop)
+        @test pop[argmax(fitnesses)] in pop
+        @test length(findall(x->x==pop[argmax(fitnesses)], pop)) == 1
     end
 end
