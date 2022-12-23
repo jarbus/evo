@@ -1,1 +1,1 @@
-{"author":{"id":"2925f8bae681ccf02a1c1ecc82cbb827e525744b16a0948b37a0b024362c4ec0"},"ops":[{"type":5,"timestamp":1671829733,"nonce":"2OrOMwUnXFQygIem80LHY30TvL0=","added":["bug"],"removed":null},{"type":5,"timestamp":1671829736,"nonce":"KaMfBoTiMcM6FyUXTFOSQlPuT48=","added":["todo"],"removed":null}]}
+{"author":{"id":"2925f8bae681ccf02a1c1ecc82cbb827e525744b16a0948b37a0b024362c4ec0"},"ops":[{"type":3,"timestamp":1671839476,"nonce":"25C//hZnKSaNbzpqgiEWyj3VyuA=","message":"seems to stem from bug where acts were added batch_size times","files":null}]}
