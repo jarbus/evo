@@ -54,18 +54,7 @@ function plot_bcs(dirname::String, ::Dict, bcs::Vector, ::Vector=[])
     end
 end
 
-function vis_outs(dirname::String)
-    # read all *.out files in the directory
-    files = readdir(dirname)
-    outs = filter(f -> endswith(f, ".out"), files)
-    # check if user has sbatch binary installed
-    sbatch = try
-        run(`sbatch --version`)
-        true
-    catch
-        return
-    end
-    for out in outs
-        run(`srun python s2g.py $(joinpath(dirname, out))`, wait=false)
-    end
+function vis_outs(dirname::String, islocal::Bool)
+    islocal && return
+    run(`sbatch run-batch-vis.sh $dirname`, wait=false)
 end
