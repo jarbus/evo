@@ -140,6 +140,7 @@ function main()
             run(`mkdir -p $outdir`)
             plot_walks("$outdir/pop.png", table, walks)
             rew_dict, mets, _, _ = run_batch(env, models, args, evaluation=false, render_str=outdir)
+            vis_outs(outdir)
 
             muts = g > 1 ? [mr(pop[i]) for i in 1:pop_size] : [0.0]
             mets["gamma"] = γ
@@ -154,7 +155,7 @@ function main()
             llog(islocal=args["local"], name=logname) do logfile
                 ts(logfile, "Generation $g: $avg_self_fit")
             end
-            plot_bcs(outdir, env, BC, novelties)
+            # plot_bcs(outdir, env, BC, novelties)
 
             # Save checkpoint
             save(check_name, Dict("gen"=>g, "gamma"=>γ, "pop"=>pop, "archive"=>archive, "BC"=> BC, "F"=>F, "best"=>best, "novelties"=>novelties))
