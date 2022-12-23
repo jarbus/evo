@@ -15,17 +15,10 @@ using Infiltrator
 
     env_config = mk_env_config(args)
 
-    function fitness(p1::T, p2::T) where T<:Vector{<:Float64}
-
-        if p1 == p2
-            params = reconstruct(sc, mi, p1)
-            models = Dict("f0a0" => re(params), "f1a0" => re(params))
-        else
-            models = Dict("f0a0" => re(reconstruct(sc, mi, p1)),
-            "f1a0" => re(reconstruct(sc, mi, p2)))
-        end
+    function fitness(p::T) where T<:Vector{<:Float64}
+        models = Dict("f0a0" => re(reconstruct(sc, mi, p)))
         rew_dict, _, bc, infos = run_batch(env, models, args, evaluation=false)
-        rew_dict["f0a0"], rew_dict["f1a0"], bc["f0a0"], bc["f1a0"], infos
+        rew_dict["f0a0"], bc["f0a0"], infos
     end
 end
 
@@ -94,13 +87,12 @@ function main()
         end
 
         fetches = pmap(1:pop_size) do p
-            fitness(pop[p], pop[p])
+            fitness(pop[p])
         end
 
-        F = [(fet[1]+fet[2])/2 for fet in fetches]
-        BC = [fet[3] for fet in fetches]
-        walks::Vector{Vector{NTuple{2, Float64}}} = [fet[5]["avg_walks"]["f0a0"] for fet in fetches]
-        walks = vcat(walks, [fet[5]["avg_walks"]["f1a0"] for fet in fetches])
+        F = [fet[1] for fet in fetches]
+        BC = [fet[2] for fet in fetches]
+        walks::Vector{Vector{NTuple{2, Float64}}} = [fet[3]["avg_walks"]["f0a0"] for fet in fetches]
 
 
         llog(islocal=args["local"], name=logname) do logfile
@@ -141,8 +133,7 @@ function main()
         # LOG
         if g % 1 == 0
             ts("log start")
-            models = Dict("f0a0" => re(reconstruct(sc, mi, best[2])),
-            "f1a0" => re(reconstruct(sc, mi, best[2])))
+            models = Dict("f0a0" => re(reconstruct(sc, mi, best[2])))
 
             # Compute and write metrics
             outdir = "outs/$clsname/$expname/$g"
@@ -159,7 +150,7 @@ function main()
             write_mets(met_csv_name, df)
 
             # Log to file
-            avg_self_fit = round((rew_dict["f0a0"] + rew_dict["f1a0"]) / 2; digits=2)
+            avg_self_fit = round(rew_dict["f0a0"]; digits=2)
             llog(islocal=args["local"], name=logname) do logfile
                 ts(logfile, "Generation $g: $avg_self_fit")
             end
