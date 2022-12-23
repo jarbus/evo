@@ -2,6 +2,10 @@ using EvoTrade
 using Test
 using NearestNeighbors
 
+function euclidist(v1::Vector, v2::Vector)::Float64
+    return sqrt(sum((v1 .- v2).^2))
+end
+
 @testset "test_average_bc" begin
   @test EvoTrade.average_bc([[1,2,3], [1,2,3]]) == [1,2,3]
   @test EvoTrade.average_bc([[1,2,3], [3,4,5]]) == [2,3,4]
@@ -27,11 +31,6 @@ end
 
 @testset "test_compute_novelty_maze" begin
   k = 2
-  # make a function that computes euclidean distance
-  function euclidist(v1::Vector, v2::Vector)::Float64
-      return sqrt(sum((v1 .- v2).^2))
-  end
-
   archive = Float32.([1 0; 3 0; 4 0]')
   pop = Float32.([0 4 ;1 4])
   archive_and_pop = hcat(archive, pop)
@@ -46,11 +45,6 @@ end
 
 @testset "test_compute_novelties_maze" begin
   k = 2
-  # make a function that computes euclidean distance
-  function euclidist(v1::Vector, v2::Vector)::Float64
-      return sqrt(sum((v1 .- v2).^2))
-  end
-
   archive = Float32.([1 0; 3 0; 4 0]')
   pop = Float32.([0 4 ;1 4])
   archive_and_pop = hcat(archive, pop)
@@ -110,10 +104,7 @@ end
     end
 end
 
-@testset "test_bc_novelty" begin
-    function euclidist(v1::Vector, v2::Vector)::Float64
-        return sqrt(sum((v1 .- v2).^2))
-    end
+@testset "test_bc1_novelty" begin
     bca = bc1([1, 1, 1, 2], 3)
     bcb = bc1([1, 2, 2, 2], 3)
     bcc = bc1([3, 3, 3, 3], 3)
@@ -124,94 +115,114 @@ end
     @test nov_c > nov_a
 end
 
+@testset "test_bc2_novelty" begin
+    x1 = [[1], [1], [1], [2]]
+    x2 = [[1], [2], [2], [2]]
+    x3 = [[3], [3], [3], [3]]
+    bca = bc2(x1, 4)
+    bcb = bc2(x2, 4)
+    bcc = bc2(x3, 4)
+    nov_a = compute_novelty(bca, hcat(bca, bcb), k=1)
+    nov_b = compute_novelty(bcb, hcat(bca, bcb), k=1)
+    nov_c = compute_novelty(bcc, hcat(bca, bcb, bcc), k=2)
+    @test nov_a == nov_b == sqrt(0.5)
+    @test nov_c > nov_a
+end
+
+@testset "test_bc2_speed" begin
+  pop = rand(54, 10000)
+  novs = compute_novelties(pop, pop, k=25)
+  @test length(novs) == 10000
+end
+
 @testset "create_next_pop_single_met" begin
-  pop = [UInt32.([1, 2, 3, 4]), UInt32.([5, 6, 7, 8])]
-  for i in 1:1000
-    push!(pop, UInt32.([0,0,0,0]))
-  end
-  next_pop = create_next_pop(1, pop, 1)
-  @test length(next_pop) == length(pop)
-  @test [1, 2, 3, 4] in next_pop
-  @test [1, 2, 3, 4] in [x[1:4] for x in next_pop]
-  @test [5,6,7,8] ∉ [x[1:4] for x in next_pop]
-  pop = [UInt32.([1, 2]), UInt32.([3, 4]), UInt32.([5, 6]), UInt32.([7, 8])]
-  for i in 1:1000
-    push!(pop, UInt32.([0,0]))
-  end
-  next_pop = create_next_pop(2, pop, 2)
-  @test UInt32.([1, 2]) in next_pop
-  @test any(pop[1] == np[1:2] for np in next_pop)
-  @test any(pop[2] == np[1:2] for np in next_pop)
+ pop = [UInt32.([1, 2, 3, 4]), UInt32.([5, 6, 7, 8])]
+ for i in 1:1000
+   push!(pop, UInt32.([0,0,0,0]))
+ end
+ next_pop = create_next_pop(1, pop, 1)
+ @test length(next_pop) == length(pop)
+ @test [1, 2, 3, 4] in next_pop
+ @test [1, 2, 3, 4] in [x[1:4] for x in next_pop]
+ @test [5,6,7,8] ∉ [x[1:4] for x in next_pop]
+ pop = [UInt32.([1, 2]), UInt32.([3, 4]), UInt32.([5, 6]), UInt32.([7, 8])]
+ for i in 1:1000
+   push!(pop, UInt32.([0,0]))
+ end
+ next_pop = create_next_pop(2, pop, 2)
+ @test UInt32.([1, 2]) in next_pop
+ @test any(pop[1] == np[1:2] for np in next_pop)
+ @test any(pop[2] == np[1:2] for np in next_pop)
 end
 @testset "create_next_pop_adaptive" begin
-  pop = [UInt32.([1, 2, 3, 4]), UInt32.([5, 6, 7, 8])]
-  for i in 1:1000
-    push!(pop, UInt32.([0,0,0,0]))
-  end
-  fitnesses = zeros(Float32, length(pop))
-  novelties = zeros(length(pop))
-  fitnesses[1] = 1.0f0
-  novelties[2] = 1.0f0
-  γ=0.5
-  next_pop, _ = create_next_pop(1, pop, fitnesses, novelties, γ, 2)
-  @test length(next_pop) == length(pop)
-  @test [1, 2, 3, 4] ∉ next_pop
-  @test [1, 2, 3, 4] in [x[1:4] for x in next_pop]
-  @test [5,6,7,8] ∈ [x[1:4] for x in next_pop]
-  @test [0,0,0,0] ∉ [x[1:4] for x in next_pop]
-  γ=0.0
-  next_pop, _ = create_next_pop(1, pop, fitnesses, novelties, γ, 1)
-  @test length(next_pop) == length(pop)
-  @test [1, 2, 3, 4] ∉ next_pop
-  @test all([[1, 2, 3, 4] == x[1:4] for x in next_pop])
-  @test [5,6,7,8] ∉ [x[1:4] for x in next_pop]
-  @test [0,0,0,0] ∉ [x[1:4] for x in next_pop]
+ pop = [UInt32.([1, 2, 3, 4]), UInt32.([5, 6, 7, 8])]
+ for i in 1:1000
+   push!(pop, UInt32.([0,0,0,0]))
+ end
+ fitnesses = zeros(Float32, length(pop))
+ novelties = zeros(length(pop))
+ fitnesses[1] = 1.0f0
+ novelties[2] = 1.0f0
+ γ=0.5
+ next_pop, _ = create_next_pop(1, pop, fitnesses, novelties, γ, 2)
+ @test length(next_pop) == length(pop)
+ @test [1, 2, 3, 4] ∉ next_pop
+ @test [1, 2, 3, 4] in [x[1:4] for x in next_pop]
+ @test [5,6,7,8] ∈ [x[1:4] for x in next_pop]
+ @test [0,0,0,0] ∉ [x[1:4] for x in next_pop]
+ γ=0.0
+ next_pop, _ = create_next_pop(1, pop, fitnesses, novelties, γ, 1)
+ @test length(next_pop) == length(pop)
+ @test [1, 2, 3, 4] ∉ next_pop
+ @test all([[1, 2, 3, 4] == x[1:4] for x in next_pop])
+ @test [5,6,7,8] ∉ [x[1:4] for x in next_pop]
+ @test [0,0,0,0] ∉ [x[1:4] for x in next_pop]
 
 
-  γ=1.0
-  next_pop, _ = create_next_pop(1, pop, fitnesses, novelties, γ, 1)
-  @test length(next_pop) == length(pop)
-  @test [5,6,7,8] ∉ next_pop
-  @test all([[5,6,7,8] == x[1:4] for x in next_pop])
-  @test [1,2,3,4] ∉ [x[1:4] for x in next_pop]
-  @test [0,0,0,0] ∉ [x[1:4] for x in next_pop]
+ γ=1.0
+ next_pop, _ = create_next_pop(1, pop, fitnesses, novelties, γ, 1)
+ @test length(next_pop) == length(pop)
+ @test [5,6,7,8] ∉ next_pop
+ @test all([[5,6,7,8] == x[1:4] for x in next_pop])
+ @test [1,2,3,4] ∉ [x[1:4] for x in next_pop]
+ @test [0,0,0,0] ∉ [x[1:4] for x in next_pop]
 
-  γ=0.999
-  next_pop, _ = create_next_pop(1, pop, fitnesses, novelties, γ, 2)
-  γ=0.001
-  next_pop, _ = create_next_pop(1, pop, fitnesses, novelties, γ, 2)
+ γ=0.999
+ next_pop, _ = create_next_pop(1, pop, fitnesses, novelties, γ, 2)
+ γ=0.001
+ next_pop, _ = create_next_pop(1, pop, fitnesses, novelties, γ, 2)
 end
 @testset "add_to_archive" begin
-  archive = Set()
-  BC = [0.0 for _ in 1:10000]
-  pop = [0.0 for _ in 1:10000]
-  @test length(archive) == 0
-  @test length(BC) > 0
-  @test length(pop) > 0
-  add_to_archive!(archive, BC, pop, 0.01)
-  @test length(archive) > 0
+ archive = Set()
+ BC = [0.0 for _ in 1:10000]
+ pop = [0.0 for _ in 1:10000]
+ @test length(archive) == 0
+ @test length(BC) > 0
+ @test length(pop) > 0
+ add_to_archive!(archive, BC, pop, 0.01)
+ @test length(archive) > 0
 end
 
 @testset "reorder!" begin
-  novelties = [1, 0, 1, 2]
-  F         = [1, 1, 4, 3]
-  BC        = [1, 2, 3, 4]
-  pop       = [1, 2, 3, 4]
-  reorder!(novelties, F, BC, pop)
-  @test novelties[1] >= novelties[2] >= novelties[3] >= novelties[4]
-  @test BC[1] == 4 == pop[1]
-  @test BC[2] == 1 == pop[2]
-  @test BC[3] == 3 == pop[3]
-  @test BC[4] == 2 == pop[4]
-  @test F[1] == 3
-  @test F[2] == 1
-  @test F[3] == 4
-  @test F[4] == 1
+ novelties = [1, 0, 1, 2]
+ F         = [1, 1, 4, 3]
+ BC        = [1, 2, 3, 4]
+ pop       = [1, 2, 3, 4]
+ reorder!(novelties, F, BC, pop)
+ @test novelties[1] >= novelties[2] >= novelties[3] >= novelties[4]
+ @test BC[1] == 4 == pop[1]
+ @test BC[2] == 1 == pop[2]
+ @test BC[3] == 3 == pop[3]
+ @test BC[4] == 2 == pop[4]
+ @test F[1] == 3
+ @test F[2] == 1
+ @test F[3] == 4
+ @test F[4] == 1
 end
 
 @testset "compute_elite" begin
-  f(a,b) = a,b
-  elite = compute_elite(f, collect(1:4), [1f0, 2f0, 3f0, 4f0], k=2, n=2)
-  @test elite[1] == 4
-  @test elite[2] == 4
+ f(a,b) = a,b
+ elite = compute_elite(f, collect(1:4), [1f0, 2f0, 3f0, 4f0], k=2, n=2)
+ @test elite[1] == 4
+ @test elite[2] == 4
 end
