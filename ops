@@ -1,1 +1,1 @@
-{"author":{"id":"2925f8bae681ccf02a1c1ecc82cbb827e525744b16a0948b37a0b024362c4ec0"},"ops":[{"type":1,"timestamp":1671829729,"nonce":"FQotklT8L9Jd4kei9OlBtIXcQHc=","title":"bug: novelty computation for bc2 is slow af","message":"","files":null}]}
+{"author":{"id":"2925f8bae681ccf02a1c1ecc82cbb827e525744b16a0948b37a0b024362c4ec0"},"ops":[{"type":5,"timestamp":1671829733,"nonce":"2OrOMwUnXFQygIem80LHY30TvL0=","added":["bug"],"removed":null},{"type":5,"timestamp":1671829736,"nonce":"KaMfBoTiMcM6FyUXTFOSQlPuT48=","added":["todo"],"removed":null}]}
