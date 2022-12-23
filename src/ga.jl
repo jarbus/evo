@@ -111,7 +111,7 @@ end
 
 elite(x) = length(x) > 2 ? x[1:end-2] : x
 mr(x) = length(x) > 1 ? x[end-1] : 10.0 ^ rand([-1,-2,-3,-4,-5])
-M(x) = clamp(x*(2^(rand()*2-1)), 0.00001, 0.1)
+M(x) = clamp(x*(2^(rand()*2-1)), 0.00001, 0.01)
 function create_next_pop(gen::Int,
         sc,
         pop::Vector{Vector{Float64}},
