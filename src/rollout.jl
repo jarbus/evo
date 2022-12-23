@@ -39,9 +39,11 @@ function run_batch(env_config::Dict, models::Dict{String,<:Chain}, args; evaluat
         for (agent, avg_pos) in batch_pos!(b_env)
             push!(avg_walks[agent], avg_pos)
         end
+        for name in keys(models)
+            push!(total_acts[name], b_acts)
+        end
         for (b, rew_dict) in enumerate(b_rew)
             for (name, rew) in rew_dict
-                push!(total_acts[name], b_acts)
                 rews[name] += rew
                 if render_str isa String && name == first(models).first
                     renderfile = "$render_str/b$b.out"
