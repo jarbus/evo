@@ -32,7 +32,7 @@ end
 
 
 r2(x) = @sprintf "%6.6s" string(round(x, digits=2))
-function plot_bcs(dirname::String, ::Dict, bcs::Vector, ::Vector=[])
+function plot_bcs(dirname::String, ::Dict, bcs::Vector, ::Vector)
     # compute mins, max, means, and stds for each dimension in 
     @assert length(bcs) > 0
     mins  = r2.([minimum([(bc[i]) for bc in bcs]) for i in 1:length(bcs[1])])

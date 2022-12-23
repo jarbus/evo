@@ -183,18 +183,22 @@ function bc1(x::Vector{<:Integer}, num_actions=9)::Vector{Float64}
 end
 
 
-function bc2(x::Vector{<:Integer}, num_actions=9)::Vector{Float64}
+function bc2(x::Vector{<:Vector{<:Integer}}, num_actions=9)::Vector{Float64}
     # percentage of each action for num_actions windows
     bcs = []
     i = 1
     while i <= length(x)
-        counts = zeros(Int, num_actions)
-        for j in x[i:min(i+num_actions-1, length(x))]
-            counts[j] += 1
+        i % num_actions == 1 && push!(bcs, zeros(Float64, num_actions))
+        for j in x[i]
+            bcs[end][j] += 1
         end
-        push!(bcs, counts ./ sum(counts))
-        i += num_actions
+        if i % num_actions == 0 
+            bcs[end] /= sum(bcs[end])
+        end
+
+        i += 1
     end
+    bcs[end] /= sum(bcs[end])
     bc = vcat(bcs...)
     # @assert length(bc) == floor(Int, length(x) / num_actions) 
     bc 

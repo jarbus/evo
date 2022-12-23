@@ -76,29 +76,37 @@ end
 end
 
 @testset "test_bc2" begin
-    x = [1, 2, 3, 4, 5, 6, 7, 8, 9]
+    x = [[1], [2], [3], [4], [5], [6], [7], [8], [9]]
     bc = bc2(x, 9)
     @test bc isa Vector{Float64}
     @test length(bc) == 9
     @test bc |> sum |> isapprox(1.0)
-    @test all(bc .== 1/9)
+    @test all(isapprox.(bc, 1/9))
+
+
+    x = [[1, 2], [2, 3]]
+    bc = bc2(x, 9)
+    @test bc isa Vector{Float64}
+    @test length(bc) == 9
+    @test bc |> sum |> isapprox(1.0)
+    @test all(isapprox.(bc, [1/4, 2/4, 1/4, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]))
     
-    x = [1, 2, 3, 4, 5, 6, 7, 8, 9, 1, 2]
+    x = [[1], [2], [3], [4], [5], [6], [7], [8], [9], [1], [2]]
     bc = bc2(x, 9)
     @test length(bc) == 18
     @test isapprox((sum(bc)), 2.0)
-    @test all(bc[1:9] .== 1/9)
+    @test all(isapprox.(bc[1:9], 1/9))
     @test all(bc[10:18] .== [1/2, 1/2, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0])
 
-    x = [1,1,1,1,1,1,1,1,1]
+    x = [[1] for _ in 1:9]
     bc = bc2(x, 9)
     @test bc == [1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
-    
+
     x2 = vcat(x, x, x, x, x, x, x, x, x)
     bc = bc2(x2, 9)
     @test length(bc) == 81
     for i in 1:9:81
-        @test bc[i:i+8] == [1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
+       @test bc[i:i+8] == [1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
     end
 end
 
