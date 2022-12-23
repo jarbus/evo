@@ -1,1 +1,1 @@
-{"author":{"id":"2925f8bae681ccf02a1c1ecc82cbb827e525744b16a0948b37a0b024362c4ec0"},"ops":[{"type":1,"timestamp":1671809859,"nonce":"Nm6d2P5m45CTa7kCsyQd99ZavQs=","title":"bug: key not found single agent","message":"","files":null}]}
+{"author":{"id":"2925f8bae681ccf02a1c1ecc82cbb827e525744b16a0948b37a0b024362c4ec0"},"ops":[{"type":5,"timestamp":1671809864,"nonce":"NQhbVzGCImyrLjPlf9weU1aJPt8=","added":["bug","todo"],"removed":null}]}
