@@ -49,9 +49,9 @@ class Light:
         if self.light_level > MAX_LIGHT_LEVEL:
             self.increasing = False
             self.light_level = MAX_LIGHT_LEVEL
-        elif self.light_level < 0:
+        elif self.light_level < -1:
             self.increasing = True
-            self.light_level = 0
+            self.light_level = -1
             
 
         self.frame = self.fire_frame()

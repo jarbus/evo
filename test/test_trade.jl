@@ -21,12 +21,16 @@ end
     env = PyTrade().Trade(env_config)
     @test env isa PyObject
     EvoTrade.Trade.reset!(env)
-    for i in 1:args["episode-length"]
+    min_light = 0.0
+    max_light = 0.0
+    for i in 1:args["episode-length"]*3
         pycall(env.light.step_light, Nothing)
         ff = pycall(env.light.fire_frame, PyArray)
-        @test maximum(ff) <= 1
-        @test minimum(ff) >= 0
+        min_light = min(min_light, minimum(ff))
+        max_light = max(max_light, maximum(ff))
     end
+    @test min_light == -1
+    @test max_light == 1
 end
 # @testset "test_plot_bcs" begin
 #     plot_bcs("$root_dir", Dict(), [[0.99, 0.11], [0.5, 0.5], [0.00, 0.0]])
