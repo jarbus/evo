@@ -136,7 +136,10 @@ function main()
             models = Dict("f0a0" => re(reconstruct(sc, mi, best[2])))
 
             # Compute and write metrics
-            outdir = "outs/$clsname/$expname/$g"
+            outdir = "outs/$clsname/$expname/"*string(g, pad=3, base=10)
+
+
+
             run(`mkdir -p $outdir`)
             plot_walks("$outdir/pop.png", table, walks)
             rew_dict, mets, _, _ = run_batch(env, models, args, evaluation=false, render_str=outdir)
