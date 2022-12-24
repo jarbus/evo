@@ -1,1 +1,1 @@
-{"author":{"id":"2925f8bae681ccf02a1c1ecc82cbb827e525744b16a0948b37a0b024362c4ec0"},"ops":[{"type":6,"timestamp":1671900902,"nonce":"QX3vJ3jk00m7shB6cOpsS+iQKjY=","target":"f49a2cc83c2e162c160790a9e9d2f959bfc62f4c8cf5091b562b7bbdb4510f56","message":"scales","files":null}]}
+{"author":{"id":"2925f8bae681ccf02a1c1ecc82cbb827e525744b16a0948b37a0b024362c4ec0"},"ops":[{"type":3,"timestamp":1671906612,"nonce":"5LP77dt+Qoh7ftPiyLKROgBFSpI=","message":"maybe add a way to output how many cache hits we have in log","files":null}]}
