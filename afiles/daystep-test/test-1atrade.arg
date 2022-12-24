@@ -1,0 +1,26 @@
+--l2 0.005
+--alpha 0.01
+--mutation-rate 0.1
+--exploration-rate 1.0
+--model large
+--window 3 3
+--pop-size 2
+--num-agents 1
+--num-elites 1
+--gx 11
+--gy 11
+--food-types 2
+--fires 5 5
+--foods 0 0 0 0 10 0 1 0 10 1 10 10
+--num-gens 2
+--checkpoint-interval 500
+--day-steps 75
+--food-agent-start 0
+--food-env-spawn 5
+--episode-length 50
+--light-coeff 10.0
+--batch-size 10
+--pickup-coeff 1.0
+--algo ga
+--archive-prob 0.01
+--nprocs 1
