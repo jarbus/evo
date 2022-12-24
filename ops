@@ -1,1 +1,1 @@
-{"author":{"id":"2925f8bae681ccf02a1c1ecc82cbb827e525744b16a0948b37a0b024362c4ec0"},"ops":[{"type":1,"timestamp":1671897018,"nonce":"+qJFL042wP0JeJ1rkXt+RhJO10A=","title":"bug: fitness collapses","message":"","files":null}]}
+{"author":{"id":"2925f8bae681ccf02a1c1ecc82cbb827e525744b16a0948b37a0b024362c4ec0"},"ops":[{"type":5,"timestamp":1671897021,"nonce":"x2JyJsbwZsWTVm2AamJ4w63H96I=","added":["bug"],"removed":null}]}
