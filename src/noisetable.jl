@@ -51,6 +51,9 @@ function cache_elites!(param_cache::SeedCache, nt::NoiseTable, elites::Vector{Ve
   for elite in elites
     @inbounds param_cache[elite] = reconstruct(param_cache, nt, elite, ϵ)
   end
+  for e in elites
+    @assert e in keys(param_cache)
+  end
 end
 
 
