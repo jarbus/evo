@@ -2,6 +2,7 @@ using EvoTrade
 using Test
 using PyCall
 root_dir = dirname(@__FILE__)  |> dirname |> String
+
 @testset "test_trade" begin
     expname = ["--exp-name", "test", "--cls-name","test", "--local", "--datime", "test"]
     arg_vector = read("$root_dir/afiles/cls-test/test-ga-trade.arg", String) |> split
@@ -12,6 +13,22 @@ root_dir = dirname(@__FILE__)  |> dirname |> String
     EvoTrade.Trade.reset!(env)
 end
 
+@testset "test_75_daystep" begin
+    expname = ["--exp-name", "test", "--cls-name","test", "--local", "--datime", "test"]
+    arg_vector = read("$root_dir/afiles/daystep-test/test-1atrade.arg", String) |> split
+    args = parse_args(vcat(arg_vector, expname), get_arg_table())
+    env_config = mk_env_config(args)
+    env = PyTrade().Trade(env_config)
+    @test env isa PyObject
+    EvoTrade.Trade.reset!(env)
+    for i in 1:args["episode-length"]
+        pycall(env.light.step_light, Nothing)
+        ff = pycall(env.light.fire_frame, PyArray)
+        println(env.light.light_level)
+        @test maximum(ff) <= 1
+        @test minimum(ff) >= 0
+    end
+end
 # @testset "test_plot_bcs" begin
 #     plot_bcs("$root_dir", Dict(), [[0.99, 0.11], [0.5, 0.5], [0.00, 0.0]])
 #     bc_file = read("$root_dir/stats.txt", String) |> split

@@ -45,8 +45,15 @@ class Light:
             self.light_level += self.interval
         else:
             self.light_level -= self.interval
-        if isclose(abs(self.light_level), MAX_LIGHT_LEVEL):
-            self.increasing = not self.increasing
+
+        if self.light_level > MAX_LIGHT_LEVEL:
+            self.increasing = False
+            self.light_level = MAX_LIGHT_LEVEL
+        elif self.light_level < 0:
+            self.increasing = True
+            self.light_level = 0
+            
+
         self.frame = self.fire_frame()
 
 if __name__ == "__main__":
