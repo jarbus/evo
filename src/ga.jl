@@ -169,6 +169,7 @@ function create_next_pop(gen::Int,
     elites = vcat(exploiter_elites, explorer_elites)
     @assert length(next_pop) == pop_size
     @assert length(elites) == num_elites
+    @assert exploiter_elites[1][:seeds] == next_pop[1]
 
     next_pop, elites
 end
