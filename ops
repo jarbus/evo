@@ -1,1 +1,1 @@
-{"author":{"id":"2925f8bae681ccf02a1c1ecc82cbb827e525744b16a0948b37a0b024362c4ec0"},"ops":[{"type":3,"timestamp":1671905016,"nonce":"XK1sTyFOdQGrLDfHR/9trkcMHrw=","message":"color can be fitness, thickness can be novelty?","files":null}]}
+{"author":{"id":"2925f8bae681ccf02a1c1ecc82cbb827e525744b16a0948b37a0b024362c4ec0"},"ops":[{"type":6,"timestamp":1671905038,"nonce":"L2T+3+yNii/NlNY/uiC669zK6i8=","target":"e79095d3abb1b23d62ccfd60f36e0073414b7d87d1eebabf971eed548769045a","message":"color can be novelty, thickness can be fitness. need to add most fit last","files":null}]}
