@@ -17,7 +17,7 @@ using Infiltrator
 
     function fitness(p::T) where T<:Vector{<:Float64}
         models = Dict("f0a0" => re(reconstruct(sc, mi, p)))
-        rew_dict, _, bc, infos = run_batch(env, models, args, evaluation=false)
+        rew_dict, _, bc, infos = run_batch(env, models, args, evaluation=true)
         rew_dict["f0a0"], bc["f0a0"], infos
     end
 end
@@ -142,7 +142,7 @@ function main()
 
             run(`mkdir -p $outdir`)
             plot_walks("$outdir/pop.png", table, walks)
-            rew_dict, mets, _, _ = run_batch(env, models, args, evaluation=false, render_str=outdir)
+            rew_dict, mets, _, _ = run_batch(env, models, args, evaluation=true, render_str=outdir)
             vis_outs(outdir, args["local"])
 
             muts = g > 1 ? [mr(pop[i]) for i in 1:pop_size] : [0.0]
