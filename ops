@@ -1,1 +1,1 @@
-{"author":{"id":"2925f8bae681ccf02a1c1ecc82cbb827e525744b16a0948b37a0b024362c4ec0"},"ops":[{"type":1,"timestamp":1671900918,"nonce":"rpfbHU1VT0T084O+q84ImOOUWU4=","title":"bug: novelty computation takes a long time","message":"","files":null}]}
+{"author":{"id":"2925f8bae681ccf02a1c1ecc82cbb827e525744b16a0948b37a0b024362c4ec0"},"ops":[{"type":5,"timestamp":1671900922,"nonce":"jaYoSH8N/ezyiouEx0cPk1gndEU=","added":["bug"],"removed":null}]}
