@@ -24,7 +24,6 @@ end
     for i in 1:args["episode-length"]
         pycall(env.light.step_light, Nothing)
         ff = pycall(env.light.fire_frame, PyArray)
-        println(env.light.light_level)
         @test maximum(ff) <= 1
         @test minimum(ff) >= 0
     end
