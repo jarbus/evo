@@ -1,1 +1,1 @@
-{"author":{"id":"2925f8bae681ccf02a1c1ecc82cbb827e525744b16a0948b37a0b024362c4ec0"},"ops":[{"type":1,"timestamp":1671897049,"nonce":"LLrjWmcnZmRt2mUlqNcJSgQA4t4=","title":"bug: visualization doesn't work on big night","message":"","files":null}]}
+{"author":{"id":"2925f8bae681ccf02a1c1ecc82cbb827e525744b16a0948b37a0b024362c4ec0"},"ops":[{"type":5,"timestamp":1671897052,"nonce":"WNBuqoRuOyDrYUOzsp53DOkUk3I=","added":["bug"],"removed":null}]}
