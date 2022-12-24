@@ -1,1 +1,1 @@
-{"author":{"id":"2925f8bae681ccf02a1c1ecc82cbb827e525744b16a0948b37a0b024362c4ec0"},"ops":[{"type":5,"timestamp":1671897052,"nonce":"WNBuqoRuOyDrYUOzsp53DOkUk3I=","added":["bug"],"removed":null}]}
+{"author":{"id":"2925f8bae681ccf02a1c1ecc82cbb827e525744b16a0948b37a0b024362c4ec0"},"ops":[{"type":3,"timestamp":1671900566,"nonce":"VTfwRjhfZZoyEe0Oilp0UUJgMXk=","message":"tied this to a light level issue for odd day steps","files":null}]}
