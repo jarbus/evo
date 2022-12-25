@@ -114,7 +114,7 @@ class Trade:
         self.dist_coeff            = env_config.get("dist_coeff", 0.0)
         self.move_coeff            = env_config.get("move_coeff", 0.0)
         self.death_prob            = env_config.get("death_prob", 0.1)
-        self.day_night_cycle       = env_config.get("day_night_cycle", False)
+        self.day_night_cycle       = env_config.get("day_night_cycle", True)
         self.day_steps             = env_config.get("day_steps", 20)
         self.fires                 = env_config.get("fires")
         self.foods                 = env_config.get("foods")
