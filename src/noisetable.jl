@@ -13,8 +13,14 @@ struct NoiseTable
 end
 
 struct ModelInfo
-  lengths::Vector{Int64}
+  sizes::Vector{Tuple}
   biases::Vector{Bool}
+end
+
+
+function glorot_normal(rng, dims::Integer...; gain::Real=1)
+  std = Float32(gain) * sqrt(1.0f0 / Flux.nfan(dims...)[1])
+  randn(rng, Float32, dims...) .* std
 end
 
 NoiseTable(rng::StableRNGs.LehmerRNG, nparams::Int, pop_size::Int, σ::Float32) = NoiseTable(rng, Flux.glorot_normal(rng, nparams + pop_size), nparams, pop_size, σ)
@@ -153,29 +159,30 @@ end
 #   theta .* ϵ
 # end
 
-lb(rng, l::Int64, b::Bool) = b ? zeros(Float32, l) : Flux.glorot_normal(rng, l)
-init_params(rng, lens::Vector{Int64}, biases::Vector{Bool}) =
-    vcat([lb(rng, l,b) for (l,b) in zip(lens, biases)]...)
-non_init_params(rng, lens::Vector{Int64}, biases::Vector{Bool}) =
-  vcat(map(x->Flux.glorot_normal(rng, x), lens)...)
+lb(rng, l::Tuple, b::Bool) = b ? zeros(Float32, l) : glorot_normal(rng, l...)
+init_params(rng, sizes::Vector{Tuple}, biases::Vector{Bool}) = vcat([lb(rng,l,b)[:] for (l,b) in zip(sizes, biases)]...)
+non_init_params(rng, sizes::Vector{Tuple}, biases::Vector{Bool}) =
+  vcat(map(x->glorot_normal(rng, x...)[:], sizes)...)
 function gen_params(rng, lens, biases, gen)
     gen == 1 && return init_params(rng, lens, biases) 
     non_init_params(rng, lens, biases)
 end
 
 function gen_params(rng, mi::ModelInfo, gen::Int)
-    gen == 1 && return non_init_params(rng, mi.lengths, mi.biases) 
-    non_init_params(rng, mi.lengths, mi.biases)
+    gen == 1 && return init_params(rng, mi.sizes, mi.biases) 
+    non_init_params(rng, mi.sizes, mi.biases)
 end
 
 
 function ModelInfo(m::Chain)
-    lengths = [length(mo) for mo in Flux.params(m)]
+    lengths = [size(mo) for mo in Flux.params(m)]
     is_bias = [mo isa Vector for mo in Flux.params(m)]
     ModelInfo(lengths, is_bias)
 end
 
-
-
+# function glorot_normal(dims::Integer...; gain::Real=1)
+#   std = Float32(gain) * sqrt(1.0f0 / Flux.nfan(dims...)[1])
+#   randn(Float32, dims...) .* std
+# end
 
 end
