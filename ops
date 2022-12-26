@@ -1,1 +1,1 @@
-{"author":{"id":"2925f8bae681ccf02a1c1ecc82cbb827e525744b16a0948b37a0b024362c4ec0"},"ops":[{"type":3,"timestamp":1672026738,"nonce":"i4rGIvfHLA0jQTlqjoqDztICfJM=","message":"should be fixed once argmax works","files":null}]}
+{"author":{"id":"2925f8bae681ccf02a1c1ecc82cbb827e525744b16a0948b37a0b024362c4ec0"},"ops":[{"type":3,"timestamp":1672092096,"nonce":"J6gamjPcBFyWAgoIK4jG46WkGwc=","message":"not fixed, elites either do not stay in population or happen to work very well on a specific environment","files":null}]}
