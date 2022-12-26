@@ -11,6 +11,17 @@ end
   @test EvoTrade.average_bc([[1,2,3], [3,4,5]]) == [2,3,4]
 end
 
+@testset "test_bc3" begin
+  avg_walk = [(1.0, 1.0), (2.0, 2.0), (3.0, 3.0)]
+  fitness = -1.0f0
+  bc = bc3(avg_walk, fitness)
+  @test bc == [1.0, 1.0, 2.0, 2.0, 3.0, 3.0, -1] 
+
+  avg_walk = [(1.0, 1.0), (2.0, 2.0), (2.0, 2.0), (1.0, 1.0)]
+  bc = bc3(avg_walk, fitness)
+  @test bc == [1.0, 1.0, 1.5, 1.5, 1.0, 1.0, -1] 
+end
+
 @testset "test_compute_novelty_trade" begin
     function gen_dist(len...) 
         x = rand(len...)

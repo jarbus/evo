@@ -6,7 +6,7 @@ using Distributed
 using Infiltrator
 using NearestNeighbors
 export compute_novelty, compute_novelties,
-bc1, bc2, create_next_pop, add_to_archive!,
+bc1, bc2, bc3, create_next_pop, add_to_archive!,
 reorder!, average_bc, compute_elite, dist, M,
 elite, mr
 
@@ -205,6 +205,16 @@ function bc2(x::Vector{<:Vector{<:Integer}}, num_actions=9)::Vector{Float64}
     bc 
 end
 
+function bc3(avg_walks::Vector{NTuple{2, Float64}}, fitness::Float32)::Vector{Float64}
+    # starting position, average position, ending position and fitness
+    start_pos = avg_walks[1]
+    mean_x = mean([x for (x,y) in avg_walks])
+    mean_y = mean([y for (x,y) in avg_walks])
+    mean_pos = (mean_x, mean_y)
+    end_pos = avg_walks[end]
+    [start_pos..., mean_pos..., end_pos..., fitness]
+end
+
 function average_bc(bcs::Vector)
   @assert Set(length.(bcs)) |> length == 1
   [mean(x) for x in zip(bcs...)]
@@ -227,6 +237,6 @@ function compute_elite(f, pop, F; k::Int=10, n::Int=30)
   elite_idx = argmax(accurate_Fs)
   elite = maximum(accurate_Fs), pop[top_F_idxs[elite_idx]]
   elite
-
 end
+
 end

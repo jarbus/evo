@@ -8,7 +8,7 @@ export plot_bcs, plot_walks, vis_outs
 export compute_centered_ranks
 export NoiseTable, compute_grad, get_noise, reconstruct, SeedCache, cache_elites!
 export ModelInfo, gen_params
-export compute_novelty, compute_novelties, bc1, bc2,
+export compute_novelty, compute_novelties, bc1, bc2, bc3
 create_next_pop, add_to_archive!, M, reorder!, compute_elite,
 elite, mr
 export run_batch
