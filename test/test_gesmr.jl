@@ -1,6 +1,7 @@
 using EvoTrade
 using Test
 using Flux
+using StableRNGs
 
 @testset "test_reconstruct_with_σ" begin
     obs_size = (30,32,4, 1)

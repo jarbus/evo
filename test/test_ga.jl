@@ -141,68 +141,68 @@ end
 end
 
 @testset "test_bc2_speed" begin
-  pop = rand(54, 10000)
+  pop = rand(100, 10000)
   novs = compute_novelties(pop, pop, k=25)
   @test length(novs) == 10000
 end
 
-@testset "create_next_pop_single_met" begin
- pop = [UInt32.([1, 2, 3, 4]), UInt32.([5, 6, 7, 8])]
- for i in 1:1000
-   push!(pop, UInt32.([0,0,0,0]))
- end
- next_pop = create_next_pop(1, pop, 1)
- @test length(next_pop) == length(pop)
- @test [1, 2, 3, 4] in next_pop
- @test [1, 2, 3, 4] in [x[1:4] for x in next_pop]
- @test [5,6,7,8] ∉ [x[1:4] for x in next_pop]
- pop = [UInt32.([1, 2]), UInt32.([3, 4]), UInt32.([5, 6]), UInt32.([7, 8])]
- for i in 1:1000
-   push!(pop, UInt32.([0,0]))
- end
- next_pop = create_next_pop(2, pop, 2)
- @test UInt32.([1, 2]) in next_pop
- @test any(pop[1] == np[1:2] for np in next_pop)
- @test any(pop[2] == np[1:2] for np in next_pop)
-end
-@testset "create_next_pop_adaptive" begin
- pop = [UInt32.([1, 2, 3, 4]), UInt32.([5, 6, 7, 8])]
- for i in 1:1000
-   push!(pop, UInt32.([0,0,0,0]))
- end
- fitnesses = zeros(Float32, length(pop))
- novelties = zeros(length(pop))
- fitnesses[1] = 1.0f0
- novelties[2] = 1.0f0
- γ=0.5
- next_pop, _ = create_next_pop(1, pop, fitnesses, novelties, γ, 2)
- @test length(next_pop) == length(pop)
- @test [1, 2, 3, 4] ∉ next_pop
- @test [1, 2, 3, 4] in [x[1:4] for x in next_pop]
- @test [5,6,7,8] ∈ [x[1:4] for x in next_pop]
- @test [0,0,0,0] ∉ [x[1:4] for x in next_pop]
- γ=0.0
- next_pop, _ = create_next_pop(1, pop, fitnesses, novelties, γ, 1)
- @test length(next_pop) == length(pop)
- @test [1, 2, 3, 4] ∉ next_pop
- @test all([[1, 2, 3, 4] == x[1:4] for x in next_pop])
- @test [5,6,7,8] ∉ [x[1:4] for x in next_pop]
- @test [0,0,0,0] ∉ [x[1:4] for x in next_pop]
-
-
- γ=1.0
- next_pop, _ = create_next_pop(1, pop, fitnesses, novelties, γ, 1)
- @test length(next_pop) == length(pop)
- @test [5,6,7,8] ∉ next_pop
- @test all([[5,6,7,8] == x[1:4] for x in next_pop])
- @test [1,2,3,4] ∉ [x[1:4] for x in next_pop]
- @test [0,0,0,0] ∉ [x[1:4] for x in next_pop]
-
- γ=0.999
- next_pop, _ = create_next_pop(1, pop, fitnesses, novelties, γ, 2)
- γ=0.001
- next_pop, _ = create_next_pop(1, pop, fitnesses, novelties, γ, 2)
-end
+# @testset "create_next_pop_single_met" begin
+#  pop = [UInt32.([1, 2, 3, 4]), UInt32.([5, 6, 7, 8])]
+#  for i in 1:1000
+#    push!(pop, UInt32.([0,0,0,0]))
+#  end
+#  next_pop = create_next_pop(1, pop, 1)
+#  @test length(next_pop) == length(pop)
+#  @test [1, 2, 3, 4] in next_pop
+#  @test [1, 2, 3, 4] in [x[1:4] for x in next_pop]
+#  @test [5,6,7,8] ∉ [x[1:4] for x in next_pop]
+#  pop = [UInt32.([1, 2]), UInt32.([3, 4]), UInt32.([5, 6]), UInt32.([7, 8])]
+#  for i in 1:1000
+#    push!(pop, UInt32.([0,0]))
+#  end
+#  next_pop = create_next_pop(2, pop, 2)
+#  @test UInt32.([1, 2]) in next_pop
+#  @test any(pop[1] == np[1:2] for np in next_pop)
+#  @test any(pop[2] == np[1:2] for np in next_pop)
+# end
+# @testset "create_next_pop_adaptive" begin
+#  pop = [UInt32.([1, 2, 3, 4]), UInt32.([5, 6, 7, 8])]
+#  for i in 1:1000
+#    push!(pop, UInt32.([0,0,0,0]))
+#  end
+#  fitnesses = zeros(Float32, length(pop))
+#  novelties = zeros(length(pop))
+#  fitnesses[1] = 1.0f0
+#  novelties[2] = 1.0f0
+#  γ=0.5
+#  next_pop, _ = create_next_pop(1, pop, fitnesses, novelties, γ, 2)
+#  @test length(next_pop) == length(pop)
+#  @test [1, 2, 3, 4] ∉ next_pop
+#  @test [1, 2, 3, 4] in [x[1:4] for x in next_pop]
+#  @test [5,6,7,8] ∈ [x[1:4] for x in next_pop]
+#  @test [0,0,0,0] ∉ [x[1:4] for x in next_pop]
+#  γ=0.0
+#  next_pop, _ = create_next_pop(1, pop, fitnesses, novelties, γ, 1)
+#  @test length(next_pop) == length(pop)
+#  @test [1, 2, 3, 4] ∉ next_pop
+#  @test all([[1, 2, 3, 4] == x[1:4] for x in next_pop])
+#  @test [5,6,7,8] ∉ [x[1:4] for x in next_pop]
+#  @test [0,0,0,0] ∉ [x[1:4] for x in next_pop]
+# 
+# 
+#  γ=1.0
+#  next_pop, _ = create_next_pop(1, pop, fitnesses, novelties, γ, 1)
+#  @test length(next_pop) == length(pop)
+#  @test [5,6,7,8] ∉ next_pop
+#  @test all([[5,6,7,8] == x[1:4] for x in next_pop])
+#  @test [1,2,3,4] ∉ [x[1:4] for x in next_pop]
+#  @test [0,0,0,0] ∉ [x[1:4] for x in next_pop]
+# 
+#  γ=0.999
+#  next_pop, _ = create_next_pop(1, pop, fitnesses, novelties, γ, 2)
+#  γ=0.001
+#  next_pop, _ = create_next_pop(1, pop, fitnesses, novelties, γ, 2)
+# end
 @testset "add_to_archive" begin
  archive = Set()
  BC = [0.0 for _ in 1:10000]
