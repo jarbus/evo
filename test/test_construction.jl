@@ -66,8 +66,6 @@ using StableRNGs
   cache_elites!(param_cache, mi, elites)
   reconstruct(param_cache, mi, pop[1])
 
-  @btime [reconstruct($param_cache, $mi, $pop[j]) for j in 1:$pop_size]
-
   for i in 1:100
       fitnesses = rand(pop_size)
       novelties = rand(pop_size)
@@ -83,5 +81,4 @@ using StableRNGs
    #   # end
    # end
   end
-  @btime [reconstruct($param_cache, $mi, $pop[j]) for j in 1:$pop_size]
 end
