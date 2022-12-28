@@ -86,8 +86,8 @@ function main()
             ts(logfile, "pmapping")
         end
 
-        fetches = pmap(1:pop_size) do p
-            fitness(pop[p])
+        fetches = pmap(pop) do p
+            fitness(p)
         end
 
         F = [fet[1] for fet in fetches]
