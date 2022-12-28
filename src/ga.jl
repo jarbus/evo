@@ -98,17 +98,15 @@ function create_next_pop(gen::Int,
     if gen == 1
         Fσs = [10.0^rand(-2:-1:-7) for _ in 1:num_elite_exploiters]
         Nσs = [10.0^rand(-2:-1:-7) for _ in 1:num_elite_explorers]
-        exploiter_elites = make_elites(fitnesses, num_elite_exploiters)
-        explorer_elites  = make_elites(novelties, num_elite_explorers)
     else
         σs = [mr(pop[i]) for i in 1:pop_size]
         ΔFs = [f - sc[elite(pop[i])][:fitness] for (i,f) in enumerate(fitnesses)]
         ΔNs = [dist(bc, sc[elite(pop[i])][:bc]) for (i,bc) in enumerate(bcs)]
         Fσs = σs[sortperm(ΔFs, rev=true)][1:num_elite_exploiters]
         Nσs = σs[sortperm(ΔNs, rev=true)][1:num_elite_explorers]
-        exploiter_elites = make_elites(ΔFs, num_elite_exploiters)
-        explorer_elites  = make_elites(ΔNs, num_elite_explorers)
     end
+    exploiter_elites = make_elites(fitnesses, num_elite_exploiters)
+    explorer_elites  = make_elites(novelties, num_elite_explorers)
 
     next_pop = [copy(exploiter_elites[1][:seeds])] # copy elite
     num_next_exploiters > 0 && for i in 2:num_next_exploiters
