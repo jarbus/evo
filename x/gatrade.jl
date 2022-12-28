@@ -30,12 +30,12 @@ function main()
     @everywhere begin
         pop_size = args["pop-size"]
         if !isnothing(args["maze"])
-            table = nothing 
             env = maze_from_file(args["maze"])
+            grid = env.grid 
         else
             env = PyTrade().Trade(env_config)
             EvoTrade.Trade.reset!(env)
-            table = env.table 
+            grid = env.table 
         end
 
         m = make_model(Symbol(args["model"]),
@@ -49,7 +49,6 @@ function main()
         println("model has $model_size params")
         # pass mazeenv struct or trade config dict
         env = env isa MazeEnv ? env : env_config
-        # nt = NoiseTable(StableRNG(123), model_size, args["pop-size"], 1f0)
         global sc = SeedCache(maxsize=args["num-elites"]*2)
     end
 
@@ -138,10 +137,8 @@ function main()
             # Compute and write metrics
             outdir = "outs/$clsname/$expname/"*string(g, pad=3, base=10)
 
-
-
             run(`mkdir -p $outdir`)
-            plot_walks("$outdir/pop.png", table, walks)
+            plot_grid_and_walks(env, "$outdir/pop.png", grid, walks, novelties, F)
             rew_dict, mets, _, _ = run_batch(env, models, args, evaluation=true, render_str=outdir)
             isnothing(args["maze"]) && vis_outs(outdir, args["local"])
 
@@ -158,7 +155,6 @@ function main()
             llog(islocal=args["local"], name=logname) do logfile
                 ts(logfile, "Generation $g: $avg_self_fit")
             end
-            # plot_bcs(outdir, env, BC, novelties)
 
             # Save checkpoint
             save(check_name, Dict("gen"=>g, "gamma"=>γ, "pop"=>pop, "archive"=>archive, "BC"=> BC, "F"=>F, "best"=>best, "novelties"=>novelties))

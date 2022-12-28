@@ -3,6 +3,7 @@ using Test
 using PyCall
 using Plots
 
+# TODO FIX THIS TEST
 @testset "test_trade_pop_visualizer" begin
     root_dir = dirname(@__FILE__)  |> dirname |> String
     expname = ["--exp-name", "test", "--cls-name","test", "--local", "--datime", "test"]

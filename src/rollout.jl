@@ -1,10 +1,12 @@
 function run_batch(env::MazeEnv, models::Dict{String,<:Chain}, args; evaluation=false, render_str::Union{Nothing,String}=nothing)
 
     batch_size = args["batch-size"]
-    EvoTrade.Maze.reset!(env)
+    @assert batch_size==1
     rewards, bcs = [], []
     sample_act_func = evaluation ? x->[argmax(c) for c in eachcol(x)] : sample_batch
+    walk = Vector{Tuple{Float64,Float64}}()
     for i in 1:batch_size 
+        EvoTrade.Maze.reset!(env)
         r = -Inf
         for i in 1:args["episode-length"]
             obs = get_obs(env)
@@ -12,14 +14,15 @@ function run_batch(env::MazeEnv, models::Dict{String,<:Chain}, args; evaluation=
             acts = sample_act_func(probs)
             @assert length(acts) == 1
             r, done = EvoTrade.Maze.step!(env, acts[1])
+            push!(walk, (env.locations[4]))
             done && break
         end
         push!(rewards, r)
         push!(bcs, env.locations[4])
     end
-    rews = Dict("f0a0" => mean(rewards), "f1a0"=> mean(rewards))
-    bc = Dict("f0a0" => average_bc(bcs), "f1a0"=> average_bc(bcs))
-    rews, nothing, bc, nothing
+    rews = Dict("f0a0" => mean(rewards))
+    bc = Dict("f0a0" => average_bc(bcs))
+    rews, Dict(), bc, Dict("avg_walks"=>Dict("f0a0"=>walk))
 end
 
 # Run trade
