@@ -63,8 +63,8 @@ function add_to_archive!(archive, BC, pop, prob)
 end
 
 elite(x) = length(x) > 2 ? x[1:end-2] : x
-mr(x) = length(x) > 1 ? x[end-1] : 10.0 ^ rand([-1,-2,-3,-4,-5])
-M(x) = clamp(x*(2^(rand()*2-1)), 0.00001, 0.01)
+mr(x) = length(x) > 1 ? x[end-1] : 10.0 ^ rand(-2:-1:-7)
+M(x) = clamp(x*(2^(rand()*2-1)), 10.0^-7, 10.0^-2)
 function create_next_pop(gen::Int,
         sc,
         pop::Vector{Vector{Float64}},
@@ -96,8 +96,8 @@ function create_next_pop(gen::Int,
          ) for i in 1:num]
     end
     if gen == 1
-        Fσs = [10.0^rand([-1,-2,-3,-4,-5]) for _ in 1:num_elite_exploiters]
-        Nσs = [10.0^rand([-1,-2,-3,-4,-5]) for _ in 1:num_elite_explorers]
+        Fσs = [10.0^rand(-2:-1:-7) for _ in 1:num_elite_exploiters]
+        Nσs = [10.0^rand(-2:-1:-7) for _ in 1:num_elite_explorers]
         exploiter_elites = make_elites(fitnesses, num_elite_exploiters)
         explorer_elites  = make_elites(novelties, num_elite_explorers)
     else
