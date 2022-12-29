@@ -7,7 +7,7 @@ import time
 import sys
 import asyncio
 import subprocess
-from math import ceil
+from math import ceil, sqrt
 from io import BytesIO
 
 import numpy as np
@@ -152,8 +152,8 @@ def make_grid(unfiltered_metrics: list):
                     assert max_met in unfiltered_metrics
                     ax.fill_between(list(range(len(runs[run][metric]))),runs[run][min_met],runs[run][max_met],alpha=0.2)
                     ax.fill_between(list(range(len(runs[run][metric]))),
-                [m-std for m, std in zip(runs[run][metric], runs[run][std_met])],
-                [m+std for m, std in zip(runs[run][metric], runs[run][std_met])],
+                [m-sqrt(std) for m, std in zip(runs[run][metric], runs[run][std_met])],
+                [m+sqrt(std) for m, std in zip(runs[run][metric], runs[run][std_met])],
                     alpha=0.2)
 
         if len(runs) > 1:
