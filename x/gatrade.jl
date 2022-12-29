@@ -46,10 +46,12 @@ function main()
         θ, re = Flux.destructure(m)
         mi = ModelInfo(m)
         model_size = length(θ)
-        println("model has $model_size params")
         # pass mazeenv struct or trade config dict
         env = env isa MazeEnv ? env : env_config
         global sc = SeedCache(maxsize=args["num-elites"]*3)
+    end
+    llog(islocal=args["local"], name=logname) do logfile
+        ts(logfile, "model has $model_size params")
     end
 
     pop = [Vector{Float64}([rand(UInt32)]) for _ in 1:pop_size]
