@@ -25,7 +25,7 @@ function plot_walks(name::String,
     hm = heatmap(grid, colorbar = false, background_color=colorant"black", foreground_color=colorant"white")
 
     for (i, walk) in enumerate(walks)
-        offset_walk = [p for p in walk]
+        offset_walk = [1 .+ p for p in walk]
         plot!(hm, offset_walk, legend = false, xticks=[], yticks=[], color=colors[i], linewidth=widths[i])
     end
     savefig(hm, name)
