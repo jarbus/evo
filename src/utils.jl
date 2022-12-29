@@ -40,4 +40,5 @@ function log_mmm(mets, name, arr)
     mets["$(name)_min"] = minimum(arr)
     mets["$(name)_mean"] = mean(arr)
     mets["$(name)_max"] = maximum(arr)
+    mets["$(name)_std"] = std(arr)
 end

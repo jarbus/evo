@@ -103,7 +103,7 @@ def make_grid(unfiltered_metrics: list):
         print("no metrics")
         return None
     unfiltered_metrics.sort()
-    metrics = [m for m in unfiltered_metrics if not m.endswith("_min") and not m.endswith("max")]
+    metrics = [m for m in unfiltered_metrics if not m.endswith("_min") and not m.endswith("_max") and not m.endswith("_std")]
     # make things graphs with 4, 8, 16 etc metrics 2 columns wide
     if len(metrics) % 2 == 0 and len(metrics) % 6 != 0:
         num_cols = 2
@@ -141,14 +141,20 @@ def make_grid(unfiltered_metrics: list):
         for run in runs_to_plot:
             if metric in runs[run].keys():
                 label = None if len(runs) < 2 else run
-                ax.plot(runs[run][metric], label=label)
+                ax.plot(runs[run][metric], label=label, linewidth=4)
+
                 if metric.endswith("_mean"):
                     # plot shaded area between min and max of metric
                     min_met = metric[:-5]+"_min"
                     max_met = metric[:-5]+"_max"
+                    std_met = metric[:-5]+"_std"
                     assert min_met in unfiltered_metrics
                     assert max_met in unfiltered_metrics
                     ax.fill_between(list(range(len(runs[run][metric]))),runs[run][min_met],runs[run][max_met],alpha=0.2)
+                    ax.fill_between(list(range(len(runs[run][metric]))),
+                [m-std for m, std in zip(runs[run][metric], runs[run][std_met])],
+                [m+std for m, std in zip(runs[run][metric], runs[run][std_met])],
+                    alpha=0.2)
 
         if len(runs) > 1:
             ax.legend(loc="upper left")
