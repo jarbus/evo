@@ -56,6 +56,9 @@ function run_batch(env_config::Dict, models::Dict{String,<:Chain}, args; evaluat
             end
         end
     end
+    for (agent, walk) in avg_walks
+        avg_walks[agent] = walk[1:4:end]
+    end
     rew_dict = Dict(name => rew / batch_size for (name, rew) in rews)
     mets = get_metrics(b_env)
     bc = Dict(name => bc3(avg_walks[name], rew_dict[name]) for (name, _) in models)
