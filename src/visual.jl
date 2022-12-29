@@ -1,5 +1,5 @@
 function prep_grid(::MazeEnv, grid::AbstractArray{<:Real})
-    grid
+    grid'
 end
 
 function prep_grid(::Dict, grid::AbstractArray{<:Real})
