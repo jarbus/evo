@@ -49,7 +49,7 @@ function main()
         println("model has $model_size params")
         # pass mazeenv struct or trade config dict
         env = env isa MazeEnv ? env : env_config
-        global sc = SeedCache(maxsize=args["num-elites"]*2)
+        global sc = SeedCache(maxsize=args["num-elites"]*3)
     end
 
     pop = [Vector{Float64}([rand(UInt32)]) for _ in 1:pop_size]
@@ -160,7 +160,7 @@ function main()
             save(check_name, Dict("gen"=>g, "gamma"=>γ, "pop"=>pop, "archive"=>archive, "BC"=> BC, "F"=>F, "best"=>best, "novelties"=>novelties))
             ts("log end")
         end
-        if best[1] > 5
+        if best[1] > 15
             best_bc = BC[argmax(F)]
             llog(islocal=args["local"], name=logname) do logfile
                 ts("Returning: Best individal found with fitness $(best[1]) and BC $best_bc")
@@ -175,7 +175,7 @@ function main()
         pop, elites = create_next_pop(g, sc, pop, F, novelties, BC, γ, args["num-elites"])
         @everywhere cache_elites!(sc, mi, $elites)
         # Save seed cache without parameters
-        sc_no_params = SeedCache(maxsize=2*args["num-elites"])
+        sc_no_params = SeedCache(maxsize=3*args["num-elites"])
         for (k,v) in sc
             sc_no_params[k] = Dict(ke=>ve for (ke,ve) in v if ke != :params)
         end

@@ -44,7 +44,7 @@ function make_head(input_size::NTuple{4,Int}; vbn::Bool=false, scale::Int=1)
   end
   # TODO this is a disgusting hack to avoid parameterizing models based
   # on domain
-  if input_size[1] > 15
+  if input_size[1] > 50
     add_layer( 8*scale=>16*scale, (8, 8), 4)
     add_layer(16*scale=>16*scale, (4, 4), 2)
     add_layer(16*scale=>16*scale, (3, 3), 1)
