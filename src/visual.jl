@@ -24,8 +24,8 @@ function plot_walks(name::String,
     colors = [colorant"blue"*0.8 + colorant"yellow" * (fit/max_fit) for fit in color_fits]
     hm = heatmap(grid, colorbar = false, background_color=colorant"black", foreground_color=colorant"white")
 
-    for (i, walk) in enumerate(walks)
-        offset_walk = [1 .+ p for p in walk]
+    for i in sortperm(fits)
+        offset_walk = [1 .+ p for p in walks[i]]
         plot!(hm, offset_walk, legend = false, xticks=[], yticks=[], color=colors[i], linewidth=widths[i])
     end
     savefig(hm, name)
