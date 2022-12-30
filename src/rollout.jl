@@ -49,7 +49,7 @@ function run_batch(env_config::Dict, models::Dict{String,<:Chain}, args; evaluat
             for (name, rew) in rew_dict
                 rews[name] += rew
                 if render_str isa String && name == first(models).first
-                    renderfile = "$render_str/b$b.out"
+                    renderfile = "$render_str-$b.out"
                     # calls trade render for each step
                     render(b_env[b], renderfile)
                 end
@@ -66,7 +66,7 @@ function run_batch(env_config::Dict, models::Dict{String,<:Chain}, args; evaluat
     rew_dict, mets, bc, info
 end
 
-function select_rollout_members(pop::Vector{T}, fits::T, novs::T; k=10) where {T <: Vector{<:AbstractFloat}}
+function select_rollout_members(pop::Vector{<:Vector{<:AbstractFloat}}, fits::Vector{<:AbstractFloat}, novs::Vector{<:AbstractFloat}; k=10)
     most_fit = sortperm(fits, rev=true)[1:k^2]
     most_fit_and_most_novel = most_fit[sortperm(novs[most_fit], rev=true)][1:k]
     return pop[most_fit_and_most_novel]

@@ -134,14 +134,21 @@ function main()
         # LOG
         if g % 1 == 0
             ts("log start")
-            models = Dict("f0a0" => re(reconstruct(sc, mi, best[2])))
 
             # Compute and write metrics
             outdir = "outs/$clsname/$expname/"*string(g, pad=3, base=10)
 
             run(`mkdir -p $outdir`)
             plot_grid_and_walks(env, "$outdir/pop.png", grid, walks, novelties, F)
-            rew_dict, mets, _, _ = run_batch(env, models, args, evaluation=true, render_str=outdir)
+            # run parallel visualization on most fit most novel members 
+            mets = pmap(select_rollout_members(pop, F, novelties; k=2)) do p
+                models = Dict("f0a0" => re(reconstruct(sc, mi, p)))
+                str_name = joinpath(outdir, string(round.(p, digits=1)))
+                rew_dict, metrics, _, _ = run_batch(env, models, args, evaluation=true, render_str=str_name)
+                metrics
+            end
+            # average all the rollout metrics
+            mets = Dict(k => mean([m[k] for m in mets]) for k in keys(mets[1]))
             isnothing(args["maze"]) && vis_outs(outdir, args["local"])
 
             muts = g > 1 ? [mr(pop[i]) for i in 1:pop_size] : [0.0]
@@ -153,7 +160,7 @@ function main()
             write_mets(met_csv_name, df)
 
             # Log to file
-            avg_self_fit = round(rew_dict["f0a0"]; digits=2)
+            avg_self_fit = round(mets["fitness_mean"]; digits=2)
             llog(islocal=args["local"], name=logname) do logfile
                 ts(logfile, "Generation $g: $avg_self_fit")
             end
