@@ -17,6 +17,14 @@ class Light:
         self.fires = fires
         self.fire_radius = 3
         self.frame = self.fire_frame()
+        self.campfire_frame = self._create_campfire_frame()
+
+    def _create_campfire_frame(self):
+        frame = np.zeros(self.grid_size)
+        for f in self.fires:
+            for i in range(self.fire_radius):
+                frame[max(0, f[0]-i):(f[0]+i+1), max(0, f[1]-i):(f[1]+i+1)] = 1
+        return frame
 
     def reset(self):
         self.light_level = STARTING_LIGHT_LEVEL
@@ -58,12 +66,12 @@ class Light:
 
 if __name__ == "__main__":
     import matplotlib.pyplot as plt
-    l = Light((11,11), [(1,1), (9,9)], 0.1)
+    l = Light((11,11), [(2,2), (9,9)], 0.1)
     l.increasing = False
-    for i in range(10):
-        print(l.frame.round(2))
-        plt.matshow(l.frame, vmin=-1, vmax=1)
-        plt.colorbar()
-        plt.show()
-        plt.close()
-        l.step_light()
+    for i in range(1):
+        print(l.campfire_frame.round(2))
+        # plt.matshow(l.campfire_frame, vmin=-1, vmax=1)
+        # plt.colorbar()
+        # plt.show()
+        # plt.close()
+        # l.step_light()

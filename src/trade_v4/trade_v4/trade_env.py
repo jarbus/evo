@@ -140,7 +140,7 @@ class Trade:
         # (self + policies) * (food frames and pos frame)
         food_frame_and_agent_channels = (2) * (self.food_types+1)
         # x, y + agents_and_foods + food frames + comms
-        self.channels = 2 + food_frame_and_agent_channels + (self.food_types) + (self.vocab_size) + int(self.punish) + int(self.day_night_cycle)
+        self.channels = 2 + food_frame_and_agent_channels + (self.food_types) + (self.vocab_size) + int(self.punish) + (2*int(self.day_night_cycle))
         self.agent_food_counts = dict()
         self.MOVES = ["UP", "DOWN", "LEFT", "RIGHT"]
         if self.punish:
@@ -322,6 +322,8 @@ class Trade:
         # Light
         if self.day_night_cycle:
             full_frames[:,:,fnum] = self.light.frame[:, :] * SCALE_DOWN
+            fnum += 1
+            full_frames[:,:,fnum] = self.light.campfire_frame[:, :] * SCALE_DOWN
             fnum += 1
         # X
         # Y
