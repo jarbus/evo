@@ -36,7 +36,7 @@ write_mets(file_name::String, df::AbstractDataFrame) = CSV.write(file_name, df)
 ts(x) = println(Dates.format(now(), "HH:MM:SS")*" $x")
 ts(f, x) = println(f, Dates.format(now(), "HH:MM:SS")*" $x")
 
-function log_mmm(mets, name, arr)
+function log_mmm!(mets, name, arr)
     mets["$(name)_min"] = minimum(arr)
     mets["$(name)_mean"] = mean(arr)
     mets["$(name)_max"] = maximum(arr)

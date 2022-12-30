@@ -146,9 +146,9 @@ function main()
 
             muts = g > 1 ? [mr(pop[i]) for i in 1:pop_size] : [0.0]
             mets["gamma"] = γ
-            log_mmm(mets, "mutation_rate", muts)
-            log_mmm(mets, "fitness", F)
-            log_mmm(mets, "novelty", novelties)
+            log_mmm!(mets, "mutation_rate", muts)
+            log_mmm!(mets, "fitness", F)
+            log_mmm!(mets, "novelty", novelties)
             df = update_df(df, mets)
             write_mets(met_csv_name, df)
 
