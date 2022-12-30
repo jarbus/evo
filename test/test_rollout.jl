@@ -17,6 +17,24 @@ root_dir = dirname(@__FILE__)  |> dirname |> String
 #     @test mets isa Nothing
 # end
 
+@testset "test_select_rollout_members" begin
+
+    pop = [[1.0], [2.0], [3.0], [4.0], [5.0], [6.0], [7.0], [8.0], [9.0], [10.0]]
+    fits = [1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0, 10.0]
+    novs = [10.0, 9.0, 8.0, 7.0, 6.0, 5.0, 4.0, 3.0, 2.0, 1.0]
+
+    eval_pop = select_rollout_members(pop, fits, novs, k=2)
+    @test length(eval_pop) == 2
+    @test [7.0] in eval_pop
+    @test [8.0] in eval_pop
+
+    fits = reverse(fits)
+    eval_pop = select_rollout_members(pop, fits, novs, k=2)
+    @test length(eval_pop) == 2
+    @test [1.0] in eval_pop
+    @test [2.0] in eval_pop
+
+end
 
 @testset "test_rollout_trade" begin
     expname = ["--exp-name", "test", "--cls-name","test", "--local", "--datime", "test"]
@@ -32,8 +50,8 @@ root_dir = dirname(@__FILE__)  |> dirname |> String
             lstm=true) |> Flux.destructure
     models = Dict("f0a0"=>re(θ), "f1a0"=>re(θ))
     rew, met, bc, info = run_batch(env_config, models,args)
-    @test length(info["avg_walks"]["f0a0"]) == args["episode-length"] * 2
-    @test length(info["avg_walks"]["f1a0"]) == args["episode-length"] * 2
+    @test length(info["avg_walks"]["f0a0"]) == args["episode-length"] / 2
+    @test length(info["avg_walks"]["f1a0"]) == args["episode-length"] / 2
 end
 
 

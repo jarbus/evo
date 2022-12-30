@@ -65,3 +65,9 @@ function run_batch(env_config::Dict, models::Dict{String,<:Chain}, args; evaluat
     info = Dict("avg_walks"=>avg_walks)
     rew_dict, mets, bc, info
 end
+
+function select_rollout_members(pop::Vector{T}, fits::T, novs::T; k=10) where {T <: Vector{<:AbstractFloat}}
+    most_fit = sortperm(fits, rev=true)[1:k^2]
+    most_fit_and_most_novel = most_fit[sortperm(novs[most_fit], rev=true)][1:k]
+    return pop[most_fit_and_most_novel]
+end
