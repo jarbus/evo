@@ -95,7 +95,7 @@ class TradeMetricCollector():
 
 METABOLISM=0.1
 PLACE_AMOUNT = 0.5
-SCALE_DOWN = 30
+SCALE_DOWN = 10
 
 NUM_ITERS = 100
 ndir = len(directions)
@@ -295,13 +295,14 @@ class Trade:
         full_frames = np.zeros((*self.grid_size, self.channels), dtype=np.float32)
         # Table
         fnum = 0
-        full_frames[:,:, fnum:self.food_types] = self.table.sum(axis=3)  # frame for each food
+        full_frames[:,:, fnum:self.food_types] = self.table.sum(axis=3) / SCALE_DOWN  # frame for each food
         fnum += self.food_types
         # Self position
         full_frames[ax,ay, fnum] = 1
         fnum +=1
         # Self food
         full_frames[ax, ay, fnum:fnum+self.food_types] += self.agent_food_counts[agent]
+        full_frames[ax, ay, fnum:fnum+self.food_types] /= SCALE_DOWN
         fnum += self.food_types
         # Others pos, Others food, comms
         pol_pos_frames = full_frames[:,:,fnum]
@@ -319,27 +320,26 @@ class Trade:
             if a != agent:
                 pol_pos_frames[oax, oay] += 1
                 pol_food_frames[oax, oay, :] += self.agent_food_counts[a]
+        pol_food_frames /= SCALE_DOWN
         # Light
         if self.day_night_cycle:
-            full_frames[:,:,fnum] = self.light.frame[:, :] * SCALE_DOWN
+            full_frames[:,:,fnum] = self.light.frame[:, :]
             fnum += 1
-            full_frames[:,:,fnum] = self.light.campfire_frame[:, :] * SCALE_DOWN
+            full_frames[:,:,fnum] = self.light.campfire_frame[:, :]
             fnum += 1
-        # X
-        # Y
         # punish ?
         if self.punish:
             full_frames[:,:,fnum] = np.sum(self.punish_frames, axis=0)[None, :, :]
             fnum += 1
 
-        xpos_frame = np.repeat(np.arange(gy).reshape(1, gy), gx, axis=0) / gx
+        xpos_frame = np.repeat(np.arange(gy).reshape(1, gy), gx, axis=0) / gy
         fnum+=1
-        ypos_frame = np.repeat(np.arange(gx).reshape(gx, 1), gy, axis=1) / gy
+        ypos_frame = np.repeat(np.arange(gx).reshape(gx, 1), gy, axis=1) / gx
         fnum+=1
 
         padded_frames = np.full((*self.padded_grid_size, full_frames.shape[2]), -1, dtype=np.float32)
         padded_frames[wx:(gx+wx), wy:(gy+wy), :] = full_frames
-        obs = padded_frames[minx:maxx, miny:maxy, :] / SCALE_DOWN
+        obs = padded_frames[minx:maxx, miny:maxy, :]
         return obs[:,:,:,None]
 
     def compute_done(self, agent):
