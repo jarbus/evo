@@ -19,6 +19,8 @@ SeedCache = LRU{Vector{Float64},Dict}
 function cache_elites!(param_cache::SeedCache, mi::ModelInfo, elites::Vector{<:AbstractDict})
   for elite in elites
     elite[:params] = reconstruct(param_cache, mi, elite[:seeds])
+  end
+  for elite in elites
     param_cache[elite[:seeds]] = elite
   end
 end
