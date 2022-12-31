@@ -1,1 +1,1 @@
-{"author":{"id":"2925f8bae681ccf02a1c1ecc82cbb827e525744b16a0948b37a0b024362c4ec0"},"ops":[{"type":1,"timestamp":1672445862,"nonce":"XyFnGBWTrP0ecR69MlHnhwGmoCM=","title":"bug: pycall crashes","message":"","files":null}]}
+{"author":{"id":"2925f8bae681ccf02a1c1ecc82cbb827e525744b16a0948b37a0b024362c4ec0"},"ops":[{"type":5,"timestamp":1672445865,"nonce":"RxAqwJ6iaYNTCFbo6KYt+JmCuRU=","added":["bug"],"removed":null}]}
