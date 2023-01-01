@@ -1,3 +1,4 @@
+import os
 import numpy as np
 import random
 from math import floor
@@ -217,7 +218,11 @@ class Trade:
         if not outfile:
             out=sys.stdout
         else:
-            out=open(outfile, "a")
+            # check if outfile exists on file system
+            if not os.path.exists(outfile):
+                out=open(outfile, "a")
+            else:
+                return
         out.write(f"--------STEP-{self.steps}------\n")
         for agent in self.agents:
             out.write(f"{agent}: {self.agent_positions[agent]} {[round(fc, 2) for fc in self.agent_food_counts[agent]]} {self.compute_done(agent)}\n")
