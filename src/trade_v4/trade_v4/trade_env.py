@@ -332,9 +332,9 @@ class Trade:
             full_frames[:,:,fnum] = np.sum(self.punish_frames, axis=0)[None, :, :]
             fnum += 1
 
-        xpos_frame = np.repeat(np.arange(gy).reshape(1, gy), gx, axis=0) / gy
+        full_frames[:,:,fnum] = np.repeat(np.arange(gy).reshape(1, gy), gx, axis=0) / gy
         fnum+=1
-        ypos_frame = np.repeat(np.arange(gx).reshape(gx, 1), gy, axis=1) / gx
+        full_frames[:,:,fnum] = np.repeat(np.arange(gx).reshape(gx, 1), gy, axis=1) / gx
         fnum+=1
 
         padded_frames = np.full((*self.padded_grid_size, full_frames.shape[2]), -1, dtype=np.float32)
