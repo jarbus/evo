@@ -3,7 +3,7 @@ import random
 from math import floor
 from .utils import add_tup, directions, valid_pos, inv_dist, punish_region, matchup_shuffler
 from .light import Light
-from .spawners import FireCornerSpawner, FoodSpawner, DiscreteFoodSpawner
+from .spawners import FireCornerSpawner, FoodSpawner, DiscreteFoodSpawner, CenterSpawner
 import sys
 from collections import defaultdict
 from typing import List, Tuple, Dict
@@ -152,7 +152,7 @@ class Trade:
         self.num_actions = len(self.MOVES)
         self.communications = {}
 
-        self.agent_spawner = FireCornerSpawner(self.grid_size, self.fires)
+        self.agent_spawner = CenterSpawner(self.grid_size)
 
         # Get rid of food type indicator for the spawner
         food_centers = [(fc[1], fc[2]) for fc in self.foods]
