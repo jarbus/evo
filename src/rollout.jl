@@ -51,7 +51,11 @@ function run_batch(env_config::Dict, models::Dict{String,<:Chain}, args; evaluat
                 if render_str isa String && name == first(models).first
                     renderfile = "$render_str-$b.out"
                     # calls trade render for each step
-                    render(b_env[b], renderfile)
+                    try
+                        render(b_env[b], renderfile)
+                    catch
+                        println("render failed for $renderfile")
+                    end
                 end
             end
         end
