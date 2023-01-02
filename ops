@@ -1,1 +1,1 @@
-{"author":{"id":"2925f8bae681ccf02a1c1ecc82cbb827e525744b16a0948b37a0b024362c4ec0"},"ops":[{"type":5,"timestamp":1672416962,"nonce":"jZg8Ov6LEwBpxSMmWeWZjfZsiI0=","added":["todo"],"removed":null}]}
+{"author":{"id":"2925f8bae681ccf02a1c1ecc82cbb827e525744b16a0948b37a0b024362c4ec0"},"ops":[{"type":3,"timestamp":1672693936,"nonce":"ck0ruk5fDRQ3Cju3OqhUlM5b/KQ=","message":"changed to agents spawn in the center","files":null}]}
