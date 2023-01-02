@@ -11,7 +11,7 @@
 #SBATCH --ntasks=${NPROCS}
 #SBATCH --requeue
 #SBATCH --cpus-per-task=1
-#SBATCH --mem-per-cpu=3GB
+#SBATCH --mem-per-cpu=6GB
 
 source /home/garbus/.bashrc
 conda activate trade
