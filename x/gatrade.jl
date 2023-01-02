@@ -115,7 +115,7 @@ function main()
             end
             best = elite
         else
-            γ = clamp(γ + 0.02, 0, 0.9)
+            γ = clamp(γ + 0.05, 0, 0.9)
             llog(islocal=args["local"], name=logname) do logfile
                 ts(logfile, "no better elite found, increasing γ to $γ")
             end
@@ -146,9 +146,9 @@ function main()
             run(`mkdir -p $outdir`)
             plot_grid_and_walks(env, "$outdir/pop.png", grid, walks, novelties, F)
             # run parallel visualization on most fit most novel members 
-            mets = pmap(select_rollout_members(pop, F, novelties; k=2)) do p
+            mets = pmap(select_rollout_members(pop, F, novelties; k=4)) do p
                 models = Dict("f0a0" => re(reconstruct(sc, mi, p)))
-                str_name = joinpath(outdir, string(round.(p, digits=1)))
+                str_name = joinpath(outdir, string(round.(p, digits=1))*"-"*string(myid()))
                 rew_dict, metrics, _, _ = run_batch(env, models, args, evaluation=true, render_str=str_name)
                 metrics
             end
@@ -184,12 +184,13 @@ function main()
             save("outs/$clsname/$expname/best.jld2", Dict("best"=>best, "bc"=>best_bc))
             return
         end
+
+        pop, elites = create_next_pop(g, sc, pop, F, novelties, BC, γ, args["num-elites"])
         llog(islocal=args["local"], name=logname) do logfile
             ts(logfile, "cache_elites")
         end
-
-        pop, elites = create_next_pop(g, sc, pop, F, novelties, BC, γ, args["num-elites"])
         @everywhere cache_elites!(sc, mi, $elites)
+
         # Save seed cache without parameters
         sc_no_params = SeedCache(maxsize=2*args["num-elites"])
         for (k,v) in sc
