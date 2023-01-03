@@ -1,1 +1,1 @@
-{"author":{"id":"2925f8bae681ccf02a1c1ecc82cbb827e525744b16a0948b37a0b024362c4ec0"},"ops":[{"type":5,"timestamp":1672719906,"nonce":"5Fs+mej2EIjH2YAVMW+Sc4o0uto=","added":["bug","todo"],"removed":null}]}
+{"author":{"id":"2925f8bae681ccf02a1c1ecc82cbb827e525744b16a0948b37a0b024362c4ec0"},"ops":[{"type":6,"timestamp":1672719937,"nonce":"wpYrjM0DZor2JFZLPmMpTnz+IKM=","target":"5a5a6cf49162e870710179721451ebf886ee6280ae8108ae90d20e8fc22c012e","message":"temp fix, logging every 5 generations instead of every generation","files":null}]}
