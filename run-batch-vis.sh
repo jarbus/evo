@@ -3,6 +3,6 @@
 #SBATCH --output=/dev/null
 
  for out in $1/*.out ; do
-    python /home/garbus/evotrade/s2g.py $out
+    python /home/garbus/evotrade/s2g.py "$out"
  done
 
