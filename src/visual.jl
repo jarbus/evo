@@ -21,7 +21,7 @@ function plot_walks(name::String,
     max_fit = max(maximum(color_fits), 0.1)
     color_novs = copy(novs) .- minimum(novs)
     max_nov = max(maximum(color_novs), 0.1)
-    colors = [colorant"white"*0.2 + colorant"blue"*(nov/max_nov)*0.8 + colorant"green"*(fit/max_fit)*0.8 for (nov, fit) in zip(color_novs, color_fits)]
+    colors = [colorant"white"*0.2 + colorant"blue"*(nov/max_nov)*0.8 + colorant"white"*(fit/max_fit)*0.8 for (nov, fit) in zip(color_novs, color_fits)]
     hm = heatmap(grid, colorbar = false, background_color=colorant"black", foreground_color=colorant"white")
 
     for i in sortperm(fits)
