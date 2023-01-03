@@ -1,1 +1,1 @@
-{"author":{"id":"2925f8bae681ccf02a1c1ecc82cbb827e525744b16a0948b37a0b024362c4ec0"},"ops":[{"type":1,"timestamp":1672719389,"nonce":"0jABuSpexnxi0mQrhtU3Y8IyFeo=","title":"bug: computing novelties takes up half the time","message":"","files":null}]}
+{"author":{"id":"2925f8bae681ccf02a1c1ecc82cbb827e525744b16a0948b37a0b024362c4ec0"},"ops":[{"type":5,"timestamp":1672719392,"nonce":"KfzjiaPwwsXTLBCQnBtzi7uFAGU=","added":["todo"],"removed":null},{"type":5,"timestamp":1672719396,"nonce":"nFaKcSB+J56gjKTFzp/n4pocuGs=","added":["bug"],"removed":null}]}
