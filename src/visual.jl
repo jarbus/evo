@@ -17,16 +17,16 @@ function plot_walks(name::String,
         fits::Vector{<:Real})
     colors = :blue
     @assert length(novs) == length(walks) == length(fits)
-    max_nov = max(maximum(novs), 0.1)
     color_fits = copy(fits) .- minimum(fits)
     max_fit = max(maximum(color_fits), 0.1)
-    widths = [3*nov/max_nov for nov in novs]
-    colors = [colorant"blue"*0.8 + colorant"yellow" * (fit/max_fit) for fit in color_fits]
+    color_novs = copy(novs) .- minimum(novs)
+    max_nov = max(maximum(color_novs), 0.1)
+    colors = [colorant"white"*0.2 + colorant"blue"*(nov/max_nov)*0.8 + colorant"green"*(fit/max_fit)*0.8 for (nov, fit) in zip(color_novs, color_fits)]
     hm = heatmap(grid, colorbar = false, background_color=colorant"black", foreground_color=colorant"white")
 
     for i in sortperm(fits)
         offset_walk = [1 .+ p for p in walks[i]]
-        plot!(hm, offset_walk, legend = false, xticks=[], yticks=[], color=colors[i], linewidth=widths[i])
+        plot!(hm, offset_walk, legend = false, xticks=[], yticks=[], color=colors[i])
     end
     savefig(hm, name)
 
