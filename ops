@@ -1,1 +1,1 @@
-{"author":{"id":"2925f8bae681ccf02a1c1ecc82cbb827e525744b16a0948b37a0b024362c4ec0"},"ops":[{"type":3,"timestamp":1672699393,"nonce":"1rohiAQusAcMI9JS1/xX9YZdY3E=","message":"test different convolutional architectures","files":null}]}
+{"author":{"id":"2925f8bae681ccf02a1c1ecc82cbb827e525744b16a0948b37a0b024362c4ec0"},"ops":[{"type":5,"timestamp":1672711250,"nonce":"tfUwHt0jGvmtBHc2nxAwMZrsnfQ=","added":["todo","x"],"removed":null}]}
