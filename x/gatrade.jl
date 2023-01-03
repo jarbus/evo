@@ -16,8 +16,11 @@ using Infiltrator
     env_config = mk_env_config(args)
 
     function fitness(p::T) where T<:Vector{<:Float64}
-        models = Dict("f0a0" => re(reconstruct(sc, mi, p)))
+        params = reconstruct(sc, mi, p)
+        models = Dict("f0a0" => re(params))
         rew_dict, _, bc, infos = run_batch(env, models, args, evaluation=true)
+        infos["min_params"] = minimum(params)
+        infos["max_params"] = maximum(params)
         rew_dict["f0a0"], bc["f0a0"], infos
     end
 end
@@ -94,6 +97,8 @@ function main()
         F = [fet[1] for fet in fetches]
         BC = [fet[2] for fet in fetches]
         walks::Vector{Vector{NTuple{2, Float64}}} = [fet[3]["avg_walks"]["f0a0"] for fet in fetches]
+        min_param = minimum([fet[3]["min_params"] for fet in fetches])
+        max_param = maximum([fet[3]["max_params"] for fet in fetches])
 
 
         llog(islocal=args["local"], name=logname) do logfile
@@ -153,6 +158,8 @@ function main()
 
             muts = g > 1 ? [mr(pop[i]) for i in 1:pop_size] : [0.0]
             mets["gamma"] = γ
+            mets["min_param"] = min_param
+            mets["max_param"] = max_param
             log_mmm!(mets, "mutation_rate", muts)
             log_mmm!(mets, "fitness", F)
             log_mmm!(mets, "novelty", novelties)
