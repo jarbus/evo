@@ -101,9 +101,6 @@ function main()
         max_param = maximum([fet[3]["max_params"] for fet in fetches])
 
 
-        llog(islocal=args["local"], name=logname) do logfile
-            ts(logfile, "computing elite by re-evaluating top performers")
-        end
         @assert length(F) == length(BC) == pop_size
         elite = (maximum(F), pop[argmax(F)])
 
