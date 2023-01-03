@@ -145,7 +145,7 @@ function main()
             # run parallel visualization on most fit most novel members 
             mets = pmap(select_rollout_members(pop, F, novelties; k=4)) do p
                 models = Dict("f0a0" => re(reconstruct(sc, mi, p)))
-                str_name = joinpath(outdir, string(round.(p, digits=1))*"-"*string(myid()))
+                str_name = joinpath(outdir, string(hash(p))*"-"*string(myid()))
                 rew_dict, metrics, _, _ = run_batch(env, models, args, evaluation=true, render_str=str_name)
                 metrics
             end
