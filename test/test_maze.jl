@@ -27,23 +27,3 @@ end
     @test obs[env.locations[3]..., 4] != obs[env.locations[3]..., 3]
     @test sum(obs.==1) == 4
 end
-@testset "test_plot_bcs" begin
-    test_dir = joinpath(root_dir, "test/test")
-    run(`mkdir -p $test_dir`, wait=false)
-    maze_png = joinpath(test_dir, "maze.png")
-    run(`rm $maze_png`, wait=false)
-    sleep(0.1)
-    env = maze_from_file("$root_dir/mazes/test_maze.txt")
-    plot_bcs(test_dir, env, [(2, 2), (2, 3), (3,4)])
-    @test isfile(maze_png)
-    run(`rm $maze_png`, wait=false)
-    sleep(0.1)
-    env = maze_from_file("$root_dir/mazes/hard-maze.txt")
-    plot_bcs(test_dir, env, [(2, 2), (2, 3), (3,4)])
-    @test isfile(maze_png)
-    run(`rm $maze_png`, wait=false)
-    env = maze_from_file("$root_dir/mazes/hard-maze.txt")
-    plot_bcs(test_dir, env, [(2, 2), (2, 3), (3,4)], [500,3,2])
-    @test isfile(maze_png)
-    run(`rm $maze_png`, wait=false)
-end

@@ -63,7 +63,7 @@ end
             if argmax(out) != argmax(prev_out)
                 action_change += 1
             end
-            identical_obs += all(obs["f0a0"][:,:,end-2,1] .== prev_obs[:,:,end-2,1])
+            identical_obs += all(obs["f0a0"][:,:,end-3,1] .== prev_obs[:,:,end-3,1])
             prev_out = out
             prev_obs = obs["f0a0"]
         end
