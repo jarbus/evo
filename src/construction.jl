@@ -43,7 +43,6 @@ function reconstruct(param_cache::SeedCache, mi::ModelInfo, seeds_and_muts::Vect
     return elite
   # Recurse if not cached
   else
-    length(seeds_and_muts) > 3 && throw("should not reach here")
     @inline @inbounds elite = reconstruct(param_cache, mi, seeds_and_muts[1:end-2])
     @inline @inbounds elite .+= gen_params(StableRNG(Int(seeds_and_muts[end])), mi, 2) * seeds_and_muts[end-1]
     return elite

@@ -215,27 +215,30 @@ class Trade:
         return {self.agents[0]: self.compute_observation(self.agents[0])}
 
     def render(self, outfile=None):
-        if not outfile:
-            out=sys.stdout
-        else:
-            out=open(outfile, "a")
-        out.write(f"--------STEP-{self.steps}------\n")
-        for agent in self.agents:
-            out.write(f"{agent}: {self.agent_positions[agent]} {[round(fc, 2) for fc in self.agent_food_counts[agent]]} {self.compute_done(agent)}\n")
-        for food in range(self.food_types):
-            out.write(f"food{food}:\n")
-            for row in self.table[:,:,food].sum(axis=2).round(2):
-                out.write(str(list(row)).replace(",","")+"\n")
-        out.write(f"Total exchanged so far: {self.mc.num_exchanges}\n")
-        if self.day_night_cycle:
-            out.write(f"Light:\n")
-            for row in self.light.frame.round(2):
-                out.write(str(list(row)).replace(",","")+"\n")
-        for agent, comm in self.communications.items():
-            if comm and max(comm) >= 1:
-                out.write(f"{agent} said {comm.index(1)}\n")
-        if outfile:
-            out.close()
+        try:
+            if not outfile:
+                out=sys.stdout
+            else:
+                out=open(outfile, "a")
+            out.write(f"--------STEP-{self.steps}------\n")
+            for agent in self.agents:
+                out.write(f"{agent}: {self.agent_positions[agent]} {[round(fc, 2) for fc in self.agent_food_counts[agent]]} {self.compute_done(agent)}\n")
+            for food in range(self.food_types):
+                out.write(f"food{food}:\n")
+                for row in self.table[:,:,food].sum(axis=2).round(2):
+                    out.write(str(list(row)).replace(",","")+"\n")
+            out.write(f"Total exchanged so far: {self.mc.num_exchanges}\n")
+            if self.day_night_cycle:
+                out.write(f"Light:\n")
+                for row in self.light.frame.round(2):
+                    out.write(str(list(row)).replace(",","")+"\n")
+            for agent, comm in self.communications.items():
+                if comm and max(comm) >= 1:
+                    out.write(f"{agent} said {comm.index(1)}\n")
+            if outfile:
+                out.close()
+        except Exception as e:
+            print(e)
 
     def compute_observation2(self, agent):
         ax, ay = self.agent_positions[agent]
