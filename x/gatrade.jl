@@ -79,8 +79,12 @@ function main()
         γ = check["gamma"]
         F, BC, best, archive, novelties = getindex.((check,), ["F", "BC", "best","archive", "novelties"])
         global sc = load(sc_name)["sc"]
-        pop, elites = create_next_pop(start_gen-1, sc, check["pop"], F, novelties, BC, γ, args["num-elites"])
-        @everywhere cache_elites!(sc, mi, $elites)
+        pop = check["pop"]
+        for p in pop
+            @assert elite(pop) in keys(sc)
+        end
+        #pop, elites = create_next_pop(start_gen-1, sc, check["pop"], F, novelties, BC, γ, args["num-elites"])
+        #@everywhere cache_elites!(sc, mi, $elites)
         ts("resuming from gen $start_gen")
     end
 
@@ -169,9 +173,9 @@ function main()
                 ts(logfile, "Generation $g: $avg_self_fit")
             end
 
-            # Save checkpoint
-            save(check_name, Dict("gen"=>g, "gamma"=>γ, "pop"=>pop, "archive"=>archive, "BC"=> BC, "F"=>F, "best"=>best, "novelties"=>novelties))
-            ts("log end")
+            llog(islocal=args["local"], name=logname) do logfile
+                ts(logfile, "log end")
+            end
         end
         if best[1] > 15
             best_bc = BC[argmax(F)]
@@ -188,6 +192,8 @@ function main()
         end
         @everywhere cache_elites!(sc, mi, $elites)
 
+        # Save checkpoint
+        save(check_name, Dict("gen"=>g, "gamma"=>γ, "pop"=>pop, "archive"=>archive, "BC"=> BC, "F"=>F, "best"=>best, "novelties"=>novelties))
         # Save seed cache without parameters
         sc_no_params = SeedCache(maxsize=2*args["num-elites"])
         for (k,v) in sc
