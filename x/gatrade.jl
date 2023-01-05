@@ -15,13 +15,34 @@ using Infiltrator
 
     env_config = mk_env_config(args)
 
-    function fitness(p::T) where T<:Vector{<:Float64}
-        params = reconstruct(sc, mi, p)
-        models = Dict("f0a0" => re(params))
-        rew_dict, _, bc, infos = run_batch(env, models, args, evaluation=true)
-        infos["min_params"] = minimum(params)
-        infos["max_params"] = maximum(params)
-        rew_dict["f0a0"], bc["f0a0"], infos
+    function fitness(group::Vector)
+        counts = Dict{Int, Int}()
+        for (i, _) in group
+            counts[i] = get(counts, i, 0) + 1
+        end
+        # creates mapping of pid_copy to params
+        params = Dict(aid(i, c)=>reconstruct(sc, mi, seeds) for (i, seeds) in group for c in 1:counts[i])
+        models = Dict(aid=>re(param) for (aid, param) in params)
+        rew_dict, _, bc_dict, info_dict = run_batch(env, models, args, evaluation=true)
+        rews, bcs, infos = Dict(), Dict(), Dict{Any, Any}("avg_walks"=>Dict())
+        for (i, _) in group 
+            i < 0 && continue # skip elites
+            a_id = aid(i, 1)
+            rews[i] = rew_dict[a_id]
+            bcs[i] = bc_dict[a_id]
+            infos["avg_walks"][i] = [info_dict["avg_walks"][a_id]]
+            for c in 2:counts[i]
+                a_id = aid(i, c)
+                rews[i] += rew_dict[a_id]
+                bcs[i] .+= bc_dict[a_id]
+                push!(infos["avg_walks"][i], info_dict["avg_walks"][a_id])
+            end
+            rews[i] /= counts[i]
+            bcs[i] ./= counts[i]
+        end
+        infos["min_params"] = minimum(minimum.(values(params)))
+        infos["max_params"] = maximum(maximum.(values(params)))
+        rews, bcs, infos
     end
 end
 
@@ -79,7 +100,8 @@ function main()
         γ = check["gamma"]
         F, BC, best, archive, novelties = getindex.((check,), ["F", "BC", "best","archive", "novelties"])
         global sc = load(sc_name)["sc"]
-        pop = check["pop"]
+        global pop = check["pop"]
+        global elites = check["elites"]
         for p in pop
             @assert elite(pop) in keys(sc)
         end
@@ -94,15 +116,28 @@ function main()
             ts(logfile, "pmapping")
         end
 
-        fetches = pmap(pop) do p
-            fitness(p)
+        if g == 1
+            groups = create_rollout_groups(pop, args["rollout-group-size"], pop_size)
+        else
+            groups = create_rollout_groups(pop, elites, args["rollout-group-size"], pop_size)
         end
 
-        F = [fet[1] for fet in fetches]
-        BC = [fet[2] for fet in fetches]
-        walks::Vector{Vector{NTuple{2, Float64}}} = [fet[3]["avg_walks"]["f0a0"] for fet in fetches]
-        min_param = minimum([fet[3]["min_params"] for fet in fetches])
-        max_param = maximum([fet[3]["max_params"] for fet in fetches])
+        fetches = pmap(groups) do g
+            fitness(g)
+        end
+
+        F = [[] for _ in 1:pop_size]
+        BC = [[] for _ in 1:pop_size]
+        walks_list = [[] for _ in 1:pop_size]
+        for fet in fetches, idx in keys(fet[1])
+            push!(F[idx], fet[1][idx])
+            push!(BC[idx], fet[2][idx])
+            push!(walks_list[idx], fet[3]["avg_walks"][idx]...)
+        end
+        F = [mean(f) for f in F]
+        BC = [average_bc(bcs) for bcs in BC]
+        walks = [average_walk(w) for w in walks_list]
+        println(walks[1])
 
 
         @assert length(F) == length(BC) == pop_size
@@ -145,22 +180,23 @@ function main()
             outdir = "outs/$clsname/$expname/"*string(g, pad=3, base=10)
 
             run(`mkdir -p $outdir`)
+
             plot_grid_and_walks(env, "$outdir/pop.png", grid, walks, novelties, F)
+
+            # TODO make this select random rollouts with duplicates of fit agents
             # run parallel visualization on most fit most novel members 
-            mets = pmap(select_rollout_members(pop, F, novelties; k=4)) do p
-                models = Dict("f0a0" => re(reconstruct(sc, mi, p)))
-                str_name = joinpath(outdir, string(hash(p))*"-"*string(myid()))
-                rew_dict, metrics, _, _ = run_batch(env, models, args, evaluation=true, render_str=str_name)
-                metrics
-            end
+            rollout_idxs = sortperm(F, rev=true)[1:args["rollout-group-size"]]
+            models = Dict("p$i" => re(reconstruct(sc, mi, pop[i])) for i in rollout_idxs)
+            str_name = joinpath(outdir, string(hash(rollout_idxs))*"-"*string(myid()))
+            rew_dict, mets, _, _ = run_batch(env, models, args, evaluation=true, render_str=str_name)
             # average all the rollout metrics
-            mets = Dict(k => mean([m[k] for m in mets]) for k in keys(mets[1]))
+            # mets = Dict(k => mean([m[k] for m in mets]) for k in keys(mets[1]))
             isnothing(args["maze"]) && vis_outs(outdir, args["local"])
 
             muts = g > 1 ? [mr(pop[i]) for i in 1:pop_size] : [0.0]
             mets["gamma"] = γ
-            mets["min_param"] = min_param
-            mets["max_param"] = max_param
+            mets["min_param"] = minimum([fet[3]["min_params"] for fet in fetches])
+            mets["max_param"] = maximum([fet[3]["max_params"] for fet in fetches])
             log_mmm!(mets, "mutation_rate", muts)
             log_mmm!(mets, "fitness", F)
             log_mmm!(mets, "novelty", novelties)
@@ -190,10 +226,11 @@ function main()
         llog(islocal=args["local"], name=logname) do logfile
             ts(logfile, "cache_elites")
         end
+        # Save checkpoint
+        save(check_name, Dict("gen"=>g, "gamma"=>γ, "pop"=>pop, "archive"=>archive, "BC"=> BC, "F"=>F, "best"=>best, "novelties"=>novelties, "elites"=>elites))
+
         @everywhere cache_elites!(sc, mi, $elites)
 
-        # Save checkpoint
-        save(check_name, Dict("gen"=>g, "gamma"=>γ, "pop"=>pop, "archive"=>archive, "BC"=> BC, "F"=>F, "best"=>best, "novelties"=>novelties))
         # Save seed cache without parameters
         sc_no_params = SeedCache(maxsize=2*args["num-elites"])
         for (k,v) in sc

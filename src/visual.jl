@@ -12,9 +12,10 @@ end
 
 function plot_walks(name::String,
         grid::AbstractArray{<:Real},
-        walks::Vector{Vector{NTuple{2, Float64}}},
+        walks::Vector,
         novs::Vector{<:Real},
         fits::Vector{<:Real})
+    """walks::{Vector{NTuple{2, Float64}}}"""
     colors = :blue
     @assert length(novs) == length(walks) == length(fits)
     color_fits = copy(fits) .- minimum(fits)
@@ -25,7 +26,7 @@ function plot_walks(name::String,
     hm = heatmap(grid, colorbar = false, background_color=colorant"black", foreground_color=colorant"white")
 
     for i in sortperm(fits)
-        offset_walk = [1 .+ p for p in walks[i]]
+        offset_walk = [(1+p[1], 1+p[2]) for p in walks[i]]
         plot!(hm, offset_walk, legend = false, xticks=[], yticks=[], color=colors[i])
     end
     savefig(hm, name)
@@ -35,9 +36,10 @@ end
 function plot_grid_and_walks(env,
         name::String,
         grid::AbstractArray,
-        walks::Vector{Vector{NTuple{2, Float64}}},
+        walks::Vector,
         novs::Vector{<:Real},
         fits::Vector{<:Real})
+    """walks::{Vector{NTuple{2, Float64}}}"""
     grid = prep_grid(env, grid)
     plot_walks(name, grid, walks, novs, fits)
 end

@@ -42,3 +42,21 @@ function log_mmm!(mets, name, arr)
     mets["$(name)_max"] = maximum(arr)
     mets["$(name)_std"] = std(arr)
 end
+
+function aid(i::Int, j::Int)
+    if i > 0
+        return "p$(i)_$j"
+    elseif i < 0
+        return "e$(-i)_$j"
+    else
+        throw("Invalid agent id $i")
+    end
+end
+
+function invert(m::Dict)
+    inverted_dict = Dict{valtype(m), Vector{keytype(m)}}()
+    for (k, v) in m
+        push!(get!(() -> valtype(inverted_dict)[], inverted_dict, v), k)
+    end
+    inverted_dict
+end

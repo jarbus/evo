@@ -1,6 +1,7 @@
 module GANS
 using StableRNGs
 using Flux
+using Random
 using Statistics
 using Distributed
 using Infiltrator
@@ -8,7 +9,7 @@ using NearestNeighbors
 export compute_novelty, compute_novelties,
 bc1, bc2, bc3, create_next_pop, add_to_archive!,
 reorder!, average_bc, compute_elite, dist, M,
-elite, mr
+elite, mr, create_rollout_groups, average_walk
 
 dist(a, b) = sum((a .- b).^2)
 
@@ -171,6 +172,18 @@ function average_bc(bcs::Vector)
   [mean(x) for x in zip(bcs...)]
 end
 
+function average_walk(walks)
+    """walks is ::Vector{Vector{Tuple{Float64, Float64}}}
+    but too much of a pain to specify type in main script
+    """
+    avg_walk = []
+    for step in zip(walks...)
+        avg_step = mean.(zip(step...))
+        push!(avg_walk, avg_step)
+    end
+    avg_walk
+end
+
 function compute_elite(f, pop, F; k::Int=10, n::Int=30)
   # run n evals in parallel on top k members to compute elite
   top_F_idxs = sortperm(F, rev=true)[1:min(k, length(pop))]
@@ -189,5 +202,69 @@ function compute_elite(f, pop, F; k::Int=10, n::Int=30)
   elite = maximum(accurate_Fs), pop[top_F_idxs[elite_idx]]
   elite
 end
+
+function popn!(x, n::Int)
+    [pop!(x) for _ in 1:n]
+end
+
+
+
+function create_rollout_groups(pop::Vector{<:Vector{<:AbstractFloat}},
+        elites::Vector{<:AbstractDict},
+        rollout_group_size::Int, n_groups::Int)
+    """Creates a vector of groups to evaluate. Each group is half elites from
+    the previous generation and half members of the current population. 
+    Each pop member and elite are sampled an equal amount, plus or minus 1.
+
+    # Return a vector of Dict{Int, Vector}s where 
+        Integer key is the positive index in the population
+    or negative index in the elite vector
+        Vector `v` is length 2, where `v[1]` is the count of how many times
+    this member has been chosen and `v[2]` is the member seed itself.
+    """
+
+    function make_group!(g_pop, g_elites, n)
+        n_pop = ceil(Int, n/2)
+        n_elite = n - n_pop
+        @assert n_pop <= length(g_pop)
+        @assert n_elite <= length(g_elites)
+        # ints from pop are positive, ints from elites are negative
+        group_pop_ids = popn!(g_pop, n_pop)
+        group_elite_ids = popn!(g_elites, n_elite)
+        group_pop = [(i, pop[i]) for i in group_pop_ids]
+        group_elite = [(-i, elites[i][:seeds]) for i in group_elite_ids]
+        group = vcat(group_pop, group_elite) |> shuffle
+        group
+    end
+    n_agents = n_groups * rollout_group_size
+    if n_agents < length(pop)
+        error("Creating $n_groups groups of size $rollout_group_size will not include all members of the population.")
+    end
+    n_pop_agents = n_elite_agents = ceil(Int, n_agents / 2)
+    n_pop_duplicates = ceil(Int, n_pop_agents / length(pop))
+    n_elite_duplicates = ceil(Int, n_elite_agents / length(elites))
+    massive_pop = vcat([collect(1:length(pop)) for _ in 1:n_pop_duplicates]...) |> shuffle
+    massive_elites = vcat([collect(1:length(elites)) for _ in 1:n_elite_duplicates]...) |> shuffle
+    @assert length(massive_pop) >= n_pop_agents
+    @assert length(massive_elites) >= n_elite_agents
+    groups = [make_group!(massive_pop, massive_elites, rollout_group_size) for _ in 1:n_groups]
+    groups
+end
+
+function create_rollout_groups(pop::Vector{<:Vector{<:AbstractFloat}},
+        rollout_group_size::Int, n_groups::Int)
+
+    function make_group!(g_pop, n)
+        group_pop_ids = popn!(g_pop, n)
+        group_pop = [(i, pop[i]) for i in group_pop_ids] |> shuffle
+        group_pop
+    end
+    n_agents = n_groups * rollout_group_size
+    n_duplicates = ceil(Int, n_agents / length(pop))
+    massive_pop = vcat([collect(1:length(pop)) for _ in 1:n_duplicates]...) |> shuffle
+    @assert length(massive_pop) >= n_agents
+    groups = [make_group!(massive_pop, rollout_group_size) for i in 1:n_groups]
+end
+
 
 end

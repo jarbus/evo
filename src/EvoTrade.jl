@@ -10,8 +10,8 @@ export reconstruct, SeedCache, cache_elites!
 export ModelInfo, gen_params
 export compute_novelty, compute_novelties, bc1, bc2, bc3,
 create_next_pop, add_to_archive!, M, reorder!, compute_elite,
-elite, mr
-export run_batch, select_rollout_members
+elite, mr, create_rollout_groups, average_bc, aid, average_walk
+export run_batch, invert
 
 using ArgParse
 using Infiltrator

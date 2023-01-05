@@ -1,4 +1,5 @@
 --l2 0.005
+--rollout-group-size 1
 --alpha 0.01
 --mutation-rate 0.1
 --exploration-rate 1.0

@@ -22,5 +22,6 @@
 --batch-size 10
 --pickup-coeff 1.0
 --algo ga
+--rollout-group-size 1
 --archive-prob 0.01
 --nprocs 1

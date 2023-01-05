@@ -5,6 +5,9 @@ function get_arg_table()
       "--datime"
       arg_type = String
       required = true
+      "--rollout-group-size"
+      arg_type = Int
+      required = true
       "--algo"
       arg_type = String
       required = true
