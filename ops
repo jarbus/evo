@@ -1,1 +1,1 @@
-{"author":{"id":"2925f8bae681ccf02a1c1ecc82cbb827e525744b16a0948b37a0b024362c4ec0"},"ops":[{"type":1,"timestamp":1672935824,"nonce":"TkR4hkSHTt4tiN5Zt9pJ45lmr+o=","title":"todo: add test for resuming from checkpoint","message":"","files":null}]}
+{"author":{"id":"2925f8bae681ccf02a1c1ecc82cbb827e525744b16a0948b37a0b024362c4ec0"},"ops":[{"type":5,"timestamp":1672935827,"nonce":"YdfcLDRxBj71GSSEf6WdFmtUxRk=","added":["todo"],"removed":null}]}
