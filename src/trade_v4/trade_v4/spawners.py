@@ -33,6 +33,19 @@ class CenterSpawner(BaseSpawnGenerator):
     def __init__(self, grid_size):
         self.grid_size = grid_size
         self.gx, self.gy = grid_size
+        self.cx = (self.gx // 2)
+        self.cy = (self.gy // 2)
+
+    def reset(self):
+        pass
+
+    def gen_poses(self, n=4):
+        return [(self.cx+choice(range(-2,3)), self.cy+choice(range(-2,3))) for _ in range(n)]
+
+class CenterCornersSpawner(BaseSpawnGenerator):
+    def __init__(self, grid_size):
+        self.grid_size = grid_size
+        self.gx, self.gy = grid_size
         cx = (self.gx // 2)
         cy = (self.gy // 2)
         self.poses = [(cx-1, cy-1), (cx-1, cy+1), (cx+1,cy-1), (cx+1, cy+1)]
@@ -231,16 +244,18 @@ class FireCornerSpawner(BaseSpawnGenerator):
 
 if __name__ == "__main__":
     size = (11,11)
-    fc = FoodSpawner(size, [(0,0), (10,10), (5,5)])
-    x = np.zeros(size)
-    import matplotlib.pyplot as plt
-    import time
-    start = time.time()
-    for i in range(100):
-        for pos in fc.gen_poses():
-            x[pos] += 0.1
-    import matplotlib.pyplot as plt
-    print(time.time() - start)
-    plt.matshow(x)
-    plt.show()
-    print(x.round(2))
+    CenterSpawner(size).gen_poses(4)
+    # fc = FoodSpawner(size, [(0,0), (10,10), (5,5)])
+    # x = np.zeros(size)
+    # import matplotlib.pyplot as plt
+    # import time
+    # start = time.time()
+    # for i in range(100):
+    #     for pos in fc.gen_poses():
+    #         x[pos] += 0.1
+    # import matplotlib.pyplot as plt
+    # print(time.time() - start)
+    # plt.matshow(x)
+    # plt.show()
+    # print(x.round(2))
+

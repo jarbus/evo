@@ -185,12 +185,17 @@ function main()
 
             # TODO make this select random rollouts with duplicates of fit agents
             # run parallel visualization on most fit most novel members 
-            rollout_idxs = sortperm(F, rev=true)[1:args["rollout-group-size"]]
-            models = Dict("p$i" => re(reconstruct(sc, mi, pop[i])) for i in rollout_idxs)
-            str_name = joinpath(outdir, string(hash(rollout_idxs))*"-"*string(myid()))
-            rew_dict, mets, _, _ = run_batch(env, models, args, evaluation=true, render_str=str_name)
+            eval_best_idxs = sortperm(F, rev=true)[1:args["rollout-group-size"]]
+            eval_group_idxs = [rand(eval_best_idxs, args["rollout-group-size"]) for _ in 1:10]
+            eval_group_seeds = [[pop[idx] for idx in idxs] for idxs in eval_group_idxs]
+            mets = pmap(eval_group_seeds) do group_seeds
+                models = Dict("p$i" => re(reconstruct(sc, mi, seeds)) for (i, seeds) in enumerate(group_seeds))
+                str_name = joinpath(outdir, string(hash(group_seeds))*"-"*string(myid()))
+                rew_dict, metrics, _, _ = run_batch(env, models, args, evaluation=true, render_str=str_name, batch_size=1)
+                metrics
+            end
             # average all the rollout metrics
-            # mets = Dict(k => mean([m[k] for m in mets]) for k in keys(mets[1]))
+            mets = Dict(k => mean([m[k] for m in mets]) for k in keys(mets[1]))
             isnothing(args["maze"]) && vis_outs(outdir, args["local"])
 
             muts = g > 1 ? [mr(pop[i]) for i in 1:pop_size] : [0.0]

@@ -1,6 +1,6 @@
-function run_batch(env::MazeEnv, models::Dict{String,<:Chain}, args; evaluation=false, render_str::Union{Nothing,String}=nothing)
+function run_batch(env::MazeEnv, models::Dict{String,<:Chain}, args; evaluation=false, render_str::Union{Nothing,String}=nothing, batch_size=nothing)
 
-    batch_size = args["batch-size"]
+    batch_size = isnothing(batch_size) ? args["batch-size"] : batch_size
     @assert batch_size==1
     rewards, bcs = [], []
     sample_act_func = evaluation ? x->[argmax(c) for c in eachcol(x)] : sample_batch
@@ -26,9 +26,9 @@ function run_batch(env::MazeEnv, models::Dict{String,<:Chain}, args; evaluation=
 end
 
 # Run trade
-function run_batch(env_config::Dict, models::Dict{String,<:Chain}, args; evaluation=false, render_str::Union{Nothing,String}=nothing)
+function run_batch(env_config::Dict, models::Dict{String,<:Chain}, args; evaluation=false, render_str::Union{Nothing,String}=nothing, batch_size=nothing)
 
-    batch_size = args["batch-size"]
+    batch_size = isnothing(batch_size) ? args["batch-size"] : batch_size
     env_config["matchups"] = [tuple(keys(models)...)]
     b_env = [PyTrade().Trade(env_config) for _ in 1:batch_size]
     obs_size = (b_env[1].obs_size..., batch_size)
