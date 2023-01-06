@@ -1,1 +1,1 @@
-{"author":{"id":"2925f8bae681ccf02a1c1ecc82cbb827e525744b16a0948b37a0b024362c4ec0"},"ops":[{"type":1,"timestamp":1673030570,"nonce":"0vl9SAtW7FO0qUkeWhefzjZYKY0=","title":"todo: rollout more elites, include duplicates of some elites","message":"","files":null}]}
+{"author":{"id":"2925f8bae681ccf02a1c1ecc82cbb827e525744b16a0948b37a0b024362c4ec0"},"ops":[{"type":5,"timestamp":1673030572,"nonce":"+0iv0iP1GLFfoHHjsXQFPvQAvIg=","added":["todo"],"removed":null}]}
