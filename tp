@@ -137,7 +137,6 @@ def make_grid(unfiltered_metrics: list):
         else:
             ax = axes[r,c]
 
-        ax.set_title(metric)
         for run in runs_to_plot:
             if metric in runs[run].keys():
                 label = None if len(runs) < 2 else run
@@ -155,6 +154,9 @@ def make_grid(unfiltered_metrics: list):
                 [m-sqrt(std) for m, std in zip(runs[run][metric], runs[run][std_met])],
                 [m+sqrt(std) for m, std in zip(runs[run][metric], runs[run][std_met])],
                     alpha=0.2)
+                    ax.set_title(metric[:-5])
+                else:
+                    ax.set_title(metric)
 
         if len(runs) > 1:
             ax.legend(loc="upper left")

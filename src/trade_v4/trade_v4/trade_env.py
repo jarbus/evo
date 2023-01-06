@@ -9,6 +9,11 @@ import sys
 from collections import defaultdict
 from typing import List, Tuple, Dict
 
+def llogmmm(dic, name, arr):
+    dic[f"{name}_min"] = min(arr)
+    dic[f"{name}_max"] = max(arr)
+    dic[f"{name}_mean"] = np.mean(arr)
+
 class TradeMetricCollector():
     def __init__(self, env):
         self.rew_base_health          = 0
@@ -61,11 +66,20 @@ class TradeMetricCollector():
             custom_metrics[f"exchange_{food}"] = count
         #for symbol, count in enumerate(self.comm_history):
         #    episode.custom_metrics[f"comm_{symbol}"] = count
+        food_imbalances = []
+        takes = []
+        gives = []
+        picks = [[] for _ in range(env.food_types)]
+        places = [[] for _ in range(env.food_types)]
+        mut_exchanges = []
+
         for agent in env.agents:
             #episode.custom_metrics[f"{agent}_punishes"] = self.punish_counts[agent]
             #episode.custom_metrics[f"{agent}_lifetime"] = env.mc.lifetimes[agent]
-            custom_metrics[f"{agent}_food_imbalance"] = \
-                max(env.agent_food_counts[agent]) / max(1, min(env.agent_food_counts[agent]))
+            # custom_metrics[f"{agent}_food_imbalance"] = \
+            #     max(env.agent_food_counts[agent]) / max(1, min(env.agent_food_counts[agent]))
+            food_imbalances.append(
+                max(env.agent_food_counts[agent]) / max(1, min(env.agent_food_counts[agent])))
             total_agent_exchange = {"give": 0, "take": 0}
             for other_agent in env.agents:
                 other_agent_exchange = {"give": 0, "take": 0}
@@ -77,18 +91,31 @@ class TradeMetricCollector():
                     if other_agent != agent:
                         total_agent_exchange["give"] += give
                         total_agent_exchange["take"] += take
-                #episode.custom_metrics[f"{agent}_take_from_{other_agent}"] = other_agent_exchange["take"]
-                #episode.custom_metrics[f"{agent}_give_to_{other_agent}"] = other_agent_exchange["give"]
-                custom_metrics[f"{agent}_mut_exchange_{other_agent}"] =\
-                   min(other_agent_exchange["take"],
-                       other_agent_exchange["give"])
+                # episode.custom_metrics[f"{agent}_take_from_{other_agent}"] = other_agent_exchange["take"]
+                # episode.custom_metrics[f"{agent}_give_to_{other_agent}"] = other_agent_exchange["give"]
+                # custom_metrics[f"{agent}_mut_exchange_{other_agent}"] =\
+                #    min(other_agent_exchange["take"],
+                       # other_agent_exchange["give"])
             #episode.custom_metrics[f"{agent}_take_from_all"] = total_agent_exchange["take"]
             #episode.custom_metrics[f"{agent}_give_to_all"] = total_agent_exchange["give"]
-            custom_metrics[f"{agent}_mut_exchange_total"] =\
-                min(total_agent_exchange["take"], total_agent_exchange["give"])
+            gives.append(total_agent_exchange["give"])
+            takes.append(total_agent_exchange["take"])
+            mut_exchanges.append(min(total_agent_exchange["take"], total_agent_exchange["give"]))
+            # custom_metrics[f"{agent}_mut_exchange_total"] =\
+                # min(total_agent_exchange["take"], total_agent_exchange["give"])
             for food in range(env.food_types):
-                custom_metrics[f"{agent}_PICK_{food}"] = self.picked_counts[agent][food]
-                custom_metrics[f"{agent}_PLACE_{food}"] = self.placed_counts[agent][food]
+                # custom_metrics[f"{agent}_PICK_{food}"] = self.picked_counts[agent][food]
+                picks[food].append(self.picked_counts[agent][food])
+                # custom_metrics[f"{agent}_PLACE_{food}"] = self.placed_counts[agent][food]
+                places[food].append(self.placed_counts[agent][food])
+        llogmmm(custom_metrics, "gives", gives)
+        llogmmm(custom_metrics, "takes", takes)
+        llogmmm(custom_metrics, "mut_exchanges", mut_exchanges)
+        llogmmm(custom_metrics, "food_imbalances", food_imbalances)
+        for food in range(env.food_types):
+            llogmmm(custom_metrics, f"picks_{food}", picks[food])
+            llogmmm(custom_metrics, f"places_{food}", places[food])
+
         return custom_metrics
 
 
