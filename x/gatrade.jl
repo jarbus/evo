@@ -75,6 +75,7 @@ function main()
         global sc = SeedCache(maxsize=args["num-elites"]*2)
     end
     llog(islocal=args["local"], name=logname) do logfile
+        print(logfile, "Running on commit: "*read(`git rev-parse --short HEAD`, String))
         ts(logfile, "model has $model_size params")
     end
 
