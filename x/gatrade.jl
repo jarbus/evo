@@ -102,8 +102,9 @@ function main()
         global sc = load(sc_name)["sc"]
         global pop = check["pop"]
         global elites = check["elites"]
+
         for p in pop
-            @assert elite(pop) in keys(sc)
+            @assert elite(p) in keys(sc)
         end
         #pop, elites = create_next_pop(start_gen-1, sc, check["pop"], F, novelties, BC, γ, args["num-elites"])
         #@everywhere cache_elites!(sc, mi, $elites)
@@ -137,7 +138,6 @@ function main()
         F = [mean(f) for f in F]
         BC = [average_bc(bcs) for bcs in BC]
         walks = [average_walk(w) for w in walks_list]
-        println(walks[1])
 
 
         @assert length(F) == length(BC) == pop_size
