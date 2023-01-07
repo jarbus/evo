@@ -1,1 +1,1 @@
-{"author":{"id":"2925f8bae681ccf02a1c1ecc82cbb827e525744b16a0948b37a0b024362c4ec0"},"ops":[{"type":1,"timestamp":1673108709,"nonce":"qMwtWcT4r8sx9X5kEVyO39dpgHo=","title":"bug: key not found when getting elite fitness and bc in create_next_pop","message":"","files":null}]}
+{"author":{"id":"2925f8bae681ccf02a1c1ecc82cbb827e525744b16a0948b37a0b024362c4ec0"},"ops":[{"type":5,"timestamp":1673108711,"nonce":"qDb6WNopxBWRso0NS+55Soe/59I=","added":["bug"],"removed":null}]}
