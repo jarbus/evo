@@ -119,9 +119,9 @@ function main()
         end
 
         if g == 1
-            groups = create_rollout_groups(pop, args["rollout-group-size"], round(Int, pop_size/args["rollout-group-size"]))
+            groups = create_rollout_groups(pop, args["rollout-group-size"], round(Int, 2*pop_size/args["rollout-group-size"]))
         else
-            groups = create_rollout_groups(pop, elites, args["rollout-group-size"], round(Int, pop_size/args["rollout-group-size"]))
+            groups = create_rollout_groups(pop, elites, args["rollout-group-size"], round(Int, 2*pop_size/args["rollout-group-size"]))
         end
 
         fetches = pmap(groups) do g
@@ -136,6 +136,7 @@ function main()
             push!(BC[idx], fet[2][idx])
             push!(walks_list[idx], fet[3]["avg_walks"][idx]...)
         end
+        @assert all(length.(F) .>= 1)
         F = [mean(f) for f in F]
         BC = [average_bc(bcs) for bcs in BC]
         walks = [average_walk(w) for w in walks_list]
