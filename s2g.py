@@ -41,7 +41,7 @@ class Step:
 
 
 all_exchange_messages = []
-player_colors = ["olivedrab", "darkcyan", "mediumslateblue", "purple", "brown", "navajowhite", "plum", "gray"]
+player_colors = ["olivedrab", "darkcyan", "mediumslateblue", "purple", "brown", "navajowhite", "plum", "gray", "blue", "red", "orange"]
 food_colors = [(1.0, 0.0, 0.0), (0.0, 1.0, 0.0)]
 offv = 0.015
 player_offsets = (0, offv), (offv, 0), (0, 2*offv), (2*offv, 0),\
