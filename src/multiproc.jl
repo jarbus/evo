@@ -24,7 +24,15 @@ function make_procs(args)
 
       machine_specs = [hostspec for hostspec in zip(hostnames, cpus_per_node)]
       println(machine_specs)
-      addprocs(machine_specs, max_parallel=1000, multiplex=true, enable_threaded_blas=false, env=["OPENBLAS_NUM_THREADS"=>"1"])
+      for hostspec in machine_specs
+        try
+          println("adding $(hostspec[2]) workers on $(hostspec[1])")
+          addprocs([hostspec], max_parallel=1000, multiplex=true, enable_threaded_blas=false, env=["OPENBLAS_NUM_THREADS"=>"1"])
+        catch e
+          println("ERROR: FAILED to add $(hostspec[2]) workers on $(hostspec[1])")
+          throw(e)
+        end
+      end
       println("nprocs $(nprocs())")
     else
       addprocs(3)
