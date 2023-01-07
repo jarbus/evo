@@ -78,15 +78,13 @@ function create_next_pop(gen::Int,
     @assert length(pop) == length(fitnesses) == length(novelties) == length(bcs)
     @assert 0 < num_elites < pop_size
     @assert pop_size > 0
+    new_pop_size = pop_size - num_elites
     num_elite_explorers = floor(Int, γ * num_elites)
     num_elite_exploiters = num_elites - num_elite_explorers
-    if num_elite_exploiters == 0
-        num_elite_explorers -= 1
-        num_elite_exploiters += 1
-    end
-    num_next_explorers = floor(Int, pop_size*(num_elite_explorers / num_elites))
-    num_next_exploiters  = pop_size - num_next_explorers
-    @assert num_next_exploiters >= 1
+    @assert num_elite_explorers + num_elite_exploiters == num_elites
+    num_next_explorers = floor(Int, new_pop_size*(num_elite_explorers / num_elites))
+    num_next_exploiters  = new_pop_size - num_next_explorers
+    @assert num_elite_explorers + num_elite_exploiters + new_pop_size == pop_size
     function make_elites(order_metric, num)
         order = sortperm(order_metric, rev=true)
         elites = [Dict(
@@ -100,21 +98,25 @@ function create_next_pop(gen::Int,
         Fσs = [10.0^rand(-2:-1:-7) for _ in 1:num_elite_exploiters]
         Nσs = [10.0^rand(-2:-1:-7) for _ in 1:num_elite_explorers]
     else
-        σs = [mr(pop[i]) for i in 1:pop_size]
-        ΔFs = [f - sc[elite(pop[i])][:fitness] for (i,f) in enumerate(fitnesses)]
-        ΔNs = [dist(bc, sc[elite(pop[i])][:bc]) for (i,bc) in enumerate(bcs)]
+        σs = [mr(pop[i]) for i in (1+num_elites):pop_size]
+        ΔFs = [f - sc[elite(pop[i])][:fitness] for (i,f) in enumerate(fitnesses[1+num_elites:end])]
+        ΔNs = [dist(bc, sc[elite(pop[i])][:bc]) for (i,bc) in enumerate(bcs[1+num_elites:end])]
         Fσs = σs[sortperm(ΔFs, rev=true)][1:num_elite_exploiters]
         Nσs = σs[sortperm(ΔNs, rev=true)][1:num_elite_explorers]
     end
     exploiter_elites = make_elites(fitnesses, num_elite_exploiters)
     explorer_elites  = make_elites(novelties, num_elite_explorers)
 
-    next_pop = [copy(exploiter_elites[1][:seeds])] # copy elite
-    num_next_exploiters > 0 && for i in 2:num_next_exploiters
+    next_pop::Vector{Vector{Float64}} = vcat(
+                    [copy(e[:seeds]) for e in exploiter_elites],
+                    [copy(e[:seeds]) for e in explorer_elites]
+                    )
+    @assert length(next_pop) == num_elites
+    num_next_exploiters > 0 && for _ in 1:num_next_exploiters
         push!(next_pop, copy(rand(exploiter_elites)[:seeds]))
         push!(next_pop[end], M(rand(Fσs)), rand(UInt32))
     end
-    num_next_explorers > 0 && for j in 1:num_next_explorers
+    num_next_explorers > 0 && for _ in 1:num_next_explorers
         push!(next_pop, copy(rand(explorer_elites)[:seeds]))
         push!(next_pop[end], M(rand(Nσs)), rand(UInt32))
     end

@@ -31,11 +31,13 @@ function reconstruct(param_cache::SeedCache, mi::ModelInfo, seeds_and_muts::Vect
   reconstructs all future generations. Creates a new parameter vector if
   no ancestor is found.
   """
+  @assert isodd(length(seeds_and_muts))
   if length(seeds_and_muts) == 1
     elite = gen_params(StableRNG(Int(seeds_and_muts[1])), mi, 1)
-    # elite *= ϵ
     return elite
-  @assert isodd(length(seeds_and_muts))
+  elseif seeds_and_muts in keys(param_cache) # elite that was directly copied over
+    elite = gen_params(StableRNG(Int(seeds_and_muts[1])), mi, length(seeds_and_muts))
+    return elite
   # Get cached elite
   elseif seeds_and_muts[1:end-2] in keys(param_cache) && haskey(param_cache[seeds_and_muts[1:end-2]], :params)
     @inline @inbounds elite = copy(param_cache[seeds_and_muts[1:end-2]][:params])
