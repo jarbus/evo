@@ -119,9 +119,9 @@ function main()
         end
 
         if g == 1
-            groups = create_rollout_groups(pop, args["rollout-group-size"], pop_size)
+            groups = create_rollout_groups(pop, args["rollout-group-size"], round(Int, pop_size/args["rollout-group-size"]))
         else
-            groups = create_rollout_groups(pop, elites, args["rollout-group-size"], pop_size)
+            groups = create_rollout_groups(pop, elites, args["rollout-group-size"], round(Int, pop_size/args["rollout-group-size"]))
         end
 
         fetches = pmap(groups) do g
