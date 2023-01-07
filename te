@@ -1,0 +1,17 @@
+#!/usr/bin/env julia
+using JLD2
+elites = load(ARGS[1])["elites"]
+
+seeds = Set()
+for e in elites
+    push!(seeds, e[:seeds][1:2:end]...)
+end
+seeds = collect(seeds)
+echars = []
+for e in elites
+    push!(echars, [Char(120223+findfirst((x)->x==s, seeds)) for s in e[:seeds][1:2:end]] |> join)
+end
+
+for s in echars
+    println(s)
+end
