@@ -28,17 +28,19 @@ using Infiltrator
         for (i, _) in group 
             i < 0 && continue # skip elites
             a_id = aid(i, 1)
-            rews[i] = rew_dict[a_id]
-            bcs[i] = bc_dict[a_id]
+            rews[i] = [rew_dict[a_id]]
+            bcs[i] = [bc_dict[a_id]]
             infos["avg_walks"][i] = [info_dict["avg_walks"][a_id]]
             for c in 2:counts[i]
                 a_id = aid(i, c)
-                rews[i] += rew_dict[a_id]
-                bcs[i] .+= bc_dict[a_id]
+                push!(rews[i], rew_dict[a_id])
+                push!(bcs[i], bc_dict[a_id])
                 push!(infos["avg_walks"][i], info_dict["avg_walks"][a_id])
             end
-            rews[i] /= counts[i]
-            bcs[i] ./= counts[i]
+        end
+        for (i, _) in group
+            i < 0 && continue
+            @assert i in keys(rews)
         end
         infos["min_params"] = minimum(minimum.(values(params)))
         infos["max_params"] = maximum(maximum.(values(params)))
@@ -119,9 +121,9 @@ function main()
         end
 
         if g == 1
-            groups = create_rollout_groups(pop, args["rollout-group-size"], round(Int, 2*pop_size/args["rollout-group-size"]))
+            groups = create_rollout_groups(pop, args["rollout-group-size"], args["rollout-groups-per-mut"])
         else
-            groups = create_rollout_groups(pop, elites, args["rollout-group-size"], round(Int, 2*pop_size/args["rollout-group-size"]))
+            groups = create_rollout_groups(pop, elites, args["rollout-group-size"], args["rollout-groups-per-mut"])
         end
 
         fetches = pmap(groups) do g
@@ -132,11 +134,11 @@ function main()
         BC = [[] for _ in 1:pop_size]
         walks_list = [[] for _ in 1:pop_size]
         for fet in fetches, idx in keys(fet[1])
-            push!(F[idx], fet[1][idx])
-            push!(BC[idx], fet[2][idx])
+            push!(F[idx], fet[1][idx]...)
+            push!(BC[idx], fet[2][idx]...)
             push!(walks_list[idx], fet[3]["avg_walks"][idx]...)
         end
-        @assert all(length.(F) .>= 1)
+        @assert all(length.(F) .>= args["rollout-groups-per-mut"])
         F = [mean(f) for f in F]
         BC = [average_bc(bcs) for bcs in BC]
         walks = [average_walk(w) for w in walks_list]

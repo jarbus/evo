@@ -8,6 +8,9 @@ function get_arg_table()
       "--rollout-group-size"
       arg_type = Int
       required = true
+      "--rollout-groups-per-mut"
+      arg_type = Int
+      required = true
       "--algo"
       arg_type = String
       required = true

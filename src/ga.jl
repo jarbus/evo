@@ -213,7 +213,7 @@ end
 
 function create_rollout_groups(pop::Vector{<:Vector{<:AbstractFloat}},
         elites::Vector{<:AbstractDict},
-        rollout_group_size::Int, n_groups::Int)
+        rollout_group_size::Int, rollouts_per_ind::Int)
     """Creates a vector of groups to evaluate. Each group is half elites from
     the previous generation and half members of the current population. 
     Each pop member and elite are sampled an equal amount, plus or minus 1.
@@ -238,6 +238,8 @@ function create_rollout_groups(pop::Vector{<:Vector{<:AbstractFloat}},
         group = vcat(group_pop, group_elite) |> shuffle
         group
     end
+
+    n_groups = ceil(Int, rollouts_per_ind*2*length(pop)/rollout_group_size)
     n_agents = n_groups * rollout_group_size
     if n_agents < length(pop)
         error("Creating $n_groups groups of size $rollout_group_size will not include all members of the population.")
@@ -250,12 +252,23 @@ function create_rollout_groups(pop::Vector{<:Vector{<:AbstractFloat}},
     @assert length(massive_pop) >= n_pop_agents
     @assert length(massive_elites) >= n_elite_agents
     groups = [make_group!(massive_pop, massive_elites, rollout_group_size) for _ in 1:n_groups]
+    counts = Dict()
+    for g in groups
+        for (i, _) in g
+            i < 0 && continue
+            counts[i] = get(counts, i, 0) + 1
+        end
+    end
+    for count in values(counts)
+        @assert count == rollouts_per_ind || count == rollouts_per_ind + 1
+    end
     groups
 end
 
 function create_rollout_groups(pop::Vector{<:Vector{<:AbstractFloat}},
-        rollout_group_size::Int, n_groups::Int)
+        rollout_group_size::Int, rollouts_per_ind::Int)
 
+    n_groups = ceil(Int, rollouts_per_ind*2*length(pop)/rollout_group_size)
     function make_group!(g_pop, n)
         group_pop_ids = popn!(g_pop, n)
         group_pop = [(i, pop[i]) for i in group_pop_ids] |> shuffle
@@ -266,6 +279,17 @@ function create_rollout_groups(pop::Vector{<:Vector{<:AbstractFloat}},
     massive_pop = vcat([collect(1:length(pop)) for _ in 1:n_duplicates]...) |> shuffle
     @assert length(massive_pop) >= n_agents
     groups = [make_group!(massive_pop, rollout_group_size) for i in 1:n_groups]
+    counts = Dict()
+    for g in groups
+        for (i, _) in g
+            i < 0 && continue
+            counts[i] = get(counts, i, 0) + 1
+        end
+    end
+    for count in values(counts)
+        @assert count == rollouts_per_ind*2 || count == rollouts_per_ind*2 + 1
+    end
+    groups
 end
 
 
