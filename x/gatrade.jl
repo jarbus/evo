@@ -175,6 +175,7 @@ function main()
         @assert length(novelties) == pop_size
 
         # LOG
+        @spawnat 1 begin
         if g % 1 == 0
             ts("log start")
 
@@ -219,6 +220,7 @@ function main()
             llog(islocal=args["local"], name=logname) do logfile
                 ts(logfile, "log end")
             end
+        end
         end
         if best[1] > 15
             best_bc = BC[argmax(F)]
