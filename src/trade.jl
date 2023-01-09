@@ -1,6 +1,6 @@
 module Trade
 
-export batch_reset!, batch_step!, PyTrade, render, get_metrics, reset!, step!, batch_pos!
+export batch_reset!, batch_step!, PyTrade, render, get_metrics, reset!, step!, batch_pos!, get_bcs
 
 using PyCall
 using Pathnames
@@ -37,6 +37,10 @@ end
 
 function get_metrics(env::PyObject)
   pycall(env.mc.return_metrics, PyDict{String,Float32}, env)
+end
+
+function get_bcs(env::PyObject)
+  pycall(env.mc.get_bcs, PyDict{String,Vector{Float64}}, env)
 end
 
 function get_metrics(envs::Vector{PyObject})

@@ -2,7 +2,7 @@ import os
 import numpy as np
 import random
 from math import floor
-from .utils import add_tup, directions, valid_pos, inv_dist, punish_region, matchup_shuffler
+from .utils import add_tup, directions, valid_pos, inv_dist, punish_region, matchup_shuffler, avg_tuple
 from .light import Light
 from .spawners import FireCornerSpawner, FoodSpawner, DiscreteFoodSpawner, CenterSpawner
 import sys
@@ -24,11 +24,15 @@ class TradeMetricCollector():
         self.rew_light                = 0
         self.rew_acts                 = 0
 
+        self.poses = {agent: [] for agent in env.agents}
         self.num_exchanges = [0]*env.food_types
         self.picked_counts = {agent: [0] * env.food_types for agent in env.agents}
         self.placed_counts = {agent: [0] * env.food_types for agent in env.agents}
         self.player_exchanges = {(a, b, f): 0 for a in env.agents for b in env.agents for f in range(env.food_types)}
         self.lifetimes = {agent: 0 for agent in env.agents}
+        # per agent dict for light reward
+        self.lights = {agent: 0 for agent in env.agents}
+        self.rews = {agent: 0 for agent in env.agents}
 
     def collect_lifetimes(self, dones):
         for agent, done in dones.items():
@@ -47,7 +51,7 @@ class TradeMetricCollector():
         self.picked_counts[agent][food] += env.compute_pick_amount(x, y, food, agent_id)
         pass
 
-    def collect_rew(self, env, base_health, nn, other_survival_bonus, pun_rew, mov_rew, light, action_rewards):
+    def collect_rews(self, agent, base_health, nn, other_survival_bonus, pun_rew, mov_rew, light, action_rewards):
         self.rew_base_health          += base_health
         self.rew_nn                   += nn
         self.rew_other_survival_bonus += other_survival_bonus
@@ -55,6 +59,43 @@ class TradeMetricCollector():
         self.rew_mov                  += mov_rew
         self.rew_light                += light
         self.rew_acts                 += action_rewards
+        self.lights[agent]            += light
+
+    def collect_rew(self, agent, rew):
+        self.rews[agent] += rew
+
+    def collect_pos(self, agent, pos):
+        self.poses[agent].append(pos)
+
+    def get_bcs(self, env):
+        return {agent: self.get_bc(env, agent) for agent in env.agents}
+
+    def get_bc(self, env, agent):
+        """
+        BC is a length-8 list:
+            0:1 picked counts
+            2:3 placed counts
+            4:5 avg pos
+            6   light
+            7   fitness
+        """
+
+        bc = [0 for _ in range(8)]
+        f = 0 
+        bc[0:env.food_types] = self.picked_counts[agent]
+        f += env.food_types
+        bc[f:f+env.food_types] = self.placed_counts[agent]
+        f += env.food_types
+        avg_pos = avg_tuple(self.poses[agent]) 
+        avg_pos = [avg_pos[i] / env.grid_size[i] for i in range(len(env.grid_size))]
+        bc[f:(f+2)] = avg_pos
+        f +=2
+        bc[f] = self.lights[agent] / env.max_steps
+        f +=1
+        # we only want to compare positive rewards along this dimension, since we compare light penalty separately
+        bc[f] = max(0, self.rews[agent])
+        return bc
+
 
     def return_metrics(self, env):
         custom_metrics = {
@@ -406,9 +447,10 @@ class Trade:
         act_rew   = self.pickup_coeff * self.action_rewards[agent]
 
         # Remember to update this function whenever you add a new reward
-        self.mc.collect_rew(self, base_health, nn_rew, other_survival_bonus, pun_rew, mov_rew, light_rew, act_rew )
+        self.mc.collect_rews(agent, base_health, nn_rew, other_survival_bonus, pun_rew, mov_rew, light_rew, act_rew)
 
         rew  = base_health + light_rew + act_rew
+        self.mc.collect_rew(agent, rew)
         return rew
 
     def compute_exchange_amount(self, x: int, y: int, food: int, picker: int):
@@ -445,6 +487,7 @@ class Trade:
             # MOVEMENT
             self.moved_last_turn[agent] = False
             x, y = self.agent_positions[agent]
+            self.mc.collect_pos(agent, (x,y))
             aid: int = self.agents.index(agent)
             if action in range(0, ndir):
                 new_pos = add_tup(self.agent_positions[agent], directions[action])

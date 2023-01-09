@@ -16,6 +16,10 @@ def inv_dist(tup1: tuple, tup2: tuple):
 def two_combos(xs: tuple, ys: tuple):
     return [(x, y) for x in xs for y in ys]
 
+def avg_tuple(tuples):
+    """Returns the average tuple of a list of all tuples"""
+    return tuple(sum(x)/len(x) for x in zip(*tuples))
+
 def punish_region(x, y, gx, gy):
     window = 1
     x_region = slice(max(0, x-window), min(gx, x+window))
