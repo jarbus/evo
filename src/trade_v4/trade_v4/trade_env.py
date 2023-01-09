@@ -241,7 +241,7 @@ class Trade:
         # Each agent starts with self.food_agent_spawn of a single resource,
         # used for trading scenarios
         for i, a in enumerate(self.agents):
-            self.agent_food_counts[a][i % self.food_types] = self.food_agent_spawn
+            self.agent_food_counts[a][i % self.food_types] = self.food_agent_start
 
         self.mc = TradeMetricCollector(self)
         return {self.agents[0]: self.compute_observation(self.agents[0])}
