@@ -150,10 +150,10 @@ def make_grid(unfiltered_metrics: list):
                     assert min_met in unfiltered_metrics
                     assert max_met in unfiltered_metrics
                     ax.fill_between(list(range(len(runs[run][metric]))),runs[run][min_met],runs[run][max_met],alpha=0.2)
-                    ax.fill_between(list(range(len(runs[run][metric]))),
-                [m-sqrt(std) for m, std in zip(runs[run][metric], runs[run][std_met])],
-                [m+sqrt(std) for m, std in zip(runs[run][metric], runs[run][std_met])],
-                    alpha=0.2)
+                #   ax.fill_between(list(range(len(runs[run][metric]))),
+                #[m-sqrt(std) for m, std in zip(runs[run][metric], runs[run][std_met])],
+                #[m+sqrt(std) for m, std in zip(runs[run][metric], runs[run][std_met])],
+                #    alpha=0.2)
                     ax.set_title(metric[:-5])
                 else:
                     ax.set_title(metric)

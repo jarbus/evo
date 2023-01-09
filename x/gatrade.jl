@@ -179,7 +179,9 @@ function main()
         # LOG
         @spawnat 1 begin
         if g % 1 == 0
-            ts("log start")
+            llog(islocal=args["local"], name=logname) do logfile
+                ts(logfile, "log start")
+            end
 
             # Compute and write metrics
             outdir = "outs/$clsname/$expname/"*string(g, pad=3, base=10)
