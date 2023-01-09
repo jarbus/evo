@@ -1,1 +1,1 @@
-{"author":{"id":"2925f8bae681ccf02a1c1ecc82cbb827e525744b16a0948b37a0b024362c4ec0"},"ops":[{"type":5,"timestamp":1673285653,"nonce":"4cTCY9aOSy+IycO1Yt2AKJhgTHo=","added":["idea","todo"],"removed":null}]}
+{"author":{"id":"2925f8bae681ccf02a1c1ecc82cbb827e525744b16a0948b37a0b024362c4ec0"},"ops":[{"type":2,"timestamp":1673285664,"nonce":"Y8fTW0po+vUFXlkv3GQIQeWaUoE=","title":"todo: collect metrics from pmap instead of eval","was":"todo: collect metrics from pmap"}]}
