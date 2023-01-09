@@ -1,1 +1,1 @@
-{"author":{"id":"2925f8bae681ccf02a1c1ecc82cbb827e525744b16a0948b37a0b024362c4ec0"},"ops":[{"type":1,"timestamp":1673276132,"nonce":"JF58h+vX24gmPIz6q5tcnr/6UVw=","title":"todo: test small rollout group size with 2fire","message":"","files":null}]}
+{"author":{"id":"2925f8bae681ccf02a1c1ecc82cbb827e525744b16a0948b37a0b024362c4ec0"},"ops":[{"type":5,"timestamp":1673276135,"nonce":"/C/7SJ/EONjMsfAjjk5XF4K0irQ=","added":["todo"],"removed":null}]}
