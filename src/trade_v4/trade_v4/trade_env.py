@@ -237,7 +237,12 @@ class Trade:
         self.agent_positions = {agent: spawn_spot for agent, spawn_spot in zip(self.agents, spawn_spots)}
         self.steps = 0
         self.communications = {agent: [0 for j in range(self.vocab_size)] for agent in self.agents}
-        self.agent_food_counts = {agent: [self.food_agent_start for f in range(self.food_types)] for agent in self.agents}
+        self.agent_food_counts = {agent: [0 for f in range(self.food_types)] for agent in self.agents}
+        # Each agent starts with self.food_agent_spawn of a single resource,
+        # used for trading scenarios
+        for i, a in enumerate(self.agents):
+            self.agent_food_counts[a][i % self.food_types] = self.food_agent_spawn
+
         self.mc = TradeMetricCollector(self)
         return {self.agents[0]: self.compute_observation(self.agents[0])}
 
