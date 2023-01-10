@@ -64,8 +64,8 @@ function add_to_archive!(archive, BC, pop, prob)
 end
 
 elite(x) = length(x) > 2 ? x[1:end-2] : x
-mr(x) = length(x) > 1 ? x[end-1] : 10.0 ^ rand(-2:-1:-5)
-M(x) = clamp(x*(2^(rand()*2-1)), 10.0^-5, 10.0^-2)
+mr(x) = length(x) > 1 ? x[end-1] : 10.0 ^ rand(-1:-1:-5)
+M(x) = clamp(x*(2^(rand()*2-1)), 10.0^-5, 10.0^-1)
 function create_next_pop(gen::Int,
         sc,
         pop::Vector{Vector{Float64}},
@@ -96,8 +96,8 @@ function create_next_pop(gen::Int,
          ) for i in 1:num]
     end
     if gen == 1
-        Fσs = [10.0^rand(-2:-1:-5) for _ in 1:num_elite_exploiters]
-        Nσs = [10.0^rand(-2:-1:-5) for _ in 1:num_elite_explorers]
+        Fσs = [10.0^rand(-1:-1:-5) for _ in 1:num_elite_exploiters]
+        Nσs = [10.0^rand(-1:-1:-5) for _ in 1:num_elite_explorers]
     else
         σs = [mr(pop[i]) for i in (1+num_elites):pop_size]
         ΔFs = [f - sc[elite(pop[i])][:fitness] for (i,f) in enumerate(fitnesses[1+num_elites:end])]
