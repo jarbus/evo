@@ -31,7 +31,7 @@ class TradeMetricCollector():
         self.player_exchanges = {(a, b, f): 0 for a in env.agents for b in env.agents for f in range(env.food_types)}
         self.lifetimes = {agent: 0 for agent in env.agents}
         # per agent dict for light reward
-        self.lights = {agent: 0 for agent in env.agents}
+        self.night_penalties_avoided = {agent: 0 for agent in env.agents}
         self.rews = {agent: 0 for agent in env.agents}
 
     def collect_lifetimes(self, dones):
@@ -51,7 +51,11 @@ class TradeMetricCollector():
         self.picked_counts[agent][food] += env.compute_pick_amount(x, y, food, agent_id)
         pass
 
-    def collect_rews(self, agent, base_health, nn, other_survival_bonus, pun_rew, mov_rew, light, action_rewards):
+    def collect_avoided_darkness(self, env, agent):
+        if env.light.contains(env.agent_positions[agent]) and env.light.light_level < 0:
+            self.night_penalties_avoided[agent] += 1
+
+    def collect_rews(self, _, base_health, nn, other_survival_bonus, pun_rew, mov_rew, light, action_rewards):
         self.rew_base_health          += base_health
         self.rew_nn                   += nn
         self.rew_other_survival_bonus += other_survival_bonus
@@ -59,7 +63,6 @@ class TradeMetricCollector():
         self.rew_mov                  += mov_rew
         self.rew_light                += light
         self.rew_acts                 += action_rewards
-        self.lights[agent]            += light
 
     def collect_rew(self, agent, rew):
         self.rews[agent] += rew
@@ -90,7 +93,7 @@ class TradeMetricCollector():
         avg_pos = [avg_pos[i] / env.grid_size[i] for i in range(len(env.grid_size))]
         bc[f:(f+2)] = avg_pos
         f +=2
-        bc[f] = self.lights[agent] / env.max_steps
+        bc[f] = self.night_penalties_avoided[agent] / 3
         f +=1
         # we only want to compare positive rewards along this dimension, since we compare light penalty separately
         bc[f] = max(0, self.rews[agent])
@@ -448,6 +451,7 @@ class Trade:
 
         # Remember to update this function whenever you add a new reward
         self.mc.collect_rews(agent, base_health, nn_rew, other_survival_bonus, pun_rew, mov_rew, light_rew, act_rew)
+        self.mc.collect_avoided_darkness(self, agent)
 
         rew  = base_health + light_rew + act_rew
         self.mc.collect_rew(agent, rew)
