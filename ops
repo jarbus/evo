@@ -1,1 +1,1 @@
-{"author":{"id":"2925f8bae681ccf02a1c1ecc82cbb827e525744b16a0948b37a0b024362c4ec0"},"ops":[{"type":3,"timestamp":1673392406,"nonce":"9qWZ4ctDcKcasessRmhGK2X6DrI=","message":"it would be helpful to change visualizer to show just the elites","files":null}]}
+{"author":{"id":"2925f8bae681ccf02a1c1ecc82cbb827e525744b16a0948b37a0b024362c4ec0"},"ops":[{"type":2,"timestamp":1673392477,"nonce":"XLJlHvuwJdR6NtsdTmMqIBIuRYg=","title":"todo: explore why novelty crashed for maze-test/full-adaptive","was":"todo: explore why novelty crashed for maze"}]}
