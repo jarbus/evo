@@ -1,1 +1,1 @@
-{"author":{"id":"2925f8bae681ccf02a1c1ecc82cbb827e525744b16a0948b37a0b024362c4ec0"},"ops":[{"type":3,"timestamp":1673391072,"nonce":"lktepxVucOGqbrz+fuooXlUlF6c=","message":"crashed from gen 23-\u003e25","files":null}]}
+{"author":{"id":"2925f8bae681ccf02a1c1ecc82cbb827e525744b16a0948b37a0b024362c4ec0"},"ops":[{"type":8,"timestamp":1673391601,"nonce":"I2Zf0y+yy/KublyXfwzVBcfNsB4=","target":"da3a9fb36a018215d57bec36e594af9d123d5e2fdd98909c142d925375db67a6","new_metadata":{"github-id":"I_kwDOITEkGs5bFWRC","github-url":"https://github.com/jarbus/evotrade/issues/106"}}]}
