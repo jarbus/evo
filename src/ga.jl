@@ -224,6 +224,9 @@ function create_rollout_groups(pop::Vector{<:Vector{<:AbstractFloat}},
         Vector `v` is length 2, where `v[1]` is the count of how many times
     this member has been chosen and `v[2]` is the member seed itself.
     """
+    if rollout_group_size == 1
+        return create_rollout_groups(pop, rollout_group_size, rollouts_per_ind)
+    end
 
     function make_group!(g_pop, g_elites, n)
         n_pop = ceil(Int, n/2)
@@ -268,7 +271,7 @@ end
 function create_rollout_groups(pop::Vector{<:Vector{<:AbstractFloat}},
         rollout_group_size::Int, rollouts_per_ind::Int)
 
-    n_groups = ceil(Int, rollouts_per_ind*2*length(pop)/rollout_group_size)
+    n_groups = ceil(Int, rollouts_per_ind*length(pop)/rollout_group_size)
     function make_group!(g_pop, n)
         group_pop_ids = popn!(g_pop, n)
         group_pop = [(i, pop[i]) for i in group_pop_ids] |> shuffle
@@ -287,7 +290,7 @@ function create_rollout_groups(pop::Vector{<:Vector{<:AbstractFloat}},
         end
     end
     for count in values(counts)
-        @assert count == rollouts_per_ind*2 || count == rollouts_per_ind*2 + 1
+        @assert count == rollouts_per_ind || count == rollouts_per_ind + 1
     end
     groups
 end
