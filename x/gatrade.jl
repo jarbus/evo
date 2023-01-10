@@ -74,7 +74,7 @@ function main()
         model_size = length(θ)
         # pass mazeenv struct or trade config dict
         env = env isa MazeEnv ? env : env_config
-        global sc = SeedCache(maxsize=args["num-elites"]*2)
+        global sc = SeedCache(maxsize=args["num-elites"]*3)
     end
     llog(islocal=args["local"], name=logname) do logfile
         print(logfile, "Running on commit: "*read(`git rev-parse --short HEAD`, String))
@@ -248,7 +248,7 @@ function main()
         @everywhere cache_elites!(sc, mi, $elites)
 
         # Save seed cache without parameters
-        sc_no_params = SeedCache(maxsize=2*args["num-elites"])
+        sc_no_params = SeedCache(maxsize=3*args["num-elites"])
         for (k,v) in sc
             sc_no_params[k] = Dict(ke=>ve for (ke,ve) in v if ke != :params)
         end
