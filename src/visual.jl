@@ -22,7 +22,7 @@ function plot_walks(name::String,
     max_fit = max(maximum(color_fits), 0.1)
     color_novs = copy(novs) .- minimum(novs)
     max_nov = max(maximum(color_novs), 0.1)
-    function color(fit::AbstractFloat, nov::AbstractFloat)
+    function col(fit::AbstractFloat, nov::AbstractFloat)
         color = colorant"white"*0.2 + colorant"blue"*(nov/max_nov)*0.8 + colorant"white"*(fit/max_fit)*0.8
         # not really a better way to do this afaik
         r = clamp(red(color), 0, 1)
@@ -30,7 +30,7 @@ function plot_walks(name::String,
         b = clamp(blue(color), 0, 1)
         RGB(r, g, b)
     end
-    colors = [color(fit, nov) for (nov, fit) in zip(color_novs, color_fits)]
+    colors = [col(fit, nov) for (nov, fit) in zip(color_novs, color_fits)]
     hm = heatmap(grid, colorbar = false, background_color=colorant"black", foreground_color=colorant"white")
 
     for i in sortperm(fits)
@@ -38,7 +38,6 @@ function plot_walks(name::String,
         plot!(hm, offset_walk, legend = false, xticks=[], yticks=[], color=colors[i])
     end
     savefig(hm, name)
-
 end
 
 function plot_grid_and_walks(env,
