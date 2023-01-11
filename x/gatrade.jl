@@ -175,6 +175,9 @@ function main()
         end
         novelties = compute_novelties(bc_matrix, pop_and_arch, k=min(pop_size-1, 25))
         @assert length(novelties) == pop_size
+        llog(islocal=args["local"], name=logname) do logfile
+            ts(logfile, "most novel bc: $(BC[argmax(novelties)])")
+        end
 
         # LOG
         @spawnat 1 begin
