@@ -5,12 +5,13 @@ function run_batch(env::MazeEnv, models::Dict{String,<:Chain}, args; evaluation=
     batch_size = isnothing(batch_size) ? args["batch-size"] : batch_size
     @assert batch_size==1
     rewards, bcs = [], []
-    sample_act_func = evaluation ? x->[argmax(c) for c in eachcol(x)] : sample_batch
+    #sample_act_func = evaluation ? x->[argmax(c) for c in eachcol(x)] : sample_batch
+    sample_act_func = x->[argmax(c) for c in eachcol(x)]
     walk = Vector{Tuple{Float64,Float64}}()
     for i in 1:batch_size 
         EvoTrade.Maze.reset!(env)
         r = -Inf
-        for i in 1:args["episode-length"]
+        for j in 1:args["episode-length"]
             obs = get_obs(env)
             probs = model(obs)
             acts = sample_act_func(probs)
