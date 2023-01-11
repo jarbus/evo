@@ -126,7 +126,7 @@ function create_next_pop(gen::Int,
     @assert length(elites) == num_elites
     @assert exploiter_elites[1][:seeds] == next_pop[1]
     @assert exploiter_elites[num_elite_exploiters][:seeds] == next_pop[num_elite_exploiters]
-    if length(explorer_elites) > 1 &&
+    if length(explorer_elites) > 1
         @assert explorer_elites[1][:seeds] == next_pop[1+num_elite_exploiters]
         @assert explorer_elites[num_elite_explorers][:seeds] == next_pop[num_elite_explorers+num_elite_exploiters]
     end
