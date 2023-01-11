@@ -54,7 +54,7 @@ using StableRNGs
   pop_size = 100
   n_elites = 3
   model_size = 10_000
-  param_cache::SeedCache = SeedCache(maxsize=n_elites*2)
+  param_cache::SeedCache = SeedCache(maxsize=n_elites*3)
   m = make_model(:large, (11, 11, 7, 10), 4, lstm=true)
   mi = ModelInfo(m)
   pop = [rand(1.0:1000.0, 1) for _ in 1:pop_size]
@@ -66,13 +66,18 @@ using StableRNGs
   cache_elites!(param_cache, mi, elites)
   reconstruct(param_cache, mi, pop[1])
 
-  for i in 1:100
+  for i in 1:5
       fitnesses = rand(pop_size)
+      fitnesses[1] = 2
       novelties = rand(pop_size)
       bcs = [rand(3) for _ in 1:pop_size]
+      p1_1 = reconstruct(param_cache, mi, pop[1])
       pop, elites = create_next_pop(2, param_cache, pop, fitnesses, novelties, bcs, γ, n_elites)
       cache_elites!(param_cache, mi, elites)
-      hits = 0
+      p1_2 = reconstruct(param_cache, mi, pop[1])
+      p1_3 = reconstruct(param_cache, mi, pop[1])
+      @test p1_1 == p1_2 == p1_3
+      # hits = 0
    # for j in 1:pop_size
    #   theta = reconstruct(param_cache, mi, pop[j])
    #   # if rand() < 0.01
