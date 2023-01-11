@@ -21,7 +21,12 @@ function cache_elites!(param_cache::SeedCache, mi::ModelInfo, elites::Vector{<:A
     elite[:params] = reconstruct(param_cache, mi, elite[:seeds])
   end
   for elite in elites
-    param_cache[elite[:seeds]] = elite
+    try
+      param_cache[elite[:seeds]] = elite
+    catch
+      @assert elite[:seeds] in keys(param_cache)
+      @assert length(param_cache) <= param_cache.maxsize
+    end
   end
 end
 
