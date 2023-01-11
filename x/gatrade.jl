@@ -188,7 +188,7 @@ function main()
 
             run(`mkdir -p $outdir`)
 
-            plot_grid_and_walks(env, "$outdir/pop.png", grid, walks, novelties, F)
+            plot_grid_and_walks(env, "$outdir/pop.png", grid, walks, novelties, F, args["num-elites"], γ)
 
             # TODO make this select random rollouts with duplicates of fit agents
             # run parallel visualization on most fit most novel members 

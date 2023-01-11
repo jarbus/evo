@@ -14,8 +14,13 @@ function plot_walks(name::String,
         grid::AbstractArray{<:Real},
         walks::Vector,
         novs::Vector{<:Real},
-        fits::Vector{<:Real})
+        fits::Vector{<:Real}, num_elites::Int, γ::AbstractFloat)
     """walks::{Vector{NTuple{2, Float64}}}"""
+    # Make sure following 2 lines is the same as src/ga.jl::create_next_pop()
+    num_elite_explorers = floor(Int, γ * num_elites)
+    num_elite_exploiters = num_elites - num_elite_explorers
+    elite_exploiter_idxs = sortperm(fits, rev=true)[1:num_elite_exploiters]
+    elite_explorer_idxs = sortperm(novs, rev=true)[1:num_elite_explorers]
     colors = :blue
     @assert length(novs) == length(walks) == length(fits)
     color_fits = copy(fits) .- minimum(fits)
@@ -34,8 +39,18 @@ function plot_walks(name::String,
     hm = heatmap(grid, colorbar = false, background_color=colorant"black", foreground_color=colorant"white")
 
     for i in sortperm(fits)
+        marker_shape=:none
+        marker_color=:match
+        if i in elite_exploiter_idxs
+            marker_shape=:hexagon
+            marker_color=:white
+        elseif i in elite_explorer_idxs
+            println("painting elite explorer")
+            marker_shape=:hexagon
+            marker_color=:blue
+        end
         offset_walk = [(1+p[1], 1+p[2]) for p in walks[i]]
-        plot!(hm, offset_walk, legend = false, xticks=[], yticks=[], color=colors[i])
+        plot!(hm, offset_walk, legend = false, xticks=[], yticks=[], color=colors[i], markershape=marker_shape, markercolor=marker_color)
     end
     savefig(hm, name)
 end
@@ -45,10 +60,11 @@ function plot_grid_and_walks(env,
         grid::AbstractArray,
         walks::Vector,
         novs::Vector{<:Real},
-        fits::Vector{<:Real})
+        fits::Vector{<:Real},
+        num_elites::Int, γ::AbstractFloat)
     """walks::{Vector{NTuple{2, Float64}}}"""
     grid = prep_grid(env, grid)
-    plot_walks(name, grid, walks, novs, fits)
+    plot_walks(name, grid, walks, novs, fits, num_elites, γ)
 end
 
 function vis_outs(dirname::String, islocal::Bool)

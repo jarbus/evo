@@ -79,6 +79,7 @@ function create_next_pop(gen::Int,
     @assert 0 < num_elites < pop_size
     @assert pop_size > 0
     new_pop_size = pop_size - num_elites
+    # If you change the below two lines, update src/visual.jl::plot_walks() too
     num_elite_explorers = floor(Int, γ * num_elites)
     num_elite_exploiters = num_elites - num_elite_explorers
     @assert num_elite_explorers + num_elite_exploiters == num_elites
@@ -124,6 +125,11 @@ function create_next_pop(gen::Int,
     @assert length(next_pop) == pop_size
     @assert length(elites) == num_elites
     @assert exploiter_elites[1][:seeds] == next_pop[1]
+    @assert exploiter_elites[num_elite_exploiters][:seeds] == next_pop[num_elite_exploiters]
+    if length(explorer_elites) > 1 &&
+        @assert explorer_elites[1][:seeds] == next_pop[1+num_elite_exploiters]
+        @assert explorer_elites[num_elite_explorers][:seeds] == next_pop[num_elite_explorers+num_elite_exploiters]
+    end
 
     next_pop, elites
 end
