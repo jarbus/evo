@@ -111,7 +111,10 @@ function main()
         end
         #pop, elites = create_next_pop(start_gen-1, sc, check["pop"], F, novelties, BC, γ, args["num-elites"])
         #@everywhere cache_elites!(sc, mi, $elites)
-        ts("resuming from gen $start_gen")
+
+        llog(islocal=args["local"], name=logname) do logfile
+            ts(logfile, "resuming from gen $start_gen")
+        end
     end
 
     for g in start_gen:args["num-gens"]
