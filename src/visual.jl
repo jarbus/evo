@@ -44,11 +44,14 @@ function plot_walks(name::String,
         if i in elite_exploiter_idxs
             marker_shape=:hexagon
             marker_color=:white
-        elseif i in elite_explorer_idxs
-            println("painting elite explorer")
-            marker_shape=:hexagon
-            marker_color=:blue
         end
+        offset_walk = [(1+p[1], 1+p[2]) for p in walks[i]]
+        plot!(hm, offset_walk, legend = false, xticks=[], yticks=[], color=colors[i], markershape=marker_shape, markercolor=marker_color)
+    end
+    # paint explorers elites on top of fit
+    marker_shape=:hexagon
+    marker_color=:blue
+    for i in elite_explorer_idxs
         offset_walk = [(1+p[1], 1+p[2]) for p in walks[i]]
         plot!(hm, offset_walk, legend = false, xticks=[], yticks=[], color=colors[i], markershape=marker_shape, markercolor=marker_color)
     end
