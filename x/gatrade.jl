@@ -180,6 +180,7 @@ function main()
         @assert length(novelties) == pop_size
         llog(islocal=args["local"], name=logname) do logfile
             ts(logfile, "most novel bc: $(BC[argmax(novelties)])")
+            ts(logfile, "most fit bc: $(BC[argmax(F)])")
         end
 
         # LOG
@@ -196,8 +197,6 @@ function main()
 
             plot_grid_and_walks(env, "$outdir/pop.png", grid, walks, novelties, F, args["num-elites"], γ)
 
-            # TODO make this select random rollouts with duplicates of fit agents
-            # run parallel visualization on most fit most novel members 
             eval_best_idxs = sortperm(F, rev=true)[1:args["rollout-group-size"]]
             eval_group_idxs = [rand(eval_best_idxs, args["rollout-group-size"]) for _ in 1:10]
             eval_group_seeds = [[pop[idx] for idx in idxs] for idxs in eval_group_idxs]
