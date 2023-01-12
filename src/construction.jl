@@ -40,7 +40,8 @@ function reconstruct(param_cache::SeedCache, mi::ModelInfo, seeds_and_muts::Vect
   if length(seeds_and_muts) == 1
     elite = gen_params(StableRNG(Int(seeds_and_muts[1])), mi, 1)
     return elite
-  elseif seeds_and_muts in keys(param_cache) # elite that was directly copied over
+  # elite that was directly copied over 
+  elseif seeds_and_muts in keys(param_cache) && haskey(param_cache[seeds_and_muts], :params)
     return copy(param_cache[seeds_and_muts][:params])
   # Get cached elite
   elseif seeds_and_muts[1:end-2] in keys(param_cache) && haskey(param_cache[seeds_and_muts[1:end-2]], :params)
