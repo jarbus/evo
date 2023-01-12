@@ -59,7 +59,7 @@ end
 lb(rng, l::Tuple, b::Bool) = b ? zeros(Float32, l) : glorot_normal(rng, l...)
 init_params(rng, sizes::Vector{Tuple}, biases::Vector{Bool}) = vcat([lb(rng,l,b)[:] for (l,b) in zip(sizes, biases)]...)
 non_init_params(rng, sizes::Vector{Tuple}, biases::Vector{Bool}) =
-  vcat(map(x->glorot_normal(rng, x...)[:], sizes)...)
+  vcat(map(x->randn(rng, x...)[:], sizes)...)
 function gen_params(rng, lens, biases, gen)
     gen == 1 && return init_params(rng, lens, biases) 
     non_init_params(rng, lens, biases)
