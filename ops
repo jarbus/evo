@@ -1,1 +1,1 @@
-{"author":{"id":"2925f8bae681ccf02a1c1ecc82cbb827e525744b16a0948b37a0b024362c4ec0"},"ops":[{"type":1,"timestamp":1673588820,"nonce":"ZLHfAty7Nmsds8LGIZ1yG1245vM=","title":"cache_elites takes more time than pmapping, investigate why. it might just be doing its job to reduce the time it takes to parallel map.","message":"","files":null}]}
+{"author":{"id":"2925f8bae681ccf02a1c1ecc82cbb827e525744b16a0948b37a0b024362c4ec0"},"ops":[{"type":5,"timestamp":1673588824,"nonce":"sZJ9S4TMIDxv34JGrZ+alvRnANI=","added":["bug"],"removed":null}]}
