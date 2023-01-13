@@ -15,7 +15,7 @@ using Infiltrator
 
     env_config = mk_env_config(args)
 
-    function fitness(group::Vector)
+    function fitness(group::Vector, eval_gen)
         counts = Dict{Int, Int}()
         for (i, _) in group
             counts[i] = get(counts, i, 0) + 1
@@ -36,6 +36,9 @@ using Infiltrator
                 push!(rews[i], rew_dict[a_id])
                 push!(bcs[i], bc_dict[a_id])
                 push!(infos["avg_walks"][i], info_dict["avg_walks"][a_id])
+            end
+            if !eval_gen
+                infos["avg_walks"][i] = []
             end
         end
         for (i, _) in group
@@ -119,6 +122,7 @@ function main()
 
     for g in start_gen:args["num-gens"]
 
+        eval_gen = g % 50 == 1
         llog(islocal=args["local"], name=logname) do logfile
             ts(logfile, "pmapping")
         end
@@ -130,7 +134,7 @@ function main()
         end
 
         fetches = pmap(groups) do g
-            fitness(g)
+            fitness(g, eval_gen)
         end
 
         F = [[] for _ in 1:pop_size]
@@ -144,7 +148,9 @@ function main()
         @assert all(length.(F) .>= args["rollout-groups-per-mut"])
         F = [mean(f) for f in F]
         BC = [average_bc(bcs) for bcs in BC]
-        walks = [average_walk(w) for w in walks_list]
+        if eval_gen
+            walks = [average_walk(w) for w in walks_list]
+        end
 
 
         @assert length(F) == length(BC) == pop_size
@@ -184,52 +190,52 @@ function main()
         end
 
         # LOG
-        @spawnat 1 begin
-        if g % 1 == 0
-            llog(islocal=args["local"], name=logname) do logfile
-                ts(logfile, "log start")
-            end
+        if eval_gen
+            @spawnat 1 begin
+               llog(islocal=args["local"], name=logname) do logfile
+                   ts(logfile, "log start")
+               end
 
-            # Compute and write metrics
-            outdir = "outs/$clsname/$expname/"*string(g, pad=3, base=10)
+               # Compute and write metrics
+               outdir = "outs/$clsname/$expname/"*string(g, pad=3, base=10)
 
-            run(`mkdir -p $outdir`)
+               run(`mkdir -p $outdir`)
 
-            plot_grid_and_walks(env, "$outdir/pop.png", grid, walks, novelties, F, args["num-elites"], γ)
+               plot_grid_and_walks(env, "$outdir/pop.png", grid, walks, novelties, F, args["num-elites"], γ)
 
-            eval_best_idxs = sortperm(F, rev=true)[1:args["rollout-group-size"]]
-            eval_group_idxs = [rand(eval_best_idxs, args["rollout-group-size"]) for _ in 1:10]
-            eval_group_seeds = [[pop[idx] for idx in idxs] for idxs in eval_group_idxs]
-            mets = pmap(eval_group_seeds) do group_seeds
-                models = Dict("p$i" => re(reconstruct(sc, mi, seeds)) for (i, seeds) in enumerate(group_seeds))
-                str_name = joinpath(outdir, string(hash(group_seeds))*"-"*string(myid()))
-                rew_dict, metrics, _, _ = run_batch(env, models, args, evaluation=true, render_str=str_name, batch_size=1)
-                metrics
-            end
-            # average all the rollout metrics
-            mets = Dict(k => mean([m[k] for m in mets]) for k in keys(mets[1]))
-            isnothing(args["maze"]) && vis_outs(outdir, args["local"])
+               eval_best_idxs = sortperm(F, rev=true)[1:args["num-elites"]]
+               eval_group_idxs = [rand(eval_best_idxs, args["rollout-group-size"]) for _ in 1:10]
+               eval_group_seeds = [[pop[idx] for idx in idxs] for idxs in eval_group_idxs]
+               mets = pmap(eval_group_seeds) do group_seeds
+                   models = Dict("p$i" => re(reconstruct(sc, mi, seeds)) for (i, seeds) in enumerate(group_seeds))
+                   str_name = joinpath(outdir, string(hash(group_seeds))*"-"*string(myid()))
+                   rew_dict, metrics, _, _ = run_batch(env, models, args, evaluation=true, render_str=str_name, batch_size=1)
+                   metrics
+               end
+               # average all the rollout metrics
+               mets = Dict(k => mean([m[k] for m in mets]) for k in keys(mets[1]))
+               isnothing(args["maze"]) && vis_outs(outdir, args["local"])
 
-            muts = g > 1 ? [mr(pop[i]) for i in 1:pop_size] : [0.0]
-            mets["gamma"] = γ
-            mets["min_param"] = minimum([fet[3]["min_params"] for fet in fetches])
-            mets["max_param"] = maximum([fet[3]["max_params"] for fet in fetches])
-            log_mmm!(mets, "mutation_rate", muts)
-            log_mmm!(mets, "fitness", F)
-            log_mmm!(mets, "novelty", novelties)
-            df = update_df(df, mets)
-            write_mets(met_csv_name, df)
+               muts = g > 1 ? [mr(pop[i]) for i in 1:pop_size] : [0.0]
+               mets["gamma"] = γ
+               mets["min_param"] = minimum([fet[3]["min_params"] for fet in fetches])
+               mets["max_param"] = maximum([fet[3]["max_params"] for fet in fetches])
+               log_mmm!(mets, "mutation_rate", muts)
+               log_mmm!(mets, "fitness", F)
+               log_mmm!(mets, "novelty", novelties)
+               df = update_df(df, mets)
+               write_mets(met_csv_name, df)
 
-            # Log to file
-            avg_self_fit = round(mets["fitness_mean"]; digits=2)
-            llog(islocal=args["local"], name=logname) do logfile
-                ts(logfile, "Generation $g: $avg_self_fit")
-            end
+               # Log to file
+               avg_self_fit = round(mets["fitness_mean"]; digits=2)
+               llog(islocal=args["local"], name=logname) do logfile
+                   ts(logfile, "Generation $g: $avg_self_fit")
+               end
 
-            llog(islocal=args["local"], name=logname) do logfile
-                ts(logfile, "log end")
-            end
-        end
+               llog(islocal=args["local"], name=logname) do logfile
+                   ts(logfile, "log end")
+               end
+           end
         end
         if best[1] > 15
             best_bc = BC[argmax(F)]
