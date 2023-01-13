@@ -109,11 +109,16 @@ function main()
         global pop = check["pop"]
         global elites = check["elites"]
 
-        for p in pop
-            @assert elite(p) in keys(sc)
-        end
+        #for p in pop
+        #    @assert elite(p) in keys(sc)
+        #end
         #pop, elites = create_next_pop(start_gen-1, sc, check["pop"], F, novelties, BC, γ, args["num-elites"])
-        @everywhere cache_elites!(sc, mi, $elites)
+
+        new_elites = deepcopy(elites)
+        for i in 1:length(new_elites)
+            new_elites[i][:seeds] = new_elites[i][:seeds][1:2:end]
+        end
+        @everywhere cache_elites!(sc, mi, $new_elites)
 
         llog(islocal=args["local"], name=logname) do logfile
             ts(logfile, "resuming from gen $start_gen")
@@ -123,6 +128,7 @@ function main()
     for g in start_gen:args["num-gens"]
 
         eval_gen = g % 50 == 1
+
         llog(islocal=args["local"], name=logname) do logfile
             ts(logfile, "pmapping")
         end
@@ -253,7 +259,13 @@ function main()
         # Save checkpoint
         save(check_name, Dict("gen"=>g, "gamma"=>γ, "pop"=>pop, "archive"=>archive, "BC"=> BC, "F"=>F, "best"=>best, "novelties"=>novelties, "elites"=>elites))
 
-        @everywhere cache_elites!(sc, mi, $elites)
+        # only cache new elites
+        new_elites = g > 1 ? [deepcopy(e) for e in elites if !in(e[:seeds], keys(sc))] : deepcopy(elites)
+        # ignore mutations
+        for i in 1:length(new_elites)
+            new_elites[i][:seeds] = new_elites[i][:seeds][1:2:end]
+        end
+        @everywhere cache_elites!(sc, mi, $new_elites)
 
         # Save seed cache without parameters
         sc_no_params = SeedCache(maxsize=3*args["num-elites"])
