@@ -18,7 +18,7 @@ function compute_novelty(ind_bc::Vector, archive_and_pop::Matrix; k::Int=25)::Fl
     @assert k < size(archive_and_pop, 2)
     @assert size(ind_bc,1) == size(archive_and_pop, 1)
     # Assumptions: Novelty against self is zero, ind_bc is in archive_and_pop
-    kdtree = KDTree(archive_and_pop, leafsize=100000)
+    kdtree = KDTree(archive_and_pop, leafsize=10)
     inds, dists = knn(kdtree, ind_bc, k+1)
     # @assert length(dists) == length(archive_and_pop) - k
     return sum(dists) / k
@@ -32,7 +32,7 @@ function compute_novelties(ind_bc::Matrix, archive_and_pop::Matrix; k::Int=25)
     @assert size(ind_bc, 1) == size(archive_and_pop, 1)
     @assert size(ind_bc, 1) == size(archive_and_pop, 1)
     # Assumptions: Novelty against self is zero, ind_bc is in archive_and_pop
-    kdtree = KDTree(archive_and_pop, leafsize=100000)
+    kdtree = KDTree(archive_and_pop, leafsize=10)
     inds, dists = knn(kdtree, ind_bc, k+1)
     # @assert length(dists) == length(archive_and_pop) - k
     return [sum(d) / k for d in dists]
