@@ -23,13 +23,13 @@ function cache_elites!(param_cache::SeedCache, mi::ModelInfo, compressed_elites:
     elite[:params] = reconstruct(param_cache, mi, elite[:seeds])
   end
   for elite in elites
-    # try
+    try
       param_cache[elite[:seeds]] = elite
       @assert elite[:seeds] in keys(param_cache)
-    # catch
-    #   @assert elite[:seeds] in keys(param_cache)
-    #   @assert length(param_cache) <= param_cache.maxsize
-    # end
+    catch
+      @assert elite[:seeds] in keys(param_cache)
+      @assert length(param_cache) <= param_cache.maxsize
+    end
   end
 end
 

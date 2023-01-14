@@ -101,11 +101,16 @@ function main()
     # check if check exists on the file system
     if isfile(check_name)
         df = isfile(met_csv_name) ? CSV.read(met_csv_name, DataFrame) : nothing
-        check = load(check_name)
+        try
+            global check = load(check_name)
+            global sc = load(sc_name)["sc"]
+        catch
+            global check = load(check_name*"-old")
+            global sc = load(sc_name*"-old")["sc"]
+        end
         start_gen = check["gen"] + 1
         γ = check["gamma"]
         F, BC, best, archive, novelties = getindex.((check,), ["F", "BC", "best","archive", "novelties"])
-        global sc = load(sc_name)["sc"]
         global pop = check["pop"]
         global elites = check["elites"]
 
@@ -123,6 +128,9 @@ function main()
     end
 
     for g in start_gen:args["num-gens"]
+        llog(islocal=args["local"], name=logname) do logfile
+            ts(logfile, "starting generation $g")
+        end
 
         eval_gen = g % 50 == 1
 
@@ -249,12 +257,18 @@ function main()
         end
 
         pop, elites = create_next_pop(g, sc, pop, F, novelties, BC, γ, args["num-elites"])
+        # Save checkpoint
+        if eval_gen
+            llog(islocal=args["local"], name=logname) do logfile
+                ts(logfile, "savefile")
+            end
+            isfile(check_name) && run(`mv $check_name $check_name-old`)
+            save(check_name, Dict("gen"=>g, "gamma"=>γ, "pop"=>pop, "archive"=>archive, "BC"=> BC, "F"=>F, "best"=>best, "novelties"=>novelties, "elites"=>elites))
+        end 
+
         llog(islocal=args["local"], name=logname) do logfile
             ts(logfile, "cache_elites")
         end
-        # Save checkpoint
-        save(check_name, Dict("gen"=>g, "gamma"=>γ, "pop"=>pop, "archive"=>archive, "BC"=> BC, "F"=>F, "best"=>best, "novelties"=>novelties, "elites"=>elites))
-
         # only cache new elites
         compressed_elites, prefix = compress_elites(sc, elites)
         n_zipped = length(filter(e->e[:seeds][1]==:pre, compressed_elites))
@@ -268,11 +282,14 @@ function main()
         @everywhere cache_elites!(sc, mi, $compressed_elites, $prefix)
 
         # Save seed cache without parameters
-        sc_no_params = SeedCache(maxsize=3*args["num-elites"])
-        for (k,v) in sc
-            sc_no_params[k] = Dict(ke=>ve for (ke,ve) in v if ke != :params)
+        if eval_gen
+            isfile(sc_name) && run(`mv $sc_name $sc_name-old`)
+            sc_no_params = SeedCache(maxsize=3*args["num-elites"])
+            for (k,v) in sc
+                sc_no_params[k] = Dict(ke=>ve for (ke,ve) in v if ke != :params)
+            end
+            save(sc_name, Dict("sc"=>sc_no_params))
         end
-        save(sc_name, Dict("sc"=>sc_no_params))
     end
 
 end
