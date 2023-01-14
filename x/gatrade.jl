@@ -260,18 +260,23 @@ function main()
         end
 
         pop, elites = create_next_pop(g, sc, pop, F, novelties, BC, γ, args["num-elites"])
-        # Save checkpoint
-        if eval_gen
-            llog(islocal=args["local"], name=logname) do logfile
-                ts(logfile, "savefile")
-            end
-            isfile(check_name) && run(`mv $check_name $check_name-old`)
-            save(check_name, Dict("gen"=>g, "gamma"=>γ, "pop"=>pop, "archive"=>archive, "BC"=> BC, "F"=>F, "best"=>best, "novelties"=>novelties, "elites"=>elites))
-        end 
 
-        llog(islocal=args["local"], name=logname) do logfile
-            ts(logfile, "cache_elites")
-        end
+        #llog(islocal=args["local"], name=logname) do logfile
+        #    ts(logfile, "cache_elites")
+        #end
+        ## only cache new elites
+        #compressed_elites, prefix = compress_elites(sc, elites)
+        #n_zipped = length(filter(e->e[:seeds][1]==:pre, compressed_elites))
+        #n_unzipped = length(filter(e->e[:seeds][1]!=:pre, compressed_elites))
+        #max_elite_len = maximum(length(e[:seeds]) for e in elites)
+        #llog(islocal=args["local"], name=logname) do logfile
+        #    ts(logfile, "prefix len: $(length(prefix)), max elite len: $max_elite_len")
+        #    ts(logfile, "elites sent zipped: $n_zipped unzipped: $n_unzipped")
+        #end
+
+        #@everywhere cache_elites!(sc, mi, $compressed_elites, $prefix)
+        #cache_elites!(sc, mi, compressed_elites, prefix)
+
         # only cache new elites
         # compressed_elites, prefix = compress_elites(sc, elites)
         # n_zipped = length(filter(e->e[:seeds][1]==:pre, compressed_elites))
@@ -282,10 +287,20 @@ function main()
         #     ts(logfile, "elites sent zipped: $n_zipped unzipped: $n_unzipped")
         # end
 
+        llog(islocal=args["local"], name=logname) do logfile
+            ts(logfile, "cache_elites")
+        end
         cache_elites!(sc, mi, elites)
 
-        # Save seed cache without parameters
         if eval_gen
+            # Save checkpoint
+            llog(islocal=args["local"], name=logname) do logfile
+                ts(logfile, "savefile")
+            end
+            isfile(check_name) && run(`mv $check_name $check_name-old`)
+            save(check_name, Dict("gen"=>g, "gamma"=>γ, "pop"=>pop, "archive"=>archive, "BC"=> BC, "F"=>F, "best"=>best, "novelties"=>novelties, "elites"=>elites))
+
+            # Save seed cache without parameters
             isfile(sc_name) && run(`mv $sc_name $sc_name-old`)
             sc_no_params = SeedCache(maxsize=3*args["num-elites"])
             for (k,v) in sc

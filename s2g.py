@@ -117,6 +117,7 @@ def plot_step(step: Step):
 
         p_pos = tuple(p / scale for p in reversed(player.pos))
 
+        p_pos = add_tuple(p_pos, (1/scale, 0))
         p_pos = add_tuple(p_pos, (0.15/scale, 0.15/scale))
         p_pos = add_tuple(p_pos, player_offsets[i])
         radius = 0.5/scale
