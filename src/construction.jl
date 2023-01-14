@@ -68,7 +68,7 @@ function reconstruct(param_cache::SeedCache, mi::ModelInfo, seeds_and_muts::Vect
     @inline @inbounds elite .+= gen_params(StableRNG(Int(seeds_and_muts[end])), mi, 2) * seeds_and_muts[end-1]
   # Recurse if not cached
   else
-    @inline @inbounds elite = reconstruct(param_cache, mi, seeds_and_muts[1:end-2])
+    @inline @inbounds elite = reconstruct(param_cache, mi, seeds_and_muts[1:end-2], elite_idxs)
     @inline @inbounds elite .+= gen_params(StableRNG(Int(seeds_and_muts[end])), mi, 2) * seeds_and_muts[end-1]
   end
   if length(seeds_and_muts) ∈ elite_idxs
