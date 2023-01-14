@@ -146,6 +146,24 @@ function main()
             groups = create_rollout_groups(pop, elites, args["rollout-group-size"], args["rollout-groups-per-mut"])
             groups = add_elite_idxs_to_groups(groups, elites)
         end
+        avg_set_len = 0
+        avg_pop_lens = 0
+        num_inds = 0
+        union_set = Set()
+        for g in groups
+            for ind in g
+                eset = ind[3]
+                avg_set_len += length(eset)
+                num_inds += 1
+                avg_pop_lens += length(ind[2])
+                union_set = union(union_set, eset)
+            end
+        end
+        llog(islocal=args["local"], name=logname) do logfile
+            ts(logfile, "avg num_elites_cached len: $(avg_set_len/num_inds)")
+            ts(logfile, "union set: $(union_set)")
+            ts(logfile, "avg pop len: $(avg_pop_lens/num_inds)")
+        end
 
         llog(islocal=args["local"], name=logname) do logfile
             ts(logfile, "pmapping")
