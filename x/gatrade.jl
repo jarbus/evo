@@ -120,8 +120,8 @@ function main()
         #end
         #pop, elites = create_next_pop(start_gen-1, sc, check["pop"], F, novelties, BC, γ, args["num-elites"])
 
-        compressed_elites, prefix = compress_elites(sc, elites)
-        @everywhere cache_elites!(sc, mi, $compressed_elites, $prefix)
+        # compressed_elites, prefix = compress_elites(sc, elites)
+        cache_elites!(sc, mi, elites)
 
         llog(islocal=args["local"], name=logname) do logfile
             ts(logfile, "resuming from gen $start_gen")
