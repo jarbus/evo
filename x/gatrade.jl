@@ -136,7 +136,7 @@ function main()
         eval_gen = g % 50 == 1
 
         llog(islocal=args["local"], name=logname) do logfile
-            ts(logfile, "pmapping")
+            ts(logfile, "creating groups")
         end
 
         if g == 1
@@ -145,6 +145,10 @@ function main()
         else
             groups = create_rollout_groups(pop, elites, args["rollout-group-size"], args["rollout-groups-per-mut"])
             groups = add_elite_idxs_to_groups(groups, elites)
+        end
+
+        llog(islocal=args["local"], name=logname) do logfile
+            ts(logfile, "pmapping")
         end
 
         fetches = pmap(wp, groups) do g

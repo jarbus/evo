@@ -333,6 +333,15 @@ function find_prefix(seeds::Vector)
     prefix
 end
 
+function find_first_nonmatching_idx(v1::Vector, v2::Vector)
+    for i in 1:min(length(v1), length(v2))
+        if v1[i] != v2[i]
+            return i
+        end
+    end
+    return min(length(v1), length(v2))
+end
+
 function add_elite_idxs_to_groups(groups, elites)
     """
     groups: Vector of Tuples t, t[i][1] is identifier , t[i][2] is seed
@@ -355,9 +364,7 @@ function add_elite_idxs_to_groups(groups, elites)
                 
                 # println("l_seed: $l_seed, l_eseed: $l_eseed")
                 # println("seed: $seed, eseed: $eseed")
-                if seed[1:l_eseed] == eseed
-                    push!(idxs, l_eseed)
-                end
+                push!(idxs, find_first_nonmatching_idx(seed, eseed))
             end
             push!(new_groups[end], (i, seed, idxs))
         end

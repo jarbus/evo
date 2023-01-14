@@ -25,4 +25,3 @@ arg_vector = read(file, String) |> split
 args = parse_args(vcat(arg_vector, expname), get_arg_table())
 make_procs(args)
 includet("x/"*args["algo"]*"trade.jl")
-main()
