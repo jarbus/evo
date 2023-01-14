@@ -21,7 +21,7 @@ using Infiltrator
             counts[i] = get(counts, i, 0) + 1
         end
         # creates mapping of pid_copy to params
-        params = Dict(aid(i, c)=>reconstruct(sc, mi, seeds) for (i, seeds) in group for c in 1:counts[i])
+        params = Dict(aid(i, c)=>reconstruct(sc, mi, seeds, e_idxs) for (i, seeds, e_idxs) in group for c in 1:counts[i])
         models = Dict(aid=>cpu(re(param)) for (aid, param) in params)
         rew_dict, _, bc_dict, info_dict = run_batch(env, models, args, evaluation=true)
         rews, bcs, infos = Dict(), Dict(), Dict{Any, Any}("avg_walks"=>Dict())
@@ -56,6 +56,7 @@ function main()
     logname="runs/$clsname/$dt_str-$expname.log"
     println("cls: $clsname\nexp: $expname")
     df = nothing
+    wp = WorkerPool(workers())
     @everywhere begin
         pop_size = args["pop-size"]
         if !isnothing(args["maze"])
@@ -140,11 +141,13 @@ function main()
 
         if g == 1
             groups = create_rollout_groups(pop, args["rollout-group-size"], args["rollout-groups-per-mut"])
+            groups = add_elite_idxs_to_groups(groups, [])
         else
             groups = create_rollout_groups(pop, elites, args["rollout-group-size"], args["rollout-groups-per-mut"])
+            groups = add_elite_idxs_to_groups(groups, elites)
         end
 
-        fetches = pmap(groups) do g
+        fetches = pmap(wp, groups) do g
             fitness(g, eval_gen)
         end
 
@@ -217,7 +220,7 @@ function main()
                eval_best_idxs = sortperm(F, rev=true)[1:args["num-elites"]]
                eval_group_idxs = [rand(eval_best_idxs, args["rollout-group-size"]) for _ in 1:10]
                eval_group_seeds = [[pop[idx] for idx in idxs] for idxs in eval_group_idxs]
-               mets = pmap(eval_group_seeds) do group_seeds
+               mets = pmap(wp, eval_group_seeds) do group_seeds
                    models = Dict("p$i" => re(reconstruct(sc, mi, seeds)) for (i, seeds) in enumerate(group_seeds))
                    str_name = joinpath(outdir, string(hash(group_seeds))*"-"*string(myid()))
                    rew_dict, metrics, _, _ = run_batch(env, models, args, evaluation=true, render_str=str_name, batch_size=1)
@@ -270,16 +273,16 @@ function main()
             ts(logfile, "cache_elites")
         end
         # only cache new elites
-        compressed_elites, prefix = compress_elites(sc, elites)
-        n_zipped = length(filter(e->e[:seeds][1]==:pre, compressed_elites))
-        n_unzipped = length(filter(e->e[:seeds][1]!=:pre, compressed_elites))
-        max_elite_len = maximum(length(e[:seeds]) for e in elites)
-        llog(islocal=args["local"], name=logname) do logfile
-            ts(logfile, "prefix len: $(length(prefix)), max elite len: $max_elite_len")
-            ts(logfile, "elites sent zipped: $n_zipped unzipped: $n_unzipped")
-        end
+        # compressed_elites, prefix = compress_elites(sc, elites)
+        # n_zipped = length(filter(e->e[:seeds][1]==:pre, compressed_elites))
+        # n_unzipped = length(filter(e->e[:seeds][1]!=:pre, compressed_elites))
+        # max_elite_len = maximum(length(e[:seeds]) for e in elites)
+        # llog(islocal=args["local"], name=logname) do logfile
+        #     ts(logfile, "prefix len: $(length(prefix)), max elite len: $max_elite_len")
+        #     ts(logfile, "elites sent zipped: $n_zipped unzipped: $n_unzipped")
+        # end
 
-        @everywhere cache_elites!(sc, mi, $compressed_elites, $prefix)
+        cache_elites!(sc, mi, elites)
 
         # Save seed cache without parameters
         if eval_gen

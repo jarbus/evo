@@ -10,7 +10,7 @@ export compute_novelty, compute_novelties,
 bc1, bc2, bc3, create_next_pop, add_to_archive!,
 reorder!, average_bc, compute_elite, dist, M,
 elite, mr, create_rollout_groups, average_walk,
-compress_elites, decompress_elites
+add_elite_idxs_to_groups
 
 dist(a, b) = sum((a .- b).^2)
 
@@ -97,16 +97,18 @@ function create_next_pop(gen::Int,
           :fitness => fitnesses[order[i]],
          ) for i in 1:num]
     end
-    if gen == 1
-        Fσs = [0.002f0 for _ in 1:num_elite_exploiters]
-        Nσs = [0.002f0 for _ in 1:num_elite_explorers]
-    else
-        σs = [mr(pop[i]) for i in (1+num_elites):pop_size]
-        ΔFs = [f - sc[elite(pop[i])][:fitness] for (i,f) in enumerate(fitnesses[1+num_elites:end])]
-        ΔNs = [dist(bc, sc[elite(pop[i])][:bc]) for (i,bc) in enumerate(bcs[1+num_elites:end])]
-        Fσs = σs[sortperm(ΔFs, rev=true)][1:num_elite_exploiters]
-        Nσs = σs[sortperm(ΔNs, rev=true)][1:num_elite_explorers]
-    end
+    # if gen == 1
+        # Fσs = [0.002f0 for _ in 1:num_elite_exploiters]
+        # Nσs = [0.002f0 for _ in 1:num_elite_explorers]
+    Fσs = [0.002f0]
+    Nσs = [0.002f0]
+    # else
+    #     σs = [mr(pop[i]) for i in (1+num_elites):pop_size]
+    #     ΔFs = [f - sc[elite(pop[i])][:fitness] for (i,f) in enumerate(fitnesses[1+num_elites:end])]
+    #     ΔNs = [dist(bc, sc[elite(pop[i])][:bc]) for (i,bc) in enumerate(bcs[1+num_elites:end])]
+    #     Fσs = σs[sortperm(ΔFs, rev=true)][1:num_elite_exploiters]
+    #     Nσs = σs[sortperm(ΔNs, rev=true)][1:num_elite_explorers]
+    # end
     exploiter_elites = make_elites(fitnesses, num_elite_exploiters)
     explorer_elites  = make_elites(novelties, num_elite_explorers)
 
@@ -263,16 +265,16 @@ function create_rollout_groups(pop::Vector{<:Vector{<:AbstractFloat}},
     @assert length(massive_pop) >= n_pop_agents
     @assert length(massive_elites) >= n_elite_agents
     groups = [make_group!(massive_pop, massive_elites, rollout_group_size) for _ in 1:n_groups]
-    counts = Dict()
-    for g in groups
-        for (i, _) in g
-            i < 0 && continue
-            counts[i] = get(counts, i, 0) + 1
-        end
-    end
-    for count in values(counts)
-        @assert count == rollouts_per_ind || count == rollouts_per_ind + 1
-    end
+    #counts = Dict()
+    #for g in groups
+    #    for (i, _) in g
+    #        i < 0 && continue
+    #        counts[i] = get(counts, i, 0) + 1
+    #    end
+    #end
+    #for count in values(counts)
+    #    @assert count == rollouts_per_ind || count == rollouts_per_ind + 1
+    #end
     groups
 end
 
@@ -290,17 +292,77 @@ function create_rollout_groups(pop::Vector{<:Vector{<:AbstractFloat}},
     massive_pop = vcat([collect(1:length(pop)) for _ in 1:n_duplicates]...) |> shuffle
     @assert length(massive_pop) >= n_agents
     groups = [make_group!(massive_pop, rollout_group_size) for i in 1:n_groups]
-    counts = Dict()
-    for g in groups
-        for (i, _) in g
-            i < 0 && continue
-            counts[i] = get(counts, i, 0) + 1
+    # counts = Dict()
+    # for g in groups
+    #     for (i, _) in g
+    #         i < 0 && continue
+    #         counts[i] = get(counts, i, 0) + 1
+    #     end
+    # end
+    # for count in values(counts)
+    #     @assert count == rollouts_per_ind || count == rollouts_per_ind + 1
+    # end
+    groups
+end
+
+function find_prefix(seeds::Vector)
+    length(seeds) == 0 && return []
+    first_counts = Dict()
+    for seed in seeds
+        if haskey(first_counts, seed[1])
+            first_counts[seed[1]] += 1
+        else
+            first_counts[seed[1]] = 1
         end
     end
-    for count in values(counts)
-        @assert count == rollouts_per_ind || count == rollouts_per_ind + 1
+    @assert sum(values(first_counts)) == length(seeds)
+    genesis = findmax(first_counts)[2]
+    children_of_genesis = [idx for (idx, s) in enumerate(seeds) if s[1] == genesis]
+    children_lengths = [length(seeds[idx]) for idx in children_of_genesis]
+    max_prefix_size = min(children_lengths...)
+    all_genesis_children_are_same = true
+    prefix = []
+    for i in 1:max_prefix_size
+        current_seeds = [seeds[idx][i] for idx in children_of_genesis] |> unique
+        if length(current_seeds) > 1
+            all_genesis_children_are_same = false
+            break
+        end
+        push!(prefix, current_seeds[1])
     end
-    groups
+    prefix
+end
+
+function add_elite_idxs_to_groups(groups, elites)
+    """
+    groups: Vector of Tuples t, t[i][1] is identifier , t[i][2] is seed
+    elites: vector of dicts
+    returns: 
+    groups_with_idxs: Vector of Tuples t, t[i][1] is identifier , t[i][2] is seed, t[i][3] is a set of idxs
+    where 1:idx is an elite, whose reconstruction should be cached
+    """
+    eseeds = [e[:seeds] for e in elites]
+    eseeds = vcat(eseeds, [find_prefix(eseeds)])
+    new_groups = []
+    for group in groups
+        push!(new_groups, [])
+        for (i, seed) in group
+            idxs = Set{Int}()
+            l_seed = length(seed)
+            for eseed in eseeds
+                l_eseed = length(eseed)
+                l_seed < l_eseed && continue
+                
+                # println("l_seed: $l_seed, l_eseed: $l_eseed")
+                # println("seed: $seed, eseed: $eseed")
+                if seed[1:l_eseed] == eseed
+                    push!(idxs, l_eseed)
+                end
+            end
+            push!(new_groups[end], (i, seed, idxs))
+        end
+    end
+    new_groups
 end
 
 end
