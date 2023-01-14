@@ -9,7 +9,8 @@ using NearestNeighbors
 export compute_novelty, compute_novelties,
 bc1, bc2, bc3, create_next_pop, add_to_archive!,
 reorder!, average_bc, compute_elite, dist, M,
-elite, mr, create_rollout_groups, average_walk
+elite, mr, create_rollout_groups, average_walk,
+compress_elites, decompress_elites
 
 dist(a, b) = sum((a .- b).^2)
 
@@ -37,7 +38,6 @@ function compute_novelties(ind_bc::Matrix, archive_and_pop::Matrix; k::Int=25)
     # @assert length(dists) == length(archive_and_pop) - k
     return [sum(d) / k for d in dists]
 end
-
 
 
 function reorder!(to_sort, vecs...)
@@ -302,6 +302,5 @@ function create_rollout_groups(pop::Vector{<:Vector{<:AbstractFloat}},
     end
     groups
 end
-
 
 end

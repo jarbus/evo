@@ -22,7 +22,7 @@ using Infiltrator
         end
         # creates mapping of pid_copy to params
         params = Dict(aid(i, c)=>reconstruct(sc, mi, seeds) for (i, seeds) in group for c in 1:counts[i])
-        models = Dict(aid=>re(param) for (aid, param) in params)
+        models = Dict(aid=>cpu(re(param)) for (aid, param) in params)
         rew_dict, _, bc_dict, info_dict = run_batch(env, models, args, evaluation=true)
         rews, bcs, infos = Dict(), Dict(), Dict{Any, Any}("avg_walks"=>Dict())
         for (i, _) in group 
@@ -114,11 +114,8 @@ function main()
         #end
         #pop, elites = create_next_pop(start_gen-1, sc, check["pop"], F, novelties, BC, γ, args["num-elites"])
 
-        new_elites = deepcopy(elites)
-        for i in 1:length(new_elites)
-            new_elites[i][:seeds] = new_elites[i][:seeds][1:2:end]
-        end
-        @everywhere cache_elites!(sc, mi, $new_elites)
+        compressed_elites, prefix = compress_elites(sc, elites)
+        @everywhere cache_elites!(sc, mi, $compressed_elites, $prefix)
 
         llog(islocal=args["local"], name=logname) do logfile
             ts(logfile, "resuming from gen $start_gen")
@@ -221,7 +218,6 @@ function main()
                # average all the rollout metrics
                mets = Dict(k => mean([m[k] for m in mets]) for k in keys(mets[1]))
                isnothing(args["maze"]) && vis_outs(outdir, args["local"])
-
                muts = g > 1 ? [mr(pop[i]) for i in 1:pop_size] : [0.0]
                mets["gamma"] = γ
                mets["min_param"] = minimum([fet[3]["min_params"] for fet in fetches])
@@ -260,12 +256,16 @@ function main()
         save(check_name, Dict("gen"=>g, "gamma"=>γ, "pop"=>pop, "archive"=>archive, "BC"=> BC, "F"=>F, "best"=>best, "novelties"=>novelties, "elites"=>elites))
 
         # only cache new elites
-        new_elites = g > 1 ? [deepcopy(e) for e in elites if !in(e[:seeds], keys(sc))] : deepcopy(elites)
-        # ignore mutations
-        for i in 1:length(new_elites)
-            new_elites[i][:seeds] = new_elites[i][:seeds][1:2:end]
+        compressed_elites, prefix = compress_elites(sc, elites)
+        n_zipped = length(filter(e->e[:seeds][1]==:pre, compressed_elites))
+        n_unzipped = length(filter(e->e[:seeds][1]!=:pre, compressed_elites))
+        max_elite_len = maximum(length(e[:seeds]) for e in elites)
+        llog(islocal=args["local"], name=logname) do logfile
+            ts(logfile, "prefix len: $(length(prefix)), max elite len: $max_elite_len")
+            ts(logfile, "elites sent zipped: $n_zipped unzipped: $n_unzipped")
         end
-        @everywhere cache_elites!(sc, mi, $new_elites)
+
+        @everywhere cache_elites!(sc, mi, $compressed_elites, $prefix)
 
         # Save seed cache without parameters
         sc_no_params = SeedCache(maxsize=3*args["num-elites"])

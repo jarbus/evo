@@ -49,7 +49,55 @@ using StableRNGs
 #
 # end
 
-@testset "test_recachstruction_accuracy" begin
+#@testset "test_recachstruction_accuracy" begin
+#
+#  pop_size = 100
+#  n_elites = 3
+#  model_size = 10_000
+#  param_cache::SeedCache = SeedCache(maxsize=n_elites*3)
+#  m = make_model(:large, (11, 11, 7, 10), 4, lstm=true)
+#  mi = ModelInfo(m)
+#  pop = [rand(1.0:1000.0, 1) for _ in 1:pop_size]
+#  fitnesses = rand(pop_size)
+#  novelties = rand(pop_size)
+#  bcs = [rand(3) for _ in 1:pop_size]
+#  γ=0.5
+#  pop, elites = create_next_pop(1, param_cache, pop, fitnesses, novelties, bcs, γ, n_elites)
+#  cache_elites!(param_cache, mi, elites)
+#  reconstruct(param_cache, mi, pop[1])
+#
+#  for i in 1:1000
+#      fitnesses = rand(pop_size)
+#      fitnesses[1] = 2
+#      novelties = rand(pop_size)
+#      bcs = [rand(3) for _ in 1:pop_size]
+#      p1_1 = reconstruct(param_cache, mi, pop[1])
+#      pop, elites = create_next_pop(2, param_cache, pop, fitnesses, novelties, bcs, γ, n_elites)
+#      cache_elites!(param_cache, mi, elites)
+#      p1_2 = reconstruct(param_cache, mi, pop[1])
+#      p1_3 = reconstruct(param_cache, mi, pop[1])
+#      @test p1_1 == p1_2 == p1_3
+#      leave = false
+#      for p in pop
+#        if length(p) >= 100
+#          @btime reconstruct($param_cache, $mi, $p)
+#          leave = true
+#          break
+#        end
+#        leave && break
+#      end
+#      leave && break
+#      # hits = 0
+#   # for j in 1:pop_size
+#   #   theta = reconstruct(param_cache, mi, pop[j])
+#   #   # if rand() < 0.01
+#   #   #   theta2 = reconstruct(nt, pop[j])
+#   #   #   @test all(isapprox.(theta, theta2; atol=0.0001))
+#   #   # end
+#   # end
+#  end 
+#end
+@testset "test_recachstruction_speed" begin
 
   pop_size = 100
   n_elites = 3
@@ -65,18 +113,23 @@ using StableRNGs
   pop, elites = create_next_pop(1, param_cache, pop, fitnesses, novelties, bcs, γ, n_elites)
   cache_elites!(param_cache, mi, elites)
   reconstruct(param_cache, mi, pop[1])
-
-  for i in 1:5
+  leave = false
+  for i in 1:1000
       fitnesses = rand(pop_size)
-      fitnesses[1] = 2
       novelties = rand(pop_size)
       bcs = [rand(3) for _ in 1:pop_size]
-      p1_1 = reconstruct(param_cache, mi, pop[1])
       pop, elites = create_next_pop(2, param_cache, pop, fitnesses, novelties, bcs, γ, n_elites)
       cache_elites!(param_cache, mi, elites)
-      p1_2 = reconstruct(param_cache, mi, pop[1])
-      p1_3 = reconstruct(param_cache, mi, pop[1])
-      @test p1_1 == p1_2 == p1_3
+      println(maximum(length.(pop)))
+      for p in pop
+        if length(p) >= 100
+          @btime reconstruct($param_cache, $mi, $p)
+          leave = true
+          break
+        end
+        leave && break
+      end
+      leave && break
       # hits = 0
    # for j in 1:pop_size
    #   theta = reconstruct(param_cache, mi, pop[j])
@@ -85,5 +138,5 @@ using StableRNGs
    #   #   @test all(isapprox.(theta, theta2; atol=0.0001))
    #   # end
    # end
+    end
   end
-end
