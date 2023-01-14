@@ -66,11 +66,11 @@ end
 elite(x) = length(x) > 2 ? x[1:end-2] : x
 # mr(x) = length(x) > 1 ? x[end-1] : 10.0 ^ rand(-2:-1:-5)
 # M(x) = clamp(x*(2^(rand()*2-1)), 10.0^-5, 10.0^-2)
-mr(x) = 0.002
-M(x) = 0.002
+mr(x) = 0.002f0
+M(x) = 0.002f0
 function create_next_pop(gen::Int,
         sc,
-        pop::Vector{Vector{Float64}},
+        pop::Vector{Vector{Float32}},
         fitnesses::Vector{<:AbstractFloat},
         novelties::Vector{<:AbstractFloat},
         bcs::Vector{<:Vector{<:AbstractFloat}},
@@ -98,8 +98,8 @@ function create_next_pop(gen::Int,
          ) for i in 1:num]
     end
     if gen == 1
-        Fσs = [0.002 for _ in 1:num_elite_exploiters]
-        Nσs = [0.002 for _ in 1:num_elite_explorers]
+        Fσs = [0.002f0 for _ in 1:num_elite_exploiters]
+        Nσs = [0.002f0 for _ in 1:num_elite_explorers]
     else
         σs = [mr(pop[i]) for i in (1+num_elites):pop_size]
         ΔFs = [f - sc[elite(pop[i])][:fitness] for (i,f) in enumerate(fitnesses[1+num_elites:end])]
@@ -110,7 +110,7 @@ function create_next_pop(gen::Int,
     exploiter_elites = make_elites(fitnesses, num_elite_exploiters)
     explorer_elites  = make_elites(novelties, num_elite_explorers)
 
-    next_pop::Vector{Vector{Float64}} = vcat(
+    next_pop::Vector{Vector{Float32}} = vcat(
                     [copy(e[:seeds]) for e in exploiter_elites],
                     [copy(e[:seeds]) for e in explorer_elites]
                     )
@@ -123,7 +123,7 @@ function create_next_pop(gen::Int,
         push!(next_pop, copy(rand(explorer_elites)[:seeds]))
         push!(next_pop[end], M(rand(Nσs)), rand(UInt32))
     end
-    elites = vcat(exploiter_elites, explorer_elites)
+    elites::Vector{Dict} = vcat(exploiter_elites, explorer_elites)
     @assert length(next_pop) == pop_size
     @assert length(elites) == num_elites
     @assert exploiter_elites[1][:seeds] == next_pop[1]

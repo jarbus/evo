@@ -84,7 +84,7 @@ function main()
         ts(logfile, "model has $model_size params")
     end
 
-    pop = [Vector{Float64}([rand(UInt32)]) for _ in 1:pop_size]
+    pop = [Vector{Float32}([rand(UInt32)]) for _ in 1:pop_size]
     best = (-Inf, [])
     archive = Set()
     BC = nothing

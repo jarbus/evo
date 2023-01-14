@@ -13,7 +13,7 @@ function glorot_normal(rng, dims::Integer...; gain::Real=1)
   randn(rng, Float32, dims...) .* std
 end
 
-SeedCache = LRU{Vector{Float64},Dict}
+SeedCache = LRU{Vector{Float32},Dict}
 
 function cache_elites!(param_cache::SeedCache, mi::ModelInfo, compressed_elites::Vector, prefix::Vector)
   length(compressed_elites) == 0 && return
