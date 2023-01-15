@@ -64,7 +64,7 @@ function get_arg_table()
       required = true
       "--num-agents"
       arg_type = Int
-      required = true
+      required = false
       "--pop-size"
       arg_type = Int
       required = true

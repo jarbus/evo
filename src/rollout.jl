@@ -37,7 +37,7 @@ function run_batch(env_config::Dict, models::Dict{String,<:Chain}, args; evaluat
     obs_size = (b_env[1].obs_size..., batch_size)
     num_actions = b_env[1].num_actions
     b_obs = batch_reset!(b_env, models)
-    max_steps = args["episode-length"] * args["num-agents"]
+    max_steps = args["episode-length"] * length(env_config["matchups"][1])
     rews = Dict(key => 0.0f0 for key in keys(models))
     avg_walks = Dict(key => Vector{NTuple{2,Float64}}() for key in keys(models))
     total_acts = Dict(key => Vector{Vector{UInt32}}() for key in keys(models))
