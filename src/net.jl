@@ -35,7 +35,7 @@ function gen_temporal_data()
 end
 
 function make_head(input_size::NTuple{4,Int}; vbn::Bool=false, scale::Int=1)
-  layers = Vector{Any}([Conv((3, 3), input_size[3] => 8*scale, pad=(1, 1), relu)])
+  layers = Vector{Any}()
   function add_layer(chans, filter, stride)
     vbn && push!(layers, VirtualBatchNorm())
     push!(layers, 
@@ -45,13 +45,14 @@ function make_head(input_size::NTuple{4,Int}; vbn::Bool=false, scale::Int=1)
   # TODO this is a disgusting hack to avoid parameterizing models based
   # on domain
   if input_size[1] > 20
+    add_layer(input_size[3]=>8*scale, (3, 3), 1) # this worked
     add_layer( 8*scale=>16*scale, (8, 8), 4)
     add_layer(16*scale=>16*scale, (4, 4), 2)
     add_layer(16*scale=>16*scale, (3, 3), 1)
   else
-    add_layer( 8*scale=>16*scale, (3, 3), 1)
-    add_layer(16*scale=>16*scale, (3, 3), 1)
-    add_layer(16*scale=>16*scale, (3, 3), 1)
+    add_layer(input_size[3]=>8*scale, (7, 7), 1)
+    add_layer( 8*scale=>16*scale, (5, 5), 1)
+    add_layer(16*scale=>32*scale, (3, 3), 1)
   end
   push!(layers, Flux.flatten)
   Chain(layers...)
