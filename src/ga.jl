@@ -305,34 +305,6 @@ function create_rollout_groups(pop::Vector{<:Vector{<:AbstractFloat}},
     groups
 end
 
-function find_prefix(seeds::Vector)
-    length(seeds) == 0 && return []
-    first_counts = Dict()
-    for seed in seeds
-        if haskey(first_counts, seed[1])
-            first_counts[seed[1]] += 1
-        else
-            first_counts[seed[1]] = 1
-        end
-    end
-    @assert sum(values(first_counts)) == length(seeds)
-    genesis = findmax(first_counts)[2]
-    children_of_genesis = [idx for (idx, s) in enumerate(seeds) if s[1] == genesis]
-    children_lengths = [length(seeds[idx]) for idx in children_of_genesis]
-    max_prefix_size = min(children_lengths...)
-    all_genesis_children_are_same = true
-    prefix = []
-    for i in 1:max_prefix_size
-        current_seeds = [seeds[idx][i] for idx in children_of_genesis] |> unique
-        if length(current_seeds) > 1
-            all_genesis_children_are_same = false
-            break
-        end
-        push!(prefix, current_seeds[1])
-    end
-    prefix
-end
-
 function find_first_nonmatching_idx(v1::Vector, v2::Vector)
     for i in 1:min(length(v1), length(v2))
         if v1[i] != v2[i]
@@ -351,22 +323,28 @@ function add_elite_idxs_to_groups(groups, elites)
     where 1:idx is an elite, whose reconstruction should be cached
     """
     eseeds = [e[:seeds] for e in elites]
-    eseeds = vcat(eseeds, [find_prefix(eseeds)])
+
+    elite_idxs = Dict()
+    for e1 in eseeds
+        idxs = Set{Int}()
+        for e2 in eseeds
+            length(e1) < length(e2) && continue
+            push!(idxs, find_first_nonmatching_idx(e1, e2))
+        end
+        elite_idxs[e1] = idxs
+    end
+
     new_groups = []
     for group in groups
         push!(new_groups, [])
         for (i, seed) in group
-            idxs = Set{Int}()
-            l_seed = length(seed)
-            for eseed in eseeds
-                l_eseed = length(eseed)
-                l_seed < l_eseed && continue
-                
-                # println("l_seed: $l_seed, l_eseed: $l_eseed")
-                # println("seed: $seed, eseed: $eseed")
-                push!(idxs, find_first_nonmatching_idx(seed, eseed))
+            if haskey(elite_idxs, seed)
+                push!(new_groups[end], (i, seed, elite_idxs[seed]))
+            elseif haskey(elite_idxs, elite(seed))
+                push!(new_groups[end], (i, seed, elite_idxs[elite(seed)]))
+            else
+                push!(new_groups[end], (i, seed, Set{Int}()))
             end
-            push!(new_groups[end], (i, seed, idxs))
         end
     end
     new_groups
