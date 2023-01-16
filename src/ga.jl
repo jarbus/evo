@@ -392,7 +392,10 @@ function compute_prefixes(elites; k::Int=10)
     end
     # sort by number of characters reduced, filter out top k, 
     chars_reduced_and_prefix = sort([(chrs, prefix) for (prefix, chrs) in chars_reduced], rev=true)
-    best_prefixes = [char_and_pre[2] for char_and_pre in chars_reduced_and_prefix][1:min(k, length(chars_reduced_and_prefix))]
+    chars_reduced_and_prefix = chars_reduced_and_prefix[1:min(k, length(chars_reduced_and_prefix))]
+    chars_reduced = [char_and_pre[1] for char_and_pre in chars_reduced_and_prefix]
+    @info "Characters reduced with new prefix: $chars_reduced"
+    best_prefixes = [char_and_pre[2] for char_and_pre in chars_reduced_and_prefix]
     Dict(string(hash(pre))=>pre for pre in best_prefixes)
 end
 
