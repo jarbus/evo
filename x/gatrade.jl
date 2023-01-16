@@ -3,6 +3,8 @@ using Distributed
 using DataFrames
 using FileIO
 using Infiltrator
+using Logging
+
 
 @everywhere begin
     using EvoTrade
@@ -55,6 +57,8 @@ end
 function main()
     dt_str = args["datime"]
     logname="runs/$clsname/$dt_str-$expname.log"
+
+    global_logger(EvoTradeLogger(args["local"] ? stdout : logname))
     println("cls: $clsname\nexp: $expname")
     df = nothing
     wp = WorkerPool(workers())
@@ -82,10 +86,8 @@ function main()
         global sc = SeedCache(maxsize=args["num-elites"]*3)
         prefixes = Dict()
     end
-    llog(islocal=args["local"], name=logname) do logfile
-        print(logfile, "Running on commit: "*read(`git rev-parse --short HEAD`, String))
-        ts(logfile, "model has $model_size params")
-    end
+    @info "Running on commit: "*read(`git rev-parse --short HEAD`, String)
+    @info "model has $model_size params"
 
     pop = [Vector{Float32}([rand(UInt32)]) for _ in 1:pop_size]
     elites = Vector{Dict}()
@@ -95,9 +97,7 @@ function main()
     F = nothing
     γ = args["exploration-rate"]
 
-    # ###############
     # load checkpoint
-    # ###############
     check_name = "outs/$clsname/$expname/check.jld2"
     met_csv_name = "outs/$clsname/$expname/metrics.csv"
     sc_name = "outs/$clsname/$expname/sc.jld2"
@@ -123,22 +123,16 @@ function main()
         #end
         cache_elites!(sc, mi, elites)
 
-        llog(islocal=args["local"], name=logname) do logfile
-            ts(logfile, "resuming from gen $start_gen")
-        end
+        @info "resuming from gen $start_gen"
     end
 
     for g in start_gen:args["num-gens"]
         global prefixes
-        llog(islocal=args["local"], name=logname) do logfile
-            ts(logfile, "starting generation $g")
-        end
+        @info "starting generation $g"
 
         eval_gen = g % 50 == 1
 
-        llog(islocal=args["local"], name=logname) do logfile
-            ts(logfile, "creating groups")
-        end
+        @info "creating groups"
 
         groups = create_rollout_groups(pop, elites, args["rollout-group-size"], args["rollout-groups-per-mut"])
         groups = add_elite_idxs_to_groups(groups, elites)
@@ -155,19 +149,13 @@ function main()
                 union_set = union(union_set, eset)
             end
         end
-        llog(islocal=args["local"], name=logname) do logfile
-            ts(logfile, "avg num_elites_cached len: $(avg_set_len/num_inds)")
-            ts(logfile, "union set: $(union_set)")
-            ts(logfile, "avg pop len: $(avg_pop_lens/num_inds)")
-        end
-        llog(islocal=args["local"], name=logname) do logfile
-            ts(logfile, "compressing groups")
-        end
+        @info "avg num_elites_cached len: $(avg_set_len/num_inds)"
+        @info "union set: $(union_set)"
+        @info "avg pop len: $(avg_pop_lens/num_inds)"
+        @info "compressing groups"
         groups = compress_groups(groups, prefixes)
 
-        llog(islocal=args["local"], name=logname) do logfile
-            ts(logfile, "pmapping")
-        end
+        @info "pmapping"
 
         fetches = pmap(wp, groups) do g
             fitness(g, eval_gen)
@@ -195,15 +183,11 @@ function main()
         # update elite and modify exploration rate
         if elite[1] > best[1]
             γ = clamp(γ / 2, 0, 0.9)
-            llog(islocal=args["local"], name=logname) do logfile
-                ts(logfile, "New best ind found, F=$(elite[1]), γ decreased to $γ")
-            end
+            @info "New best ind found, F=$(elite[1]), γ decreased to $γ"
             best = elite
         else
             γ = clamp(γ + 0.05, 0, 0.9)
-            llog(islocal=args["local"], name=logname) do logfile
-                ts(logfile, "no better elite found, increasing γ to $γ")
-            end
+            @info "no better elite found, increasing γ to $γ"
         end
         
         add_to_archive!(archive, BC, pop, args["archive-prob"])
@@ -215,28 +199,20 @@ function main()
         @assert size(bc_matrix, 1) == size(BC[1], 1)
         # @assert
 
-        llog(islocal=args["local"], name=logname) do logfile
-            ts(logfile, "computing novelties")
-        end
+        @info "computing novelties"
         novelties = compute_novelties(bc_matrix, pop_and_arch, k=min(pop_size-1, 25))
         @assert length(novelties) == pop_size
-        llog(islocal=args["local"], name=logname) do logfile
-            ts(logfile, "most novel bc: $(BC[argmax(novelties)])")
-            ts(logfile, "most fit bc: $(BC[argmax(F)])")
-        end
+        @info "most novel bc: $(BC[argmax(novelties)])"
+        @info "most fit bc: $(BC[argmax(F)])"
 
         # LOG
         if eval_gen
             prefixes = compute_prefixes(elites)
-            llog(islocal=args["local"], name=logname) do logfile
-                ts(logfile, "distributing prefixes: $(prefixes)")
-            end
+            @info "distributing prefixes: $(prefixes)"
             @everywhere prefixes = $prefixes
 
             @spawnat 1 begin
-               llog(islocal=args["local"], name=logname) do logfile
-                   ts(logfile, "log start")
-               end
+               @info "log start"
 
                # Compute and write metrics
                outdir = "outs/$clsname/$expname/"*string(g, pad=3, base=10)
@@ -269,35 +245,24 @@ function main()
 
                # Log to file
                avg_self_fit = round(mets["fitness_mean"]; digits=2)
-               llog(islocal=args["local"], name=logname) do logfile
-                   ts(logfile, "Generation $g: $avg_self_fit")
-               end
-
-               llog(islocal=args["local"], name=logname) do logfile
-                   ts(logfile, "log end")
-               end
+               @info "Generation $g: $avg_self_fit"
+               @info "log end"
            end
         end
         if best[1] > 15
             best_bc = BC[argmax(F)]
-            llog(islocal=args["local"], name=logname) do logfile
-                ts("Returning: Best individal found with fitness $(best[1]) and BC $best_bc")
-            end
+            @info "Returning: Best individal found with fitness $(best[1]) and BC $best_bc"
             save("outs/$clsname/$expname/best.jld2", Dict("best"=>best, "bc"=>best_bc))
             return
         end
 
         pop, elites = create_next_pop(g, sc, pop, F, novelties, BC, γ, args["num-elites"])
-        llog(islocal=args["local"], name=logname) do logfile
-            ts(logfile, "cache_elites")
-        end
+        @info "cache_elites"
         cache_elites!(sc, mi, elites)
 
         if eval_gen
             # Save checkpoint
-            llog(islocal=args["local"], name=logname) do logfile
-                ts(logfile, "savefile")
-            end
+            @info "savefile"
             isfile(check_name) && run(`mv $check_name $check_name-old`)
             save(check_name, Dict("gen"=>g, "gamma"=>γ, "pop"=>pop, "archive"=>archive, "BC"=> BC, "F"=>F, "best"=>best, "novelties"=>novelties, "elites"=>elites))
 

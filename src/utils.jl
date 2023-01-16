@@ -20,13 +20,6 @@ mk_env_config(args) = Dict(
     "seed" => args["seed"],
     "vocab_size" => 0)
 
-# logs to stdout if islocal is true, else logs to name
-function llog(f; islocal::Bool, name::String)
-    logfile = !islocal ? open(name, "a") : stdout
-    f(logfile)
-    !islocal && close(logfile)
-end
-
 update_df(df::Nothing, mets::Nothing) = nothing
 update_df(df::Nothing, mets)   = DataFrame(mets)
 update_df(df::DataFrame, mets) = push!(df, mets)
