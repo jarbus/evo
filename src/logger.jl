@@ -1,4 +1,4 @@
-const date_format = "mm-dd HH:MM"
+const date_format = "mm-dd HH:MM:SS"
 
 function timestamp_logger(logger)
   TransformerLogger(logger) do log
