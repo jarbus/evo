@@ -12,11 +12,11 @@ times = []
 valid_lines = []
 for line in lines:
     try:
-        times.append(datetime.datetime.strptime(line.strip().split()[0], "%H:%M:%S"))
+        times.append(datetime.datetime.strptime(line.strip().split()[1], "%H:%M:%S"))
         valid_lines.append(line)
     except:
         continue
-ops = [" ".join(line.strip().split()[1:]) for line in valid_lines]
+ops = [" ".join(line.strip().split()[2:]) for line in valid_lines]
 # Print the time difference between each timestamp
 for i in range(1, len(times)):
     print(times[i] - times[i-1], ops[i-1])
