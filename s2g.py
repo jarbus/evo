@@ -83,10 +83,6 @@ def plot_step(step: Step):
             rect = plt.Rectangle(l_pos, 1/scale, 1/scale, color=(yellow, yellow, not_yellow), fill=True)
             grid.add_patch(rect)
 
-
-
-
-
     fig.text(vs + 0.05, 1-0.05, "Player           reds      greens")
     fig.text(vs + 0.05, 1-0.07, "-----------------------------------------")
     fig.text(vs + 0.02, hs+0.03, f"Total Exchanged:", fontsize=8, wrap=True)
@@ -117,7 +113,7 @@ def plot_step(step: Step):
 
         p_pos = tuple(p / scale for p in reversed(player.pos))
 
-        p_pos = add_tuple(p_pos, (1/scale, 0))
+        p_pos = add_tuple(p_pos, (0, 0))
         p_pos = add_tuple(p_pos, (0.15/scale, 0.15/scale))
         p_pos = add_tuple(p_pos, player_offsets[i])
         radius = 0.5/scale
