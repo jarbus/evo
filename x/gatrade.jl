@@ -76,30 +76,7 @@ function main()
     @info "cls: $clsname"
     @info "exp: $expname"
     @info "Running on commit: "*read(`git rev-parse --short HEAD`, String)
-    if isfile(check_name)
-        @info "Loading from checkpoints"
-        df = isfile(met_csv_name) ? CSV.read(met_csv_name, DataFrame) : nothing
-        # We can get pre-empted while checkpointing, meaning the latest check
-        # might be invalid. We always mv the previous jld2 files to *.jld2-old,
-        # and boot from that if the latest check is corrupt.
-        try
-            global check = load(check_name)
-            global sc = load(sc_name)["sc"]
-        catch
-            global check = load(check_name*"-old")
-            global sc = load(sc_name*"-old")["sc"]
-        end
-        start_gen = check["gen"] + 1
-        γ = check["gamma"]
-        F, BC, best, archive, novelties = getindex.((check,), ["F", "BC", "best","archive", "novelties"])
-        global pop = check["pop"]
-        global elites = check["elites"]
-
-        cache_elites!(sc, mi, elites)
-
-        @info "resuming from gen $start_gen"
-    end
-
+    
     @info "Initializing on all workers"
     @everywhere begin
         if !isnothing(args["maze"])
@@ -125,6 +102,31 @@ function main()
         prefixes = Dict()
     end
     @info "model has $model_size params"
+
+    if isfile(check_name)
+        @info "Loading from checkpoints"
+        df = isfile(met_csv_name) ? CSV.read(met_csv_name, DataFrame) : nothing
+        # We can get pre-empted while checkpointing, meaning the latest check
+        # might be invalid. We always mv the previous jld2 files to *.jld2-old,
+        # and boot from that if the latest check is corrupt.
+        try
+            global check = load(check_name)
+            global sc = load(sc_name)["sc"]
+        catch
+            global check = load(check_name*"-old")
+            global sc = load(sc_name*"-old")["sc"]
+        end
+        start_gen = check["gen"] + 1
+        γ = check["gamma"]
+        F, BC, best, archive, novelties = getindex.((check,), ["F", "BC", "best","archive", "novelties"])
+        global pop = check["pop"]
+        global elites = check["elites"]
+
+        cache_elites!(sc, mi, elites)
+
+        @info "resuming from gen $start_gen"
+    end
+
     for g in start_gen:args["num-gens"]
         eval_gen = g % 50 == 1
         global prefixes
@@ -167,8 +169,8 @@ function main()
         end
         @assert all(length.(F) .>= args["rollout-groups-per-mut"])
         # TODO: change these to maximums
-        F = [mean(f) for f in F]
-        BC = [average_bc(bcs) for bcs in BC]
+        F = [maximum(f) for f in F]
+        BC = [max_bc(bcs) for bcs in BC]
         if eval_gen
             walks = [average_walk(w) for w in walks_list]
         end

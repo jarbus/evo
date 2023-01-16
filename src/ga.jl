@@ -8,7 +8,7 @@ using Infiltrator
 using NearestNeighbors
 export compute_novelty, compute_novelties,
 bc1, bc2, bc3, create_next_pop, add_to_archive!,
-reorder!, average_bc, compute_elite, dist, M,
+reorder!, average_bc, compute_elite, dist, M, max_bc,
 elite, mr, create_rollout_groups, average_walk,
 add_elite_idxs_to_groups, compute_prefixes, compress_groups,
 decompress_group
@@ -183,6 +183,11 @@ end
 function average_bc(bcs::Vector)
   @assert Set(length.(bcs)) |> length == 1
   [mean(x) for x in zip(bcs...)]
+end
+
+function max_bc(bcs::Vector)
+  @assert Set(length.(bcs)) |> length == 1
+  [maximum(x) for x in zip(bcs...)]
 end
 
 function average_walk(walks)

@@ -10,8 +10,9 @@ export reconstruct, SeedCache, cache_elites!
 export ModelInfo, gen_params
 export compute_novelty, compute_novelties, bc1, bc2, bc3,
 create_next_pop, add_to_archive!, M, reorder!, compute_elite,
-elite, mr, create_rollout_groups, average_bc, aid, average_walk,
-add_elite_idxs_to_groups, compute_prefixes, compress_groups, decompress_group
+elite, mr, create_rollout_groups, average_bc, aid, average_walk, 
+max_bc, add_elite_idxs_to_groups, compute_prefixes,
+compress_groups, decompress_group
 export run_batch, invert
 export EvoTradeLogger
 
