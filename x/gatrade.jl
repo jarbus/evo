@@ -182,12 +182,12 @@ function main()
 
         # update elite and modify exploration rate
         if elite[1] > best[1]
-            γ = clamp(γ / 2, 0, 0.9)
+            γ = 0.1
             @info "New best ind found, F=$(elite[1]), γ decreased to $γ"
             best = elite
         else
-            γ = clamp(γ + 0.05, 0, 0.9)
-            @info "no better elite found, increasing γ to $γ"
+            γ = clamp(γ + 0.02, 0, 0.9)
+            @info "no better elite found, set γ to $γ"
         end
         
         add_to_archive!(archive, BC, pop, args["archive-prob"])
@@ -203,7 +203,7 @@ function main()
         novelties = compute_novelties(bc_matrix, pop_and_arch, k=min(pop_size-1, 25))
         @assert length(novelties) == pop_size
         @info "most novel bc: $(BC[argmax(novelties)])"
-        @info "most fit bc: $(BC[argmax(F)])"
+        @info "most fit bc: $(BC[argmax(F)]), fitness $(maximum(F))"
 
         # LOG
         if eval_gen
@@ -222,6 +222,7 @@ function main()
                plot_grid_and_walks(env, "$outdir/pop.png", grid, walks, novelties, F, args["num-elites"], γ)
 
                eval_best_idxs = sortperm(F, rev=true)[1:ceil(Int, args["num-elites"]*γ)]
+               @info "evaluating inds with fitnesses $(F[eval_best_idxs])"
                eval_group_idxs = [rand(eval_best_idxs, args["rollout-group-size"]) for _ in 1:10]
                eval_group_seeds = [[pop[idx] for idx in idxs] for idxs in eval_group_idxs]
                mets = pmap(wp, eval_group_seeds) do group_seeds
