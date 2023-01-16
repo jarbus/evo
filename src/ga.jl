@@ -67,8 +67,8 @@ end
 elite(x) = length(x) > 2 ? x[1:end-2] : x
 # mr(x) = length(x) > 1 ? x[end-1] : 10.0 ^ rand(-2:-1:-5)
 # M(x) = clamp(x*(2^(rand()*2-1)), 10.0^-5, 10.0^-2)
-mr(x) = 0.002f0
-M(x) = 0.002f0
+mr(x) = 0.001f0
+M(x) = 0.001f0
 function create_next_pop(gen::Int,
         sc,
         pop::Vector{Vector{Float32}},
@@ -101,8 +101,8 @@ function create_next_pop(gen::Int,
     # if gen == 1
         # Fσs = [0.002f0 for _ in 1:num_elite_exploiters]
         # Nσs = [0.002f0 for _ in 1:num_elite_explorers]
-    Fσs = [0.002f0]
-    Nσs = [0.002f0]
+    Fσs = [0.001f0]
+    Nσs = [0.001f0]
     # else
     #     σs = [mr(pop[i]) for i in (1+num_elites):pop_size]
     #     ΔFs = [f - sc[elite(pop[i])][:fitness] for (i,f) in enumerate(fitnesses[1+num_elites:end])]
