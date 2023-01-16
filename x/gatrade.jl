@@ -22,7 +22,7 @@ using Infiltrator
         end
         # creates mapping of pid_copy to params
         params = Dict(aid(i, c)=>reconstruct(sc, mi, seeds, e_idxs) for (i, seeds, e_idxs) in group for c in 1:counts[i])
-        models = Dict(aid=>cpu(re(param)) for (aid, param) in params)
+        models = Dict(aid=>re(param) for (aid, param) in params)
         rew_dict, _, bc_dict, info_dict = run_batch(env, models, args, evaluation=true)
         rews, bcs, infos = Dict(), Dict(), Dict{Any, Any}("avg_walks"=>Dict())
         for (i, _) in group 

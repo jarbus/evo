@@ -105,9 +105,9 @@ function batch_step!(envs::Vector{PyObject}, models::Dict{String,<:Chain}, obs::
     converted to 0 for python inside this function."""
   @assert length(obs) == 1
   name, ob = first(obs)
-  ob = ob |> cpu
+  ob = ob
   probs = models[name](ob) # bottleneck
-  probs = probs |> cpu
+  probs = probs
   @assert !any(isnan.(probs))
   if evaluation
     # matrix of floats to matrix of cartesian indicies
