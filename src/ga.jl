@@ -235,7 +235,7 @@ function create_rollout_groups(pop::Vector{<:Vector{<:AbstractFloat}},
         Vector `v` is length 2, where `v[1]` is the count of how many times
     this member has been chosen and `v[2]` is the member seed itself.
     """
-    if rollout_group_size == 1
+    if rollout_group_size == 1 || elites == []
         return create_rollout_groups(pop, rollout_group_size, rollouts_per_ind)
     end
 

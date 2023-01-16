@@ -88,6 +88,7 @@ function main()
     end
 
     pop = [Vector{Float32}([rand(UInt32)]) for _ in 1:pop_size]
+    elites = Vector{Dict}()
     best = (-Inf, [])
     archive = Set()
     BC = nothing
@@ -139,14 +140,8 @@ function main()
             ts(logfile, "creating groups")
         end
 
-        # TODO: initialize elites to [] and get rid of this if
-        if g == 1
-            groups = create_rollout_groups(pop, args["rollout-group-size"], args["rollout-groups-per-mut"])
-            groups = add_elite_idxs_to_groups(groups, [])
-        else
-            groups = create_rollout_groups(pop, elites, args["rollout-group-size"], args["rollout-groups-per-mut"])
-            groups = add_elite_idxs_to_groups(groups, elites)
-        end
+        groups = create_rollout_groups(pop, elites, args["rollout-group-size"], args["rollout-groups-per-mut"])
+        groups = add_elite_idxs_to_groups(groups, elites)
         avg_set_len = 0
         avg_pop_lens = 0
         num_inds = 0
