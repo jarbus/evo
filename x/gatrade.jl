@@ -20,6 +20,7 @@ using Infiltrator
         for (i, _) in group
             counts[i] = get(counts, i, 0) + 1
         end
+        group = decompress_group(group, prefixes)
         # creates mapping of pid_copy to params
         params = Dict(aid(i, c)=>reconstruct(sc, mi, seeds, e_idxs) for (i, seeds, e_idxs) in group for c in 1:counts[i])
         models = Dict(aid=>re(param) for (aid, param) in params)
@@ -57,8 +58,8 @@ function main()
     println("cls: $clsname\nexp: $expname")
     df = nothing
     wp = WorkerPool(workers())
+    pop_size = args["pop-size"]
     @everywhere begin
-        pop_size = args["pop-size"]
         if !isnothing(args["maze"])
             env = maze_from_file(args["maze"])
             grid = env.grid 
@@ -79,6 +80,7 @@ function main()
         # pass mazeenv struct or trade config dict
         env = env isa MazeEnv ? env : env_config
         global sc = SeedCache(maxsize=args["num-elites"]*3)
+        prefixes = Dict()
     end
     llog(islocal=args["local"], name=logname) do logfile
         print(logfile, "Running on commit: "*read(`git rev-parse --short HEAD`, String))
@@ -118,9 +120,6 @@ function main()
         #for p in pop
         #    @assert elite(p) in keys(sc)
         #end
-        #pop, elites = create_next_pop(start_gen-1, sc, check["pop"], F, novelties, BC, γ, args["num-elites"])
-
-        # compressed_elites, prefix = compress_elites(sc, elites)
         cache_elites!(sc, mi, elites)
 
         llog(islocal=args["local"], name=logname) do logfile
@@ -129,6 +128,7 @@ function main()
     end
 
     for g in start_gen:args["num-gens"]
+        global prefixes
         llog(islocal=args["local"], name=logname) do logfile
             ts(logfile, "starting generation $g")
         end
@@ -139,6 +139,7 @@ function main()
             ts(logfile, "creating groups")
         end
 
+        # TODO: initialize elites to [] and get rid of this if
         if g == 1
             groups = create_rollout_groups(pop, args["rollout-group-size"], args["rollout-groups-per-mut"])
             groups = add_elite_idxs_to_groups(groups, [])
@@ -164,6 +165,10 @@ function main()
             ts(logfile, "union set: $(union_set)")
             ts(logfile, "avg pop len: $(avg_pop_lens/num_inds)")
         end
+        llog(islocal=args["local"], name=logname) do logfile
+            ts(logfile, "compressing groups")
+        end
+        groups = compress_groups(groups, prefixes)
 
         llog(islocal=args["local"], name=logname) do logfile
             ts(logfile, "pmapping")
@@ -227,6 +232,12 @@ function main()
 
         # LOG
         if eval_gen
+            prefixes = compute_prefixes(elites)
+            llog(islocal=args["local"], name=logname) do logfile
+                ts(logfile, "distributing prefixes: $(prefixes)")
+            end
+            @everywhere prefixes = $prefixes
+
             @spawnat 1 begin
                llog(islocal=args["local"], name=logname) do logfile
                    ts(logfile, "log start")
@@ -239,7 +250,7 @@ function main()
 
                plot_grid_and_walks(env, "$outdir/pop.png", grid, walks, novelties, F, args["num-elites"], γ)
 
-               eval_best_idxs = sortperm(F, rev=true)[1:args["num-elites"]]
+               eval_best_idxs = sortperm(F, rev=true)[1:ceil(Int, args["num-elites"]*γ)]
                eval_group_idxs = [rand(eval_best_idxs, args["rollout-group-size"]) for _ in 1:10]
                eval_group_seeds = [[pop[idx] for idx in idxs] for idxs in eval_group_idxs]
                mets = pmap(wp, eval_group_seeds) do group_seeds
@@ -282,33 +293,6 @@ function main()
         end
 
         pop, elites = create_next_pop(g, sc, pop, F, novelties, BC, γ, args["num-elites"])
-
-        #llog(islocal=args["local"], name=logname) do logfile
-        #    ts(logfile, "cache_elites")
-        #end
-        ## only cache new elites
-        #compressed_elites, prefix = compress_elites(sc, elites)
-        #n_zipped = length(filter(e->e[:seeds][1]==:pre, compressed_elites))
-        #n_unzipped = length(filter(e->e[:seeds][1]!=:pre, compressed_elites))
-        #max_elite_len = maximum(length(e[:seeds]) for e in elites)
-        #llog(islocal=args["local"], name=logname) do logfile
-        #    ts(logfile, "prefix len: $(length(prefix)), max elite len: $max_elite_len")
-        #    ts(logfile, "elites sent zipped: $n_zipped unzipped: $n_unzipped")
-        #end
-
-        #@everywhere cache_elites!(sc, mi, $compressed_elites, $prefix)
-        #cache_elites!(sc, mi, compressed_elites, prefix)
-
-        # only cache new elites
-        # compressed_elites, prefix = compress_elites(sc, elites)
-        # n_zipped = length(filter(e->e[:seeds][1]==:pre, compressed_elites))
-        # n_unzipped = length(filter(e->e[:seeds][1]!=:pre, compressed_elites))
-        # max_elite_len = maximum(length(e[:seeds]) for e in elites)
-        # llog(islocal=args["local"], name=logname) do logfile
-        #     ts(logfile, "prefix len: $(length(prefix)), max elite len: $max_elite_len")
-        #     ts(logfile, "elites sent zipped: $n_zipped unzipped: $n_unzipped")
-        # end
-
         llog(islocal=args["local"], name=logname) do logfile
             ts(logfile, "cache_elites")
         end

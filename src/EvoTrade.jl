@@ -6,12 +6,12 @@ export maze_from_file, step!, reset!, sample_batch, get_obs, MazeEnv, print_maze
 export reset!, step!, batch_reset!, batch_step!, PyTrade, render, get_metrics, batch_pos!
 export plot_grid_and_walks, vis_outs
 export compute_centered_ranks
-export reconstruct, SeedCache, cache_elites!, compress_elites, decompress_elites
+export reconstruct, SeedCache, cache_elites!
 export ModelInfo, gen_params
 export compute_novelty, compute_novelties, bc1, bc2, bc3,
 create_next_pop, add_to_archive!, M, reorder!, compute_elite,
 elite, mr, create_rollout_groups, average_bc, aid, average_walk,
-add_elite_idxs_to_groups
+add_elite_idxs_to_groups, compute_prefixes, compress_groups, decompress_group
 export run_batch, invert
 
 using ArgParse
