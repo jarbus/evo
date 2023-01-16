@@ -57,12 +57,50 @@ end
 function main()
     dt_str = args["datime"]
     logname="runs/$clsname/$dt_str-$expname.log"
-
+    check_name = "outs/$clsname/$expname/check.jld2"
+    met_csv_name = "outs/$clsname/$expname/metrics.csv"
+    sc_name = "outs/$clsname/$expname/sc.jld2"
+    start_gen = 1
     global_logger(EvoTradeLogger(args["local"] ? stdout : logname))
-    println("cls: $clsname\nexp: $expname")
     df = nothing
     wp = WorkerPool(workers())
     pop_size = args["pop-size"]
+    pop = [Vector{Float32}([rand(UInt32)]) for _ in 1:pop_size]
+    elites = Vector{Dict}()
+    best = (-Inf, [])
+    archive = Set()
+    BC = nothing
+    F = nothing
+    γ = args["exploration-rate"]
+
+    @info "cls: $clsname"
+    @info "exp: $expname"
+    @info "Running on commit: "*read(`git rev-parse --short HEAD`, String)
+    if isfile(check_name)
+        @info "Loading from checkpoints"
+        df = isfile(met_csv_name) ? CSV.read(met_csv_name, DataFrame) : nothing
+        # We can get pre-empted while checkpointing, meaning the latest check
+        # might be invalid. We always mv the previous jld2 files to *.jld2-old,
+        # and boot from that if the latest check is corrupt.
+        try
+            global check = load(check_name)
+            global sc = load(sc_name)["sc"]
+        catch
+            global check = load(check_name*"-old")
+            global sc = load(sc_name*"-old")["sc"]
+        end
+        start_gen = check["gen"] + 1
+        γ = check["gamma"]
+        F, BC, best, archive, novelties = getindex.((check,), ["F", "BC", "best","archive", "novelties"])
+        global pop = check["pop"]
+        global elites = check["elites"]
+
+        cache_elites!(sc, mi, elites)
+
+        @info "resuming from gen $start_gen"
+    end
+
+    @info "Initializing on all workers"
     @everywhere begin
         if !isnothing(args["maze"])
             env = maze_from_file(args["maze"])
@@ -86,52 +124,11 @@ function main()
         global sc = SeedCache(maxsize=args["num-elites"]*3)
         prefixes = Dict()
     end
-    @info "Running on commit: "*read(`git rev-parse --short HEAD`, String)
     @info "model has $model_size params"
-
-    pop = [Vector{Float32}([rand(UInt32)]) for _ in 1:pop_size]
-    elites = Vector{Dict}()
-    best = (-Inf, [])
-    archive = Set()
-    BC = nothing
-    F = nothing
-    γ = args["exploration-rate"]
-
-    # load checkpoint
-    check_name = "outs/$clsname/$expname/check.jld2"
-    met_csv_name = "outs/$clsname/$expname/metrics.csv"
-    sc_name = "outs/$clsname/$expname/sc.jld2"
-    start_gen = 1
-    # check if check exists on the file system
-    if isfile(check_name)
-        df = isfile(met_csv_name) ? CSV.read(met_csv_name, DataFrame) : nothing
-        try
-            global check = load(check_name)
-            global sc = load(sc_name)["sc"]
-        catch
-            global check = load(check_name*"-old")
-            global sc = load(sc_name*"-old")["sc"]
-        end
-        start_gen = check["gen"] + 1
-        γ = check["gamma"]
-        F, BC, best, archive, novelties = getindex.((check,), ["F", "BC", "best","archive", "novelties"])
-        global pop = check["pop"]
-        global elites = check["elites"]
-
-        #for p in pop
-        #    @assert elite(p) in keys(sc)
-        #end
-        cache_elites!(sc, mi, elites)
-
-        @info "resuming from gen $start_gen"
-    end
-
     for g in start_gen:args["num-gens"]
+        eval_gen = g % 50 == 1
         global prefixes
         @info "starting generation $g"
-
-        eval_gen = g % 50 == 1
-
         @info "creating groups"
 
         groups = create_rollout_groups(pop, elites, args["rollout-group-size"], args["rollout-groups-per-mut"])
@@ -156,7 +153,6 @@ function main()
         groups = compress_groups(groups, prefixes)
 
         @info "pmapping"
-
         fetches = pmap(wp, groups) do g
             fitness(g, eval_gen)
         end
@@ -170,6 +166,7 @@ function main()
             push!(walks_list[idx], fet[3]["avg_walks"][idx]...)
         end
         @assert all(length.(F) .>= args["rollout-groups-per-mut"])
+        # TODO: change these to maximums
         F = [mean(f) for f in F]
         BC = [average_bc(bcs) for bcs in BC]
         if eval_gen
@@ -197,7 +194,6 @@ function main()
         @assert size(pop_and_arch, 2) == pop_size + length(archive)
         @assert size(bc_matrix, 2) == pop_size
         @assert size(bc_matrix, 1) == size(BC[1], 1)
-        # @assert
 
         @info "computing novelties"
         novelties = compute_novelties(bc_matrix, pop_and_arch, k=min(pop_size-1, 25))
@@ -205,7 +201,7 @@ function main()
         @info "most novel bc: $(BC[argmax(novelties)])"
         @info "most fit bc: $(BC[argmax(F)]), fitness $(maximum(F))"
 
-        # LOG
+        # Run evaluation, collect statistics, and checkpoint every 50 gens
         if eval_gen
             prefixes = compute_prefixes(elites)
             @info "distributing prefixes: $(prefixes)"
@@ -213,7 +209,6 @@ function main()
 
             @spawnat 1 begin
                @info "log start"
-
                # Compute and write metrics
                outdir = "outs/$clsname/$expname/"*string(g, pad=3, base=10)
 
@@ -248,8 +243,22 @@ function main()
                avg_self_fit = round(mets["fitness_mean"]; digits=2)
                @info "Generation $g: $avg_self_fit"
                @info "log end"
+
+               # Save checkpoint
+               @info "savefile"
+               isfile(check_name) && run(`mv $check_name $check_name-old`)
+               save(check_name, Dict("gen"=>g, "gamma"=>γ, "pop"=>pop, "archive"=>archive, "BC"=> BC, "F"=>F, "best"=>best, "novelties"=>novelties, "elites"=>elites))
+
+               # Save seed cache without parameters
+               isfile(sc_name) && run(`mv $sc_name $sc_name-old`)
+               sc_no_params = SeedCache(maxsize=3*args["num-elites"])
+               for (k,v) in sc
+                   sc_no_params[k] = Dict(ke=>ve for (ke,ve) in v if ke != :params)
+               end
+               save(sc_name, Dict("sc"=>sc_no_params))
            end
         end
+
         if best[1] > 15
             best_bc = BC[argmax(F)]
             @info "Returning: Best individal found with fitness $(best[1]) and BC $best_bc"
@@ -260,21 +269,5 @@ function main()
         pop, elites = create_next_pop(g, sc, pop, F, novelties, BC, γ, args["num-elites"])
         @info "cache_elites"
         cache_elites!(sc, mi, elites)
-
-        if eval_gen
-            # Save checkpoint
-            @info "savefile"
-            isfile(check_name) && run(`mv $check_name $check_name-old`)
-            save(check_name, Dict("gen"=>g, "gamma"=>γ, "pop"=>pop, "archive"=>archive, "BC"=> BC, "F"=>F, "best"=>best, "novelties"=>novelties, "elites"=>elites))
-
-            # Save seed cache without parameters
-            isfile(sc_name) && run(`mv $sc_name $sc_name-old`)
-            sc_no_params = SeedCache(maxsize=3*args["num-elites"])
-            for (k,v) in sc
-                sc_no_params[k] = Dict(ke=>ve for (ke,ve) in v if ke != :params)
-            end
-            save(sc_name, Dict("sc"=>sc_no_params))
-        end
     end
-
 end
