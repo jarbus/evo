@@ -50,8 +50,12 @@ function make_head(input_size::NTuple{4,Int}; vbn::Bool=false, scale::Int=1)
     add_layer(16*scale=>16*scale, (4, 4), 2)
     add_layer(16*scale=>16*scale, (3, 3), 1)
   else
-    add_layer(input_size[3]=>8*scale, (7, 7), 1)
-    add_layer( 8*scale=>16*scale, (5, 5), 1)
+    # add_layer(input_size[3]=>8*scale, (7, 7), 1)
+    # add_layer( 8*scale=>16*scale, (5, 5), 1)
+    # add_layer(16*scale=>32*scale, (3, 3), 1)
+    # CHANGING THIS FOR TRADE_ONLY SCENARIO
+    add_layer(input_size[3]=>8*scale, (3, 3), 1)
+    add_layer( 8*scale=>16*scale, (3, 3), 1)
     add_layer(16*scale=>32*scale, (3, 3), 1)
   end
   push!(layers, Flux.flatten)
