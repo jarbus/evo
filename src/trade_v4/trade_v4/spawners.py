@@ -15,6 +15,7 @@ def add_tuple(t0, t1):
 
 class BaseSpawnGenerator(metaclass=ABCMeta):
     def __init__(self, grid_size):
+        self.grid_size = grid_size
         self.gx, self.gy = grid_size
 
 
@@ -36,11 +37,16 @@ class CenterSpawner(BaseSpawnGenerator):
         self.cx = (self.gx // 2)
         self.cy = (self.gy // 2)
 
+    def clp(self, x, y):
+        """Clamp position to grid"""
+        return max(0, min(self.gx-1, x)), max(0, min(self.gy-1, y))
+
+
     def reset(self):
         pass
 
     def gen_poses(self, n=4):
-        return [(self.cx+choice(range(-2,3)), self.cy+choice(range(-2,3))) for _ in range(n)]
+        return [self.clp(self.cx+choice(range(-2,3)), self.cy+choice(range(-2,3))) for _ in range(n)]
 
 class CenterCornersSpawner(BaseSpawnGenerator):
     def __init__(self, grid_size):
@@ -243,8 +249,9 @@ class FireCornerSpawner(BaseSpawnGenerator):
 
 
 if __name__ == "__main__":
-    size = (11,11)
-    CenterSpawner(size).gen_poses(4)
+    size = (1,1)
+    poses = CenterSpawner(size).gen_poses(4)
+    print(poses)
     # fc = FoodSpawner(size, [(0,0), (10,10), (5,5)])
     # x = np.zeros(size)
     # import matplotlib.pyplot as plt
