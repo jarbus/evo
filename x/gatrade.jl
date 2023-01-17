@@ -15,6 +15,10 @@ using Logging
     using Statistics
     using StableRNGs
 
+    mets_to_return = vcat([
+                    ["$(met)_$f" for f in 0:args["food-types"]-1 for met in
+                          ("exchange", "picks", "places", "rew_light")]]...,
+                          ["rew_base_health"], ["rew_acts"], ["mut_exchanges"], ["gives"], ["takes"])
     env_config = mk_env_config(args)
 
     function fitness(group::Vector, eval_gen)
@@ -26,7 +30,7 @@ using Logging
         # creates mapping of pid_copy to params
         params = Dict(aid(i, c)=>reconstruct(sc, mi, seeds, e_idxs) for (i, seeds, e_idxs) in group for c in 1:counts[i])
         models = Dict(aid=>re(param) for (aid, param) in params)
-        rew_dict, _, bc_dict, info_dict = run_batch(env, models, args, evaluation=true)
+        rew_dict, mets, bc_dict, info_dict = run_batch(env, models, args, evaluation=true)
         rews, bcs, infos = Dict(), Dict(), Dict{Any, Any}("avg_walks"=>Dict())
         for (i, _) in group 
             i < 0 && continue # skip elites
@@ -50,6 +54,7 @@ using Logging
         end
         infos["min_params"] = minimum(minimum.(values(params)))
         infos["max_params"] = maximum(maximum.(values(params)))
+        infos["mets"] = eval_gen ? filter(p->p.first in mets_to_return, mets) : []
         rews, bcs, infos
     end
 end
@@ -72,6 +77,7 @@ function main()
     BC = nothing
     F = nothing
     γ = args["exploration-rate"]
+    global metrics
 
     @info "cls: $clsname"
     @info "exp: $expname"
@@ -162,10 +168,12 @@ function main()
         F = [[] for _ in 1:pop_size]
         BC = [[] for _ in 1:pop_size]
         walks_list = [[] for _ in 1:pop_size]
+        group_rollout_metrics = []
         for fet in fetches, idx in keys(fet[1])
             push!(F[idx], fet[1][idx]...)
             push!(BC[idx], fet[2][idx]...)
             push!(walks_list[idx], fet[3]["avg_walks"][idx]...)
+            push!(group_rollout_metrics, fet[3]["mets"])
         end
         @assert all(length.(F) .>= args["rollout-groups-per-mut"])
         # TODO: change these to maximums
@@ -173,6 +181,7 @@ function main()
         BC = [max_bc(bcs) for bcs in BC]
         if eval_gen
             walks = [average_walk(w) for w in walks_list]
+            rollout_metrics = mergewith(vcat, group_rollout_metrics...)
         end
 
 
@@ -220,31 +229,38 @@ function main()
 
                eval_best_idxs = sortperm(F, rev=true)[1:ceil(Int, args["num-elites"]*γ)]
                @info "evaluating inds with fitnesses $(F[eval_best_idxs])"
-               eval_group_idxs = [rand(eval_best_idxs, args["rollout-group-size"]) for _ in 1:10]
+               eval_group_idxs = [rand(eval_best_idxs, args["rollout-group-size"]) for _ in 1:1]
                eval_group_seeds = [[pop[idx] for idx in idxs] for idxs in eval_group_idxs]
-               mets = pmap(wp, eval_group_seeds) do group_seeds
-                   models = Dict("p$i" => re(reconstruct(sc, mi, seeds)) for (i, seeds) in enumerate(group_seeds))
-                   str_name = joinpath(outdir, string(hash(group_seeds))*"-"*string(myid()))
-                   rew_dict, metrics, _, _ = run_batch(env, models, args, evaluation=true, render_str=str_name, batch_size=1)
-                   metrics
+               eval_metrics_vec = pmap(wp, eval_group_seeds) do group_seeds
+                  models = Dict("p$i" => re(reconstruct(sc, mi, seeds)) for (i, seeds) in enumerate(group_seeds))
+                  str_name = joinpath(outdir, string(hash(group_seeds))*"-"*string(myid()))
+                  _, metrics, _, _ = run_batch(env, models, args, evaluation=true, render_str=str_name, batch_size=1)
+                  metrics
                end
-               # average all the rollout metrics
-               mets = Dict(k => mean([m[k] for m in mets]) for k in keys(mets[1]))
                isnothing(args["maze"]) && vis_outs(outdir, args["local"])
-               muts = g > 1 ? [mr(pop[i]) for i in 1:pop_size] : [0.0]
-               mets["gamma"] = γ
-               mets["min_param"] = minimum([fet[3]["min_params"] for fet in fetches])
-               mets["max_param"] = maximum([fet[3]["max_params"] for fet in fetches])
-               log_mmm!(mets, "mutation_rate", muts)
-               log_mmm!(mets, "fitness", F)
-               log_mmm!(mets, "novelty", novelties)
-               df = update_df(df, mets)
-               write_mets(met_csv_name, df)
 
-               # Log to file
-               avg_self_fit = round(mets["fitness_mean"]; digits=2)
-               @info "Generation $g: $avg_self_fit"
-               @info "log end"
+               metrics_csv = Dict()
+               @info "Logging evaluation metrics"
+               eval_metrics = mergewith(vcat, eval_metrics_vec...)
+               @info "eval metrics: $(eval_metrics)"
+               for (met_name, met_vec) in eval_metrics
+                   log_mmm!(metrics_csv, "eval_"*met_name, met_vec)
+               end
+               global rollout_metrics
+               @info "Logging population metrics"
+               @info "rollout metrics: $(rollout_metrics)"
+               for (met_name, met_vec) in rollout_metrics
+                   log_mmm!(metrics_csv, "pop_"*met_name, met_vec)
+               end
+               muts = g > 1 ? [mr(pop[i]) for i in 1:pop_size] : [0.0]
+               metrics_csv["gamma"] = γ
+               metrics_csv["min_param"] = minimum([fet[3]["min_params"] for fet in fetches])
+               metrics_csv["max_param"] = maximum([fet[3]["max_params"] for fet in fetches])
+               log_mmm!(metrics_csv, "mutation_rate", muts)
+               log_mmm!(metrics_csv, "fitness", F)
+               log_mmm!(metrics_csv, "novelty", novelties)
+               df = update_df(df, metrics_csv)
+               write_mets(met_csv_name, df)
 
                # Save checkpoint
                @info "savefile"

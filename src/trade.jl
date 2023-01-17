@@ -36,7 +36,7 @@ function render(env::PyObject, filename::String)
 end
 
 function get_metrics(env::PyObject)
-  pycall(env.mc.return_metrics, PyDict{String,Float32}, env)
+  pycall(env.mc.return_metrics, PyDict{String,Vector{Float32}}, env)
 end
 
 function get_bcs(env::PyObject)
@@ -46,16 +46,9 @@ end
 function get_metrics(envs::Vector{PyObject})
     @assert length(envs) >= 1
     mets_vec = [get_metrics(env) for env in envs]
-    mets = Dict()
-    for key in keys(mets_vec[1])
-        vals = [met[key] for met in mets_vec]
-        push!(mets, key*"_min"=> minimum(vals))
-        push!(mets, key*"_mean"=> mean(vals))
-        push!(mets, key*"_max"=> maximum(vals))
-        push!(mets, key*"_std"=> std(vals))
-    end
-    mets
+    mergewith(vcat, mets_vec...)
 end
+
 function step!(env::PyObject, actions::Dict{String,Int})::step_return_type
   pycall(env.step, step_return_type, actions)
 end

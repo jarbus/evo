@@ -102,12 +102,12 @@ class TradeMetricCollector():
 
     def return_metrics(self, env):
         custom_metrics = {
-                "rew_base_health": self.rew_base_health,
-                "rew_light": self.rew_light,
-                "rew_acts": self.rew_acts,
+            "rew_base_health": [self.rew_base_health],
+            "rew_light": [self.rew_light],
+            "rew_acts": [self.rew_acts],
         }
         for food, count in enumerate(self.num_exchanges):
-            custom_metrics[f"exchange_{food}"] = count
+            custom_metrics[f"exchange_{food}"] = [count]
         #for symbol, count in enumerate(self.comm_history):
         #    episode.custom_metrics[f"comm_{symbol}"] = count
         food_imbalances = []
@@ -152,13 +152,13 @@ class TradeMetricCollector():
                 picks[food].append(self.picked_counts[agent][food])
                 # custom_metrics[f"{agent}_PLACE_{food}"] = self.placed_counts[agent][food]
                 places[food].append(self.placed_counts[agent][food])
-        llogmmm(custom_metrics, "gives", gives)
-        llogmmm(custom_metrics, "takes", takes)
-        llogmmm(custom_metrics, "mut_exchanges", mut_exchanges)
-        llogmmm(custom_metrics, "food_imbalances", food_imbalances)
+        custom_metrics["gives"] = gives
+        custom_metrics["takes"] = takes
+        custom_metrics["mut_exchanges"] = mut_exchanges
+        custom_metrics["food_imbalances"] = food_imbalances
         for food in range(env.food_types):
-            llogmmm(custom_metrics, f"picks_{food}", picks[food])
-            llogmmm(custom_metrics, f"places_{food}", places[food])
+            custom_metrics[f"picks_{food}"] = picks[food]
+            custom_metrics[f"places_{food}"] = places[food]
 
         return custom_metrics
 
