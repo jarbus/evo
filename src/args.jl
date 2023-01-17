@@ -1,7 +1,9 @@
 function get_arg_table()
     s = ArgParseSettings()
     @add_arg_table! s begin
-
+      "--food-types"
+      arg_type = Int
+      required = true
       "--datime"
       arg_type = String
       required = true
@@ -96,7 +98,6 @@ function get_arg_table()
       required = true
       "--seed"
       arg_type = Int
-      "--food-types"
       "--checkpoint-interval"
       "--class-name"
       "--nprocs"

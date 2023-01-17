@@ -1,7 +1,7 @@
 mk_env_config(args) = Dict(
     "window" => args["window"],
     "grid" => (args["gx"], args["gy"]),
-    "food_types" => 2,
+    "food_types" => args["food-types"],
     "latest_agent_ids" => [0, 0],
     "matchups" => [Tuple("f$(i)a0" for i in 0:args["rollout-group-size"]-1)],
     "episode_length" => args["episode-length"],
