@@ -180,8 +180,16 @@ function main()
         F = [maximum(f) for f in F]
         BC = [max_bc(bcs) for bcs in BC]
         if eval_gen
+            global rollout_metrics
             walks = [average_walk(w) for w in walks_list]
-            rollout_metrics = mergewith(vcat, group_rollout_metrics...)
+            rollout_metrics = Dict()
+            # we get a stack overflow error if we do all metrics in one call
+            # so we do them one at a time
+            @info "Combining group rollout metrics of length $(length(group_rollout_metrics)), keys[1] $(keys(group_rollout_metrics[1]))"
+            for group_mets in group_rollout_metrics
+                mergewith!(vcat, rollout_metrics, group_mets)
+            end
+            @info "keys of final rollout mets: $(keys(rollout_metrics))"
         end
 
 
@@ -220,16 +228,16 @@ function main()
 
             @spawnat 1 begin
                @info "log start"
-               # Compute and write metrics
-               outdir = "outs/$clsname/$expname/"*string(g, pad=3, base=10)
+               metrics_csv = Dict()
 
+               outdir = "outs/$clsname/$expname/"*string(g, pad=3, base=10)
                run(`mkdir -p $outdir`)
 
                plot_grid_and_walks(env, "$outdir/pop.png", grid, walks, novelties, F, args["num-elites"], γ)
 
                eval_best_idxs = sortperm(F, rev=true)[1:ceil(Int, args["num-elites"]*γ)]
                @info "evaluating inds with fitnesses $(F[eval_best_idxs])"
-               eval_group_idxs = [rand(eval_best_idxs, args["rollout-group-size"]) for _ in 1:1]
+               eval_group_idxs = [rand(eval_best_idxs, args["rollout-group-size"]) for _ in 1:10]
                eval_group_seeds = [[pop[idx] for idx in idxs] for idxs in eval_group_idxs]
                eval_metrics_vec = pmap(wp, eval_group_seeds) do group_seeds
                   models = Dict("p$i" => re(reconstruct(sc, mi, seeds)) for (i, seeds) in enumerate(group_seeds))
@@ -237,29 +245,31 @@ function main()
                   _, metrics, _, _ = run_batch(env, models, args, evaluation=true, render_str=str_name, batch_size=1)
                   metrics
                end
-               isnothing(args["maze"]) && vis_outs(outdir, args["local"])
-
-               metrics_csv = Dict()
                @info "Logging evaluation metrics"
-               eval_metrics = mergewith(vcat, eval_metrics_vec...)
-               @info "eval metrics: $(eval_metrics)"
+               eval_metrics = Dict()
+               for eval_met in eval_metrics_vec
+                    mergewith!(vcat, eval_metrics, eval_met)
+               end
                for (met_name, met_vec) in eval_metrics
                    log_mmm!(metrics_csv, "eval_"*met_name, met_vec)
                end
-               global rollout_metrics
+               @info "Visualizing outs"
+               isnothing(args["maze"]) && vis_outs(outdir, args["local"])
+
                @info "Logging population metrics"
-               @info "rollout metrics: $(rollout_metrics)"
+               global rollout_metrics
                for (met_name, met_vec) in rollout_metrics
                    log_mmm!(metrics_csv, "pop_"*met_name, met_vec)
                end
                muts = g > 1 ? [mr(pop[i]) for i in 1:pop_size] : [0.0]
-               metrics_csv["gamma"] = γ
-               metrics_csv["min_param"] = minimum([fet[3]["min_params"] for fet in fetches])
-               metrics_csv["max_param"] = maximum([fet[3]["max_params"] for fet in fetches])
                log_mmm!(metrics_csv, "mutation_rate", muts)
                log_mmm!(metrics_csv, "fitness", F)
                log_mmm!(metrics_csv, "novelty", novelties)
+               metrics_csv["gamma"] = γ
+               metrics_csv["min_param"] = minimum([fet[3]["min_params"] for fet in fetches])
+               metrics_csv["max_param"] = maximum([fet[3]["max_params"] for fet in fetches])
                df = update_df(df, metrics_csv)
+               @info "writing mets"
                write_mets(met_csv_name, df)
 
                # Save checkpoint
