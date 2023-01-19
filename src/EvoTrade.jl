@@ -12,7 +12,7 @@ export compute_novelty, compute_novelties, bc1, bc2, bc3,
 create_next_pop, add_to_archive!, M, reorder!, compute_elite,
 elite, mr, create_rollout_groups, average_bc, aid, average_walk, 
 max_bc, add_elite_idxs_to_groups, compute_prefixes,
-compress_groups, decompress_group
+compress_groups, decompress_group, add_elite_idxs, compress_pop
 export run_batch, invert
 export EvoTradeLogger
 

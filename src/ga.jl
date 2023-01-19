@@ -11,7 +11,7 @@ bc1, bc2, bc3, create_next_pop, add_to_archive!,
 reorder!, average_bc, compute_elite, dist, M, max_bc,
 elite, mr, create_rollout_groups, average_walk,
 add_elite_idxs_to_groups, compute_prefixes, compress_groups,
-decompress_group
+decompress_group, add_elite_idxs, compress_pop
 
 dist(a, b) = sum((a .- b).^2)
 
@@ -227,8 +227,8 @@ end
 
 
 
-function create_rollout_groups(pop::Vector{<:Vector{<:AbstractFloat}},
-        elites::Vector{<:AbstractDict},
+function create_rollout_groups(pop::Vector,
+        eseeds::Vector,
         rollout_group_size::Int, rollouts_per_ind::Int)
     """Creates a vector of groups to evaluate. Each group is half elites from
     the previous generation and half members of the current population. 
@@ -240,7 +240,7 @@ function create_rollout_groups(pop::Vector{<:Vector{<:AbstractFloat}},
         Vector `v` is length 2, where `v[1]` is the count of how many times
     this member has been chosen and `v[2]` is the member seed itself.
     """
-    if rollout_group_size == 1 || elites == []
+    if rollout_group_size == 1 || eseeds == []
         return create_rollout_groups(pop, rollout_group_size, rollouts_per_ind)
     end
 
@@ -252,8 +252,8 @@ function create_rollout_groups(pop::Vector{<:Vector{<:AbstractFloat}},
         # ints from pop are positive, ints from elites are negative
         group_pop_ids = popn!(g_pop, n_pop)
         group_elite_ids = popn!(g_elites, n_elite)
-        group_pop = [(i, pop[i]) for i in group_pop_ids]
-        group_elite = [(-i, elites[i][:seeds]) for i in group_elite_ids]
+        group_pop = [(i, pop[i]...) for i in group_pop_ids]
+        group_elite = [(-i, eseeds[i]...) for i in group_elite_ids]
         group = vcat(group_pop, group_elite) |> shuffle
         group
     end
@@ -265,9 +265,9 @@ function create_rollout_groups(pop::Vector{<:Vector{<:AbstractFloat}},
     end
     n_pop_agents = n_elite_agents = ceil(Int, n_agents / 2)
     n_pop_duplicates = ceil(Int, n_pop_agents / length(pop))
-    n_elite_duplicates = ceil(Int, n_elite_agents / length(elites))
+    n_elite_duplicates = ceil(Int, n_elite_agents / length(eseeds))
     massive_pop = vcat([collect(1:length(pop)) for _ in 1:n_pop_duplicates]...) |> shuffle
-    massive_elites = vcat([collect(1:length(elites)) for _ in 1:n_elite_duplicates]...) |> shuffle
+    massive_elites = vcat([collect(1:length(eseeds)) for _ in 1:n_elite_duplicates]...) |> shuffle
     @assert length(massive_pop) >= n_pop_agents
     @assert length(massive_elites) >= n_elite_agents
     groups = [make_group!(massive_pop, massive_elites, rollout_group_size) for _ in 1:n_groups]
@@ -284,13 +284,13 @@ function create_rollout_groups(pop::Vector{<:Vector{<:AbstractFloat}},
     groups
 end
 
-function create_rollout_groups(pop::Vector{<:Vector{<:AbstractFloat}},
+function create_rollout_groups(pop::Vector,
         rollout_group_size::Int, rollouts_per_ind::Int)
 
     n_groups = ceil(Int, rollouts_per_ind*length(pop)/rollout_group_size)
     function make_group!(g_pop, n)
         group_pop_ids = popn!(g_pop, n)
-        group_pop = [(i, pop[i]) for i in group_pop_ids] |> shuffle
+        group_pop = [(i, pop[i]...) for i in group_pop_ids] |> shuffle
         group_pop
     end
     n_agents = n_groups * rollout_group_size
@@ -363,6 +363,28 @@ function add_elite_idxs_to_groups(groups, elites)
     new_groups
 end
 
+function add_elite_idxs(pop, elites)
+    """
+    groups: Vector of Tuples t, t[i][1] is identifier , t[i][2] is seed
+    elites: vector of dicts
+    returns: 
+    groups_with_idxs: Vector of Tuples t, t[i][1] is identifier , t[i][2] is seed, t[i][3] is a set of idxs
+    where 1:idx is an elite, whose reconstruction should be cached
+    """
+    elite_idxs = compute_elite_idxs(elites)
+    new_pop = []
+    for seed in pop
+        if haskey(elite_idxs, seed)
+            push!(new_pop, (seed, elite_idxs[seed]))
+        elseif haskey(elite_idxs, elite(seed))
+            push!(new_pop, (seed, elite_idxs[elite(seed)]))
+        else
+            push!(new_pop, (seed, Set{Int}()))
+        end
+    end
+    new_pop
+end
+
 function compute_prefixes(elites; k::Int=10)
     """
     Returns the prefixes of elite seeds with the greatest 
@@ -426,6 +448,27 @@ function compress_groups(groups, prefixes)
         end
     end
     new_groups
+end
+
+function compress_pop(pop, prefixes)
+    """
+    groups: Vector of Tuples t, t[i][1] is identifier , t[i][2] is seed, t[i][3] is a set of idxs
+    returns: new_groups, prefix_dict with string(hash(seed)) as key
+    """
+    # we check prefixes in order of decreasing length in order to maximize 
+    # the number of characters we can replace
+    prefixes_by_len = sort([(length(v), k, v) for (k, v) in prefixes], rev=true)
+    new_pop = []
+    for (seed, idx) in pop
+        for (len, id, prefix) in prefixes_by_len
+            if length(seed) >= length(prefix) && seed[1:length(prefix)] == prefix
+                seed = vcat(id, seed[length(prefix)+1:end])
+                break
+            end
+        end
+        push!(new_pop, (seed, idx))
+    end
+    new_pop
 end
 
 function decompress_group(group, prefixes)

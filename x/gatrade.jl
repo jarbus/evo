@@ -139,8 +139,18 @@ function main()
         @info "starting generation $g"
         @info "creating groups"
 
-        groups = create_rollout_groups(pop, elites, args["rollout-group-size"], args["rollout-groups-per-mut"])
-        groups = add_elite_idxs_to_groups(groups, elites)
+        eseeds = [e[:seeds] for e in elites]
+        @info "adding elite idxs for pop"
+        rollout_pop = add_elite_idxs(pop, elites)
+        @info "compressing pop"
+        rollout_pop = compress_pop(rollout_pop, prefixes)
+        @info "adding elite idxs for elites"
+        rollout_elites = add_elite_idxs(eseeds, elites)
+        @info "compressing elites"
+        rollout_elites = compress_pop(rollout_elites, prefixes)
+        @info "creating rollout groups"
+        groups = create_rollout_groups(rollout_pop, rollout_elites, args["rollout-group-size"], args["rollout-groups-per-mut"])
+        @info "gathering statistics"
         avg_set_len = 0
         avg_pop_lens = 0
         num_inds = 0
@@ -157,8 +167,6 @@ function main()
         @info "avg num_elites_cached len: $(avg_set_len/num_inds)"
         @info "union set: $(union_set)"
         @info "avg pop len: $(avg_pop_lens/num_inds)"
-        @info "compressing groups"
-        groups = compress_groups(groups, prefixes)
 
         @info "pmapping"
         fetches = pmap(wp, groups) do g
