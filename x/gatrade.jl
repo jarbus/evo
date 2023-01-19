@@ -184,9 +184,8 @@ function main()
             push!(group_rollout_metrics, fet[3]["mets"])
         end
         @assert all(length.(F) .>= args["rollout-groups-per-mut"])
-        # TODO: change these to maximums
-        F = [maximum(f) for f in F]
-        BC = [max_bc(bcs) for bcs in BC]
+        F = [mean(f) for f in F]
+        BC = [average_bc(bcs) for bcs in BC]
         if eval_gen
             global rollout_metrics
             walks = [average_walk(w) for w in walks_list]
