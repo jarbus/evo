@@ -1,4 +1,4 @@
-@testset "test_rollout_groups" begin
+@testset "test_integration" begin
   pop_size = 100
   n_elites = 3
   model_size = 10_000

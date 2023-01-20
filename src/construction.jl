@@ -61,18 +61,17 @@ function reconstruct(param_cache::SeedCache, mi::ModelInfo, seeds_and_muts::Vect
     return elite
   # elite that was directly copied over 
   elseif seeds_and_muts in keys(param_cache) && haskey(param_cache[seeds_and_muts], :params)
-    return copy(param_cache[seeds_and_muts][:params])
+    return deepcopy(param_cache[seeds_and_muts][:params])
   # Get cached parent
   elseif seeds_and_muts[1:end-2] in keys(param_cache) && haskey(param_cache[seeds_and_muts[1:end-2]], :params)
-    @inline @inbounds elite = copy(param_cache[seeds_and_muts[1:end-2]][:params])
-    @inline @inbounds elite .+= gen_params(StableRNG(Int(seeds_and_muts[end])), mi, 2) * seeds_and_muts[end-1]
+    @inline @inbounds elite = param_cache[seeds_and_muts[1:end-2]][:params] |> deepcopy
   # Recurse if not cached
   else
     @inline @inbounds elite = reconstruct(param_cache, mi, seeds_and_muts[1:end-2], elite_idxs)
-    @inline @inbounds elite .+= gen_params(StableRNG(Int(seeds_and_muts[end])), mi, 2) * seeds_and_muts[end-1]
   end
+  @inline @inbounds elite .+= gen_params(StableRNG(Int(seeds_and_muts[end])), mi, 2) * seeds_and_muts[end-1]
   if length(seeds_and_muts) ∈ elite_idxs
-    param_cache[seeds_and_muts] = Dict(:params => elite)
+    param_cache[seeds_and_muts] = Dict(:params => deepcopy(elite))
   end
   return elite
 end
