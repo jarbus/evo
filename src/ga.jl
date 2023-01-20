@@ -311,10 +311,11 @@ function create_rollout_groups(pop::Vector,
     groups
 end
 
-function find_first_nonmatching_idx(v1::Vector, v2::Vector)
-    for i in 1:min(length(v1), length(v2))
+function find_last_matching_idx(v1::Vector, v2::Vector)
+    for i in 1:2:min(length(v1), length(v2))
         if v1[i] != v2[i]
-            return i
+            i > 1 && return i-2
+            i == 1 && return 0
         end
     end
     return min(length(v1), length(v2))
@@ -330,8 +331,7 @@ function compute_elite_idxs(elites)
     for e1 in eseeds
         idxs = Set{Int}()
         for e2 in eseeds
-            length(e1) < length(e2) && continue
-            push!(idxs, find_first_nonmatching_idx(e1, e2))
+            push!(idxs, find_last_matching_idx(e1, e2))
         end
         elite_idxs[e1] = idxs
     end
@@ -397,11 +397,11 @@ function compute_prefixes(elites; k::Int=10)
         e1 == e2 && continue
         min_len = min(length(e1), length(e2))
         # go up e1 and e2 until they stop matching
-        for i in 1:min_len
+        for i in 1:2:min_len
             # prefix is the string up until they diverge, or one of them ends
             if e1[i] != e2[i] || i == min_len
                 i == 1 && continue # skip if they diverge at the first char
-                idx = e1[i] != e2[i] ? i-1 : min_len
+                idx = e1[i] != e2[i] ? i-2 : min_len
                 prefix = e1[1:idx]
                 # skip if we've already seen this prefix on a different e1,e2 pair
                 haskey(chars_reduced, prefix) && break 
@@ -457,7 +457,7 @@ function compress_pop(pop, prefixes)
     """
     # we check prefixes in order of decreasing length in order to maximize 
     # the number of characters we can replace
-    prefixes_by_len = sort([(length(v), k, v) for (k, v) in prefixes], rev=true)
+    prefixes_by_len = copy(sort([(length(v), k, v) for (k, v) in prefixes], rev=true))
     new_pop = []
     for (seed, idx) in pop
         for (len, id, prefix) in prefixes_by_len
