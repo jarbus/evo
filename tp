@@ -125,7 +125,7 @@ def make_grid(unfiltered_metrics: list):
                 else:
                     plt.style.use(["classic", "fast"])
     
-    fig, axes = plt.subplots(num_rows, num_cols, figsize=(600*px*3, 300*px*max(num_rows, 2)))
+    fig, axes = plt.subplots(num_rows, num_cols, figsize=(600*px*3, 350*px*max(num_rows, 2)))
     for i, metric in enumerate(metrics):
         r, c = i // num_cols, i % num_cols
         ax = 0
@@ -137,30 +137,39 @@ def make_grid(unfiltered_metrics: list):
         else:
             ax = axes[r,c]
 
-        for run in runs_to_plot:
-            if metric in runs[run].keys():
-                label = None if len(runs) < 2 else run
-                ax.plot(runs[run][metric], label=label, linewidth=4)
-
-                if metric.endswith("_mean"):
-                    # plot shaded area between min and max of metric
-                    min_met = metric[:-5]+"_min"
-                    max_met = metric[:-5]+"_max"
-                    std_met = metric[:-5]+"_std"
-                    assert min_met in unfiltered_metrics
-                    assert max_met in unfiltered_metrics
-                    ax.fill_between(list(range(len(runs[run][metric]))),runs[run][min_met],runs[run][max_met],alpha=0.2)
-                    if std_met in runs[run].keys():
-                        ax.fill_between(list(range(len(runs[run][metric]))),
-                            [m-sqrt(std) for m, std in zip(runs[run][metric], runs[run][std_met])],
-                            [m+sqrt(std) for m, std in zip(runs[run][metric], runs[run][std_met])],
-                             alpha=0.2)
-                    ax.set_title(metric[:-5])
-                else:
-                    ax.set_title(metric)
-
         if len(runs) > 1:
             ax.legend(loc="upper left")
+
+        for run in runs_to_plot:
+            if metric not in runs[run].keys():
+                continue
+            label = None if len(runs) < 2 else run
+            ax.plot(runs[run][metric], label=label, linewidth=4)
+
+            # Skip processing plot statistics if there are none
+            if not metric.endswith("_mean"):
+                ax.set_title(metric)
+                continue
+            ax.set_title(metric[:-5])
+            # plot shaded area between min and max of metric
+            min_met = metric[:-5]+"_min"
+            max_met = metric[:-5]+"_max"
+            std_met = metric[:-5]+"_std"
+            assert min_met in unfiltered_metrics
+            assert max_met in unfiltered_metrics
+            ax.fill_between(list(range(len(runs[run][metric]))),
+                            runs[run][min_met],
+                            runs[run][max_met],alpha=0.2)
+            if std_met not in runs[run].keys():
+                continue
+            # plot std if exists
+            ax.fill_between(list(range(len(runs[run][metric]))),
+                [max(_min, mean-sqrt(std)) for _min, mean, std in 
+                    zip(runs[run][min_met], runs[run][metric], runs[run][std_met])],
+                [min(_max, mean+sqrt(std)) for _max, mean, std in 
+                    zip(runs[run][max_met], runs[run][metric], runs[run][std_met])],
+                 alpha=0.2)
+
 
 
         
