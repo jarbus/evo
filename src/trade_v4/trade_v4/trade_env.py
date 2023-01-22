@@ -159,7 +159,7 @@ class TradeMetricCollector():
 
 METABOLISM=0.1
 PLACE_AMOUNT = 0.5
-SCALE_DOWN = 10
+SCALE_DOWN = 5
 
 NUM_ITERS = 100
 ndir = len(directions)
