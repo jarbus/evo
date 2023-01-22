@@ -25,14 +25,9 @@ arg_vector = read(file, String) |> split
 lines = readlines(file) .|> strip
 arg_vector = []
 for line in lines
-    if '"' in line
-        # push --param and quoted string as two args
-        vec = split(line, '"') .|> strip
-        @assert length(vec) == 3
-        append!(arg_vector, vec[1:2])
-    else
-        append!(arg_vector, split(line))
-    end
+    # ignore lines that start with #
+    occursin(r"^#", line) && continue
+    append!(arg_vector, split(line))
 end
 println(arg_vector)
 args = parse_args(vcat(arg_vector, expname), get_arg_table())
