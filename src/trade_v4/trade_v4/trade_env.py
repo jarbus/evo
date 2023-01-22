@@ -118,40 +118,32 @@ class TradeMetricCollector():
         mut_exchanges = []
 
         for agent in env.agents:
-            #episode.custom_metrics[f"{agent}_punishes"] = self.punish_counts[agent]
-            #episode.custom_metrics[f"{agent}_lifetime"] = env.mc.lifetimes[agent]
-            # custom_metrics[f"{agent}_food_imbalance"] = \
-            #     max(env.agent_food_counts[agent]) / max(1, min(env.agent_food_counts[agent]))
             food_imbalances.append(
-                max(env.agent_food_counts[agent]) / max(1, min(env.agent_food_counts[agent])))
+                max(env.agent_food_counts[agent]) / \
+                max(1, min(env.agent_food_counts[agent])))
             total_agent_exchange = {"give": 0, "take": 0}
             for other_agent in env.agents:
-                other_agent_exchange = {"give": 0, "take": 0}
+                if other_agent == agent:
+                    continue
+                delta_foods = []
                 for food in range(env.food_types):
                     give = self.player_exchanges[(agent, other_agent, food)]
                     take = self.player_exchanges[(other_agent, agent, food)]
-                    other_agent_exchange["give"] += give
-                    other_agent_exchange["take"] += take
-                    if other_agent != agent:
-                        total_agent_exchange["give"] += give
-                        total_agent_exchange["take"] += take
-                # episode.custom_metrics[f"{agent}_take_from_{other_agent}"] = other_agent_exchange["take"]
-                # episode.custom_metrics[f"{agent}_give_to_{other_agent}"] = other_agent_exchange["give"]
-                # custom_metrics[f"{agent}_mut_exchange_{other_agent}"] =\
-                #    min(other_agent_exchange["take"],
-                       # other_agent_exchange["give"])
-            #episode.custom_metrics[f"{agent}_take_from_all"] = total_agent_exchange["take"]
-            #episode.custom_metrics[f"{agent}_give_to_all"] = total_agent_exchange["give"]
+                    total_agent_exchange["give"] += give
+                    total_agent_exchange["take"] += take
+                    delta_foods.append(give - take)
+
+                # An exchange occured if there is a negative and positive delta
+                if max(delta_foods) > 0 and min(delta_foods) < 0:
+                    mut_exchanges.append(sum(delta_foods))
+            
             gives.append(total_agent_exchange["give"])
             takes.append(total_agent_exchange["take"])
-            mut_exchanges.append(min(total_agent_exchange["take"], total_agent_exchange["give"]))
-            # custom_metrics[f"{agent}_mut_exchange_total"] =\
-                # min(total_agent_exchange["take"], total_agent_exchange["give"])
             for food in range(env.food_types):
-                # custom_metrics[f"{agent}_PICK_{food}"] = self.picked_counts[agent][food]
                 picks[food].append(self.picked_counts[agent][food])
-                # custom_metrics[f"{agent}_PLACE_{food}"] = self.placed_counts[agent][food]
                 places[food].append(self.placed_counts[agent][food])
+        mut_exchanges = mut_exchanges if len(mut_exchanges) > 0 else [0]
+
         custom_metrics["gives"] = gives
         custom_metrics["takes"] = takes
         custom_metrics["mut_exchanges"] = mut_exchanges
