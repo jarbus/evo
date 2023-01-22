@@ -22,6 +22,19 @@ using Dates
 using EvoTrade
 expname = ["--exp-name", exp_name, "--cls-name", cls_name, "--local", "--datime", Dates.format(now(), "mm-dd_HH:MM")] # get rid of .arg
 arg_vector = read(file, String) |> split
+lines = readlines(file) .|> strip
+arg_vector = []
+for line in lines
+    if '"' in line
+        # push --param and quoted string as two args
+        vec = split(line, '"') .|> strip
+        @assert length(vec) == 3
+        append!(arg_vector, vec[1:2])
+    else
+        append!(arg_vector, split(line))
+    end
+end
+println(arg_vector)
 args = parse_args(vcat(arg_vector, expname), get_arg_table())
 make_procs(args)
 includet("x/"*args["algo"]*"trade.jl")

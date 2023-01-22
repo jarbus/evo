@@ -98,6 +98,8 @@ function get_arg_table()
       required = true
       "--seed"
       arg_type = Int
+      "--description"
+      arg_type = String
       "--checkpoint-interval"
       "--class-name"
       "--nprocs"

@@ -81,6 +81,7 @@ function main()
 
     @info "cls: $clsname"
     @info "exp: $expname"
+    haskey(args, "description") && @info "desc: $(args["description"])"
     @info "Running on commit: "*read(`git rev-parse --short HEAD`, String)
     
     @info "Initializing on all workers"
