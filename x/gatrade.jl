@@ -134,7 +134,7 @@ function main()
     end
 
     for g in start_gen:args["num-gens"]
-        eval_gen = g % 50 == 1
+        eval_gen = g % 25 == 1
         global prefixes
         @info "starting generation $g"
         @info "creating groups"
@@ -144,29 +144,30 @@ function main()
         rollout_pop = add_elite_idxs(pop, elites)
         @info "compressing pop"
         rollout_pop = compress_pop(rollout_pop, prefixes)
-        @info "adding elite idxs for elites"
-        rollout_elites = add_elite_idxs(eseeds, elites)
-        @info "compressing elites"
-        rollout_elites = compress_pop(rollout_elites, prefixes)
+        #@info "adding elite idxs for elites"
+        #rollout_elites = add_elite_idxs(eseeds, elites)
+        #@info "compressing elites"
+        #rollout_elites = compress_pop(rollout_elites, prefixes)
         @info "creating rollout groups"
-        groups = create_rollout_groups(rollout_pop, rollout_elites, args["rollout-group-size"], args["rollout-groups-per-mut"])
-        @info "gathering statistics"
-        avg_set_len = 0
-        avg_pop_lens = 0
-        num_inds = 0
-        union_set = Set()
-        for g in groups
-            for ind in g
-                eset = ind[3]
-                avg_set_len += length(eset)
-                num_inds += 1
-                avg_pop_lens += length(ind[2])
-                union_set = union(union_set, eset)
-            end
-        end
-        @info "avg num_elites_cached len: $(avg_set_len/num_inds)"
-        @info "union set: $(union_set)"
-        @info "avg pop len: $(avg_pop_lens/num_inds)"
+        #groups = create_rollout_groups(rollout_pop, rollout_elites, args["rollout-group-size"], args["rollout-groups-per-mut"])
+        groups = create_rollout_groups(rollout_pop, args["rollout-group-size"], args["rollout-groups-per-mut"])
+        #@info "gathering statistics"
+        #avg_set_len = 0
+        #avg_pop_lens = 0
+        #num_inds = 0
+        #union_set = Set()
+        #for g in groups
+        #    for ind in g
+        #        eset = ind[3]
+        #        avg_set_len += length(eset)
+        #        num_inds += 1
+        #        avg_pop_lens += length(ind[2])
+        #        union_set = union(union_set, eset)
+        #    end
+        #end
+        #@info "avg num_elites_cached len: $(avg_set_len/num_inds)"
+        #@info "union set: $(union_set)"
+        #@info "avg pop len: $(avg_pop_lens/num_inds)"
 
         @info "pmapping"
         fetches = pmap(wp, groups) do g
@@ -209,7 +210,9 @@ function main()
             @info "New best ind found, F=$(elite[1]), γ decreased to $γ"
             best = elite
         else
-            γ = clamp(γ + 0.02, 0, 0.9)
+            # TODO change gamma to clamped value once GA test passes
+            #γ = clamp(γ + 0.02, 0, 0.9)
+            γ = 0.1
             @info "no better elite found, set γ to $γ"
         end
         
@@ -242,9 +245,9 @@ function main()
 
                plot_grid_and_walks(env, "$outdir/pop.png", grid, walks, novelties, F, args["num-elites"], γ)
 
-               eval_best_idxs = sortperm(F, rev=true)[1:ceil(Int, args["num-elites"]*γ)]
+               eval_best_idxs = sortperm(F, rev=true)[1:ceil(Int, args["num-elites"]*(1-γ))]
                @info "evaluating inds with fitnesses $(F[eval_best_idxs])"
-               eval_group_idxs = [rand(eval_best_idxs, args["rollout-group-size"]) for _ in 1:10]
+               eval_group_idxs = [rand(eval_best_idxs, args["rollout-group-size"]) for _ in 1:30]
                eval_group_seeds = [[pop[idx] for idx in idxs] for idxs in eval_group_idxs]
                eval_metrics_vec = pmap(wp, eval_group_seeds) do group_seeds
                   models = Dict("p$i" => re(reconstruct(sc, mi, seeds)) for (i, seeds) in enumerate(group_seeds))
@@ -294,7 +297,7 @@ function main()
            end
         end
 
-        if best[1] > 15
+        if best[1] > 100
             best_bc = BC[argmax(F)]
             @info "Returning: Best individal found with fitness $(best[1]) and BC $best_bc"
             save("outs/$clsname/$expname/best.jld2", Dict("best"=>best, "bc"=>best_bc))
