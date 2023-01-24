@@ -11,7 +11,7 @@ bc1, bc2, bc3, create_next_pop, add_to_archive!,
 reorder!, average_bc, compute_elite, dist, M, max_bc,
 elite, mr, create_rollout_groups, average_walk,
 add_elite_idxs_to_groups, compute_prefixes, compress_groups,
-decompress_group, add_elite_idxs, compress_pop
+decompress_group, add_elite_idxs, compress_pop, all_v_all
 
 dist(a, b) = sum((a .- b).^2)
 
@@ -284,6 +284,11 @@ function create_rollout_groups(pop::Vector,
     groups
 end
 
+
+function all_v_all(pop::Vector)
+    [[(i, p1...), (j, p2...)] for (i, p1) in enumerate(pop), (j, p2) in enumerate(pop)]
+end
+
 function create_rollout_groups(pop::Vector,
         rollout_group_size::Int, rollouts_per_ind::Int)
 
@@ -472,6 +477,7 @@ function compress_pop(pop, prefixes)
 end
 
 function decompress_group(group, prefixes)
+
     new_group = []
     for (id, seeds, elite_idxs) in group
         if typeof(seeds[1]) == String

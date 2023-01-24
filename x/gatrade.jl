@@ -15,10 +15,12 @@ using Logging
     using Statistics
     using StableRNGs
 
-    mets_to_return = vcat([
-                    ["$(met)_$f" for f in 0:args["food-types"]-1 for met in
-                          ("exchange", "picks", "places", "rew_light")]]...,
-                          ["rew_base_health"], ["rew_acts"], ["mut_exchanges"], ["gives"], ["takes"])
+    mets_to_return = vcat(
+        [["$(met)_$f" for f in 0:args["food-types"]-1 for met in
+            ("exchange", "picks", "places", "rew_light")]]...,
+        [["strat_$s" for s in ("noop","give","take","exchange")]]...,
+        ["rew_base_health"], ["rew_acts"], ["mut_exchanges"],
+        ["gives"], ["takes"])
     env_config = mk_env_config(args)
 
     function fitness(group::Vector, eval_gen)
@@ -60,234 +62,237 @@ using Logging
 end
 
 function main()
-    dt_str = args["datime"]
-    logname="runs/$clsname/$dt_str-$expname.log"
-    check_name = "outs/$clsname/$expname/check.jld2"
-    met_csv_name = "outs/$clsname/$expname/metrics.csv"
-    sc_name = "outs/$clsname/$expname/sc.jld2"
-    start_gen = 1
-    global_logger(EvoTradeLogger(args["local"] ? stdout : logname))
-    df = nothing
-    wp = WorkerPool(workers())
-    pop_size = args["pop-size"]
-    pop = [Vector{Float32}([rand(UInt32)]) for _ in 1:pop_size]
-    elites = Vector{Dict}()
-    best = (-Inf, [])
-    archive = Set()
-    BC = nothing
-    F = nothing
-    γ = args["exploration-rate"]
-    global metrics
+  dt_str = args["datime"]
+  logname="runs/$clsname/$dt_str-$expname.log"
+  check_name = "outs/$clsname/$expname/check.jld2"
+  met_csv_name = "outs/$clsname/$expname/metrics.csv"
+  sc_name = "outs/$clsname/$expname/sc.jld2"
+  start_gen = 1
+  global_logger(EvoTradeLogger(args["local"] ? stdout : logname))
+  df = nothing
+  wp = WorkerPool(workers())
+  pop_size = args["pop-size"]
+  pop = [Vector{Float32}([rand(UInt32)]) for _ in 1:pop_size]
+  elites = Vector{Dict}()
+  best = (-Inf, [])
+  archive = Set()
+  BC = nothing
+  F = nothing
+  γ = args["exploration-rate"]
+  global metrics
 
-    @info "cls: $clsname"
-    @info "exp: $expname"
-    @info "Running on commit: "*read(`git rev-parse --short HEAD`, String)
+  @info "cls: $clsname"
+  @info "exp: $expname"
+  @info "Running on commit: "*read(`git rev-parse --short HEAD`, String)
+  
+  @info "Initializing on all workers"
+  @everywhere begin
+    if !isnothing(args["maze"])
+        env = maze_from_file(args["maze"])
+        grid = env.grid 
+    else
+        env = PyTrade().Trade(env_config)
+        EvoTrade.Trade.reset!(env)
+        grid = env.table 
+    end
+
+    m = make_model(Symbol(args["model"]),
+        (env.obs_size..., args["batch-size"]),
+        env.num_actions,
+        vbn=args["algo"]=="es",
+        lstm=args["lstm"])
+    θ, re = Flux.destructure(m)
+    mi = ModelInfo(m)
+    model_size = length(θ)
+    # pass mazeenv struct or trade config dict
+    env = env isa MazeEnv ? env : env_config
+    global sc = SeedCache(maxsize=args["num-elites"]*3)
+    prefixes = Dict()
+  end
+  @info "model has $model_size params"
+
+  if isfile(check_name)
+    @info "Loading from checkpoints"
+    df = isfile(met_csv_name) ? CSV.read(met_csv_name, DataFrame) : nothing
+    # We can get pre-empted while checkpointing, meaning the 
+    # latest check might be invalid. We always mv the 
+    # previous jld2 files to *.jld2-old, and boot from that
+    # if the latest check is corrupt.
+    try
+        global check = load(check_name)
+        global sc = load(sc_name)["sc"]
+    catch
+        global check = load(check_name*"-old")
+        global sc = load(sc_name*"-old")["sc"]
+    end
+    start_gen = check["gen"] + 1
+    γ = check["gamma"]
+    F, BC, best, archive, novelties = getindex.((check,), ["F", "BC", "best","archive", "novelties"])
+    global pop = check["pop"]
+    global elites = check["elites"]
+
+    cache_elites!(sc, mi, elites)
+
+    @info "resuming from gen $start_gen"
+  end
+
+  for g in start_gen:args["num-gens"]
+    eval_gen = true #g % 25 == 1
+    global prefixes
+    @info "starting generation $g"
+    @info "creating groups"
+
+    eseeds = [e[:seeds] for e in elites]
+    @info "adding elite idxs for pop"
+    rollout_pop = add_elite_idxs(pop, elites)
+    @info "compressing pop"
+    rollout_pop = compress_pop(rollout_pop, prefixes)
+    #@info "adding elite idxs for elites"
+    #rollout_elites = add_elite_idxs(eseeds, elites)
+    #@info "compressing elites"
+    #rollout_elites = compress_pop(rollout_elites, prefixes)
+    @info "creating rollout groups"
+    #groups = create_rollout_groups(rollout_pop, rollout_elites, args["rollout-group-size"], args["rollout-groups-per-mut"])
+    # groups = create_rollout_groups(rollout_pop, args["rollout-group-size"], args["rollout-groups-per-mut"])
+    groups = all_v_all(rollout_pop)
+
+    @info "pmapping"
+    fetches = pmap(wp, groups) do g
+        fitness(g, eval_gen)
+    end
+
+    F = [[] for _ in 1:pop_size]
+    BC = [[] for _ in 1:pop_size]
+    walks_list = [[] for _ in 1:pop_size]
+    group_rollout_metrics = []
+    for fet in fetches, idx in keys(fet[1])
+        push!(F[idx], fet[1][idx]...)
+        push!(BC[idx], fet[2][idx]...)
+        push!(walks_list[idx], fet[3]["avg_walks"][idx]...)
+        push!(group_rollout_metrics, fet[3]["mets"])
+    end
+    @assert all(length.(F) .>= args["rollout-groups-per-mut"])
+    F = [mean(f) for f in F]
+    BC = [average_bc(bcs) for bcs in BC]
+
+
+    @assert length(F) == length(BC) == pop_size
+    elite = (maximum(F), pop[argmax(F)])
+
+    # update elite and modify exploration rate
+    if elite[1] > best[1]
+        γ = 0.1
+        @info "New best ind found, F=$(elite[1]), γ decreased to $γ"
+        best = elite
+    else
+        # TODO change gamma to clamped value once GA test passes
+        #γ = clamp(γ + 0.02, 0, 0.9)
+        γ = 0.1
+        @info "no better elite found, set γ to $γ"
+    end
     
-    @info "Initializing on all workers"
-    @everywhere begin
-        if !isnothing(args["maze"])
-            env = maze_from_file(args["maze"])
-            grid = env.grid 
-        else
-            env = PyTrade().Trade(env_config)
-            EvoTrade.Trade.reset!(env)
-            grid = env.table 
+    add_to_archive!(archive, BC, pop, args["archive-prob"])
+
+    bc_matrix = hcat(BC...)
+    pop_and_arch = hcat([bc for (bc, _) in archive]..., bc_matrix)
+    @assert size(pop_and_arch, 2) == pop_size + length(archive)
+    @assert size(bc_matrix, 2) == pop_size
+    @assert size(bc_matrix, 1) == size(BC[1], 1)
+
+    @info "computing novelties"
+    novelties = compute_novelties(bc_matrix, pop_and_arch, k=min(pop_size-1, 25))
+    @assert length(novelties) == pop_size
+    @info "most novel bc: $(BC[argmax(novelties)])"
+    @info "most fit bc: $(BC[argmax(F)]), fitness $(maximum(F))"
+
+    # Run evaluation, collect statistics, and checkpoint every 50 gens
+    if eval_gen
+        walks = [average_walk(w) for w in walks_list]
+        rollout_metrics = Dict()
+        # we get a stack overflow error if we do all metrics in one call
+        # so we do them one at a time
+        @info "Combining group rollout metrics of length $(length(group_rollout_metrics)), keys[1] $(keys(group_rollout_metrics[1]))"
+        for group_mets in group_rollout_metrics
+            mergewith!(vcat, rollout_metrics, group_mets)
         end
+        @info "keys of final rollout mets: $(keys(rollout_metrics))"
 
-        m = make_model(Symbol(args["model"]),
-            (env.obs_size..., args["batch-size"]),
-            env.num_actions,
-            vbn=args["algo"]=="es",
-            lstm=args["lstm"])
-        θ, re = Flux.destructure(m)
-        mi = ModelInfo(m)
-        model_size = length(θ)
-        # pass mazeenv struct or trade config dict
-        env = env isa MazeEnv ? env : env_config
-        global sc = SeedCache(maxsize=args["num-elites"]*3)
-        prefixes = Dict()
-    end
-    @info "model has $model_size params"
+        prefixes = compute_prefixes(elites)
+        @info "distributing prefixes: $(prefixes)"
+        @everywhere prefixes = $prefixes
 
-    if isfile(check_name)
-        @info "Loading from checkpoints"
-        df = isfile(met_csv_name) ? CSV.read(met_csv_name, DataFrame) : nothing
-        # We can get pre-empted while checkpointing, meaning the 
-        # latest check might be invalid. We always mv the 
-        # previous jld2 files to *.jld2-old, and boot from that
-        # if the latest check is corrupt.
-        try
-            global check = load(check_name)
-            global sc = load(sc_name)["sc"]
-        catch
-            global check = load(check_name*"-old")
-            global sc = load(sc_name*"-old")["sc"]
-        end
-        start_gen = check["gen"] + 1
-        γ = check["gamma"]
-        F, BC, best, archive, novelties = getindex.((check,), ["F", "BC", "best","archive", "novelties"])
-        global pop = check["pop"]
-        global elites = check["elites"]
+        # @spawnat 1 begin
+        begin
+           @info "log start"
+           metrics_csv = Dict()
 
-        cache_elites!(sc, mi, elites)
+           outdir = "outs/$clsname/$expname/"*string(g, pad=3, base=10)
+           run(`mkdir -p $outdir`)
 
-        @info "resuming from gen $start_gen"
-    end
+           plot_grid_and_walks(env, "$outdir/pop.png", grid, walks, novelties, F, args["num-elites"], γ)
 
-    for g in start_gen:args["num-gens"]
-        eval_gen = true #g % 25 == 1
-        global prefixes
-        @info "starting generation $g"
-        @info "creating groups"
-
-        eseeds = [e[:seeds] for e in elites]
-        @info "adding elite idxs for pop"
-        rollout_pop = add_elite_idxs(pop, elites)
-        @info "compressing pop"
-        rollout_pop = compress_pop(rollout_pop, prefixes)
-        #@info "adding elite idxs for elites"
-        #rollout_elites = add_elite_idxs(eseeds, elites)
-        #@info "compressing elites"
-        #rollout_elites = compress_pop(rollout_elites, prefixes)
-        @info "creating rollout groups"
-        #groups = create_rollout_groups(rollout_pop, rollout_elites, args["rollout-group-size"], args["rollout-groups-per-mut"])
-        groups = create_rollout_groups(rollout_pop, args["rollout-group-size"], args["rollout-groups-per-mut"])
-
-        @info "pmapping"
-        fetches = pmap(wp, groups) do g
-            fitness(g, eval_gen)
-        end
-
-        F = [[] for _ in 1:pop_size]
-        BC = [[] for _ in 1:pop_size]
-        walks_list = [[] for _ in 1:pop_size]
-        group_rollout_metrics = []
-        for fet in fetches, idx in keys(fet[1])
-            push!(F[idx], fet[1][idx]...)
-            push!(BC[idx], fet[2][idx]...)
-            push!(walks_list[idx], fet[3]["avg_walks"][idx]...)
-            push!(group_rollout_metrics, fet[3]["mets"])
-        end
-        @assert all(length.(F) .>= args["rollout-groups-per-mut"])
-        F = [mean(f) for f in F]
-        BC = [average_bc(bcs) for bcs in BC]
-
-
-        @assert length(F) == length(BC) == pop_size
-        elite = (maximum(F), pop[argmax(F)])
-
-        # update elite and modify exploration rate
-        if elite[1] > best[1]
-            γ = 0.1
-            @info "New best ind found, F=$(elite[1]), γ decreased to $γ"
-            best = elite
-        else
-            # TODO change gamma to clamped value once GA test passes
-            #γ = clamp(γ + 0.02, 0, 0.9)
-            γ = 0.1
-            @info "no better elite found, set γ to $γ"
-        end
-        
-        add_to_archive!(archive, BC, pop, args["archive-prob"])
-
-        bc_matrix = hcat(BC...)
-        pop_and_arch = hcat([bc for (bc, _) in archive]..., bc_matrix)
-        @assert size(pop_and_arch, 2) == pop_size + length(archive)
-        @assert size(bc_matrix, 2) == pop_size
-        @assert size(bc_matrix, 1) == size(BC[1], 1)
-
-        @info "computing novelties"
-        novelties = compute_novelties(bc_matrix, pop_and_arch, k=min(pop_size-1, 25))
-        @assert length(novelties) == pop_size
-        @info "most novel bc: $(BC[argmax(novelties)])"
-        @info "most fit bc: $(BC[argmax(F)]), fitness $(maximum(F))"
-
-        # Run evaluation, collect statistics, and checkpoint every 50 gens
-        if eval_gen
-            walks = [average_walk(w) for w in walks_list]
-            rollout_metrics = Dict()
-            # we get a stack overflow error if we do all metrics in one call
-            # so we do them one at a time
-            @info "Combining group rollout metrics of length $(length(group_rollout_metrics)), keys[1] $(keys(group_rollout_metrics[1]))"
-            for group_mets in group_rollout_metrics
-                mergewith!(vcat, rollout_metrics, group_mets)
-            end
-            @info "keys of final rollout mets: $(keys(rollout_metrics))"
-
-            prefixes = compute_prefixes(elites)
-            @info "distributing prefixes: $(prefixes)"
-            @everywhere prefixes = $prefixes
-
-            @spawnat 1 begin
-               @info "log start"
-               metrics_csv = Dict()
-
-               outdir = "outs/$clsname/$expname/"*string(g, pad=3, base=10)
-               run(`mkdir -p $outdir`)
-
-               plot_grid_and_walks(env, "$outdir/pop.png", grid, walks, novelties, F, args["num-elites"], γ)
-
-               eval_best_idxs = sortperm(F, rev=true)[1:ceil(Int, args["num-elites"]*(1-γ))]
-               @info "evaluating inds with fitnesses $(F[eval_best_idxs])"
-               eval_group_idxs = [rand(eval_best_idxs, args["rollout-group-size"]) for _ in 1:30]
-               eval_group_seeds = [[pop[idx] for idx in idxs] for idxs in eval_group_idxs]
-               eval_metrics_vec = pmap(wp, eval_group_seeds) do group_seeds
-                  models = Dict("p$i" => re(reconstruct(sc, mi, seeds)) for (i, seeds) in enumerate(group_seeds))
-                  str_name = joinpath(outdir, string(hash(group_seeds))*"-"*string(myid()))
-                  _, metrics, _, _ = run_batch(env, models, args, evaluation=true, render_str=str_name, batch_size=2)
-                  metrics
-               end
-               @info "Logging evaluation metrics"
-               eval_metrics = Dict()
-               for eval_met in eval_metrics_vec
-                    mergewith!(vcat, eval_metrics, eval_met)
-               end
-               for (met_name, met_vec) in eval_metrics
-                   log_mmm!(metrics_csv, "eval_"*met_name, met_vec)
-               end
-               @info "Visualizing outs"
-               isnothing(args["maze"]) && vis_outs(outdir, args["local"])
-
-               @info "Logging population metrics"
-               global rollout_metrics
-               for (met_name, met_vec) in rollout_metrics
-                   log_mmm!(metrics_csv, "pop_"*met_name, met_vec)
-               end
-               muts = g > 1 ? [mr(pop[i]) for i in 1:pop_size] : [0.0]
-               log_mmm!(metrics_csv, "mutation_rate", muts)
-               log_mmm!(metrics_csv, "fitness", F)
-               log_mmm!(metrics_csv, "novelty", novelties)
-               metrics_csv["gamma"] = γ
-               metrics_csv["min_param"] = minimum([fet[3]["min_params"] for fet in fetches])
-               metrics_csv["max_param"] = maximum([fet[3]["max_params"] for fet in fetches])
-               df = update_df(df, metrics_csv)
-               @info "writing mets"
-               write_mets(met_csv_name, df)
-
-               # Save checkpoint
-               @info "savefile"
-               isfile(check_name) && run(`mv $check_name $check_name-old`)
-               save(check_name, Dict("gen"=>g, "gamma"=>γ, "pop"=>pop, "archive"=>archive, "BC"=> BC, "F"=>F, "best"=>best, "novelties"=>novelties, "elites"=>elites))
-
-               # Save seed cache without parameters
-               isfile(sc_name) && run(`mv $sc_name $sc_name-old`)
-               sc_no_params = SeedCache(maxsize=3*args["num-elites"])
-               for (k,v) in sc
-                   sc_no_params[k] = Dict(ke=>ve for (ke,ve) in v if ke != :params)
-               end
-               save(sc_name, Dict("sc"=>sc_no_params))
+           eval_best_idxs = sortperm(F, rev=true)[1:ceil(Int, args["num-elites"]*(1-γ))]
+           @info "evaluating inds with fitnesses $(F[eval_best_idxs])"
+           # eval_group_idxs = [rand(eval_best_idxs, args["rollout-group-size"]) for _ in 1:30]
+           eval_group_seeds = [[pop[idx1], pop[idx2]] for idx1 in eval_best_idxs, idx2 in eval_best_idxs]
+           eval_metrics_vec = pmap(wp, eval_group_seeds) do group_seeds
+              models = Dict("p$i" => re(reconstruct(sc, mi, seeds)) for (i, seeds) in enumerate(group_seeds))
+              str_name = joinpath(outdir, string(hash(group_seeds))*"-"*string(myid()))
+              _, metrics, _, _ = run_batch(env, models, args, evaluation=true, render_str=str_name, batch_size=2)
+              metrics
            end
-        end
+           @info "Logging evaluation metrics"
+           eval_metrics = Dict()
+           for eval_met in eval_metrics_vec
+                mergewith!(vcat, eval_metrics, eval_met)
+           end
+           for (met_name, met_vec) in eval_metrics
+               @info "Logging $met_name with length $(met_vec)"
+               log_mmm!(metrics_csv, "eval_"*met_name, met_vec)
+           end
+           @info "Visualizing outs"
+           isnothing(args["maze"]) && vis_outs(outdir, args["local"])
 
-        if best[1] > 100
-            best_bc = BC[argmax(F)]
-            @info "Returning: Best individal found with fitness $(best[1]) and BC $best_bc"
-            save("outs/$clsname/$expname/best.jld2", Dict("best"=>best, "bc"=>best_bc))
-            return
-        end
+           @info "Logging population metrics"
+           global rollout_metrics
+           for (met_name, met_vec) in rollout_metrics
+               log_mmm!(metrics_csv, "pop_"*met_name, met_vec)
+           end
+           muts = g > 1 ? [mr(pop[i]) for i in 1:pop_size] : [0.0]
+           log_mmm!(metrics_csv, "mutation_rate", muts)
+           log_mmm!(metrics_csv, "fitness", F)
+           log_mmm!(metrics_csv, "novelty", novelties)
+           metrics_csv["gamma"] = γ
+           metrics_csv["min_param"] = minimum([fet[3]["min_params"] for fet in fetches])
+           metrics_csv["max_param"] = maximum([fet[3]["max_params"] for fet in fetches])
+           df = update_df(df, metrics_csv)
+           @info "writing mets"
+           write_mets(met_csv_name, df)
 
-        pop, elites = create_next_pop(g, sc, pop, F, novelties, BC, γ, args["num-elites"])
-        @info "cache_elites"
-        cache_elites!(sc, mi, elites)
+           # Save checkpoint
+           @info "savefile"
+           isfile(check_name) && run(`mv $check_name $check_name-old`)
+           save(check_name, Dict("gen"=>g, "gamma"=>γ, "pop"=>pop, "archive"=>archive, "BC"=> BC, "F"=>F, "best"=>best, "novelties"=>novelties, "elites"=>elites))
+
+           # Save seed cache without parameters
+           isfile(sc_name) && run(`mv $sc_name $sc_name-old`)
+           sc_no_params = SeedCache(maxsize=3*args["num-elites"])
+           for (k,v) in sc
+               sc_no_params[k] = Dict(ke=>ve for (ke,ve) in v if ke != :params)
+           end
+           save(sc_name, Dict("sc"=>sc_no_params))
+       end
     end
+
+    if best[1] > 100
+        best_bc = BC[argmax(F)]
+        @info "Returning: Best individal found with fitness $(best[1]) and BC $best_bc"
+        save("outs/$clsname/$expname/best.jld2", Dict("best"=>best, "bc"=>best_bc))
+        return
+    end
+
+    pop, elites = create_next_pop(g, sc, pop, F, novelties, BC, γ, args["num-elites"])
+    @info "cache_elites"
+    cache_elites!(sc, mi, elites)
+  end
 end
