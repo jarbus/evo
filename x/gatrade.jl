@@ -112,9 +112,10 @@ function main()
     if isfile(check_name)
         @info "Loading from checkpoints"
         df = isfile(met_csv_name) ? CSV.read(met_csv_name, DataFrame) : nothing
-        # We can get pre-empted while checkpointing, meaning the latest check
-        # might be invalid. We always mv the previous jld2 files to *.jld2-old,
-        # and boot from that if the latest check is corrupt.
+        # We can get pre-empted while checkpointing, meaning the 
+        # latest check might be invalid. We always mv the 
+        # previous jld2 files to *.jld2-old, and boot from that
+        # if the latest check is corrupt.
         try
             global check = load(check_name)
             global sc = load(sc_name)["sc"]
@@ -151,23 +152,6 @@ function main()
         @info "creating rollout groups"
         #groups = create_rollout_groups(rollout_pop, rollout_elites, args["rollout-group-size"], args["rollout-groups-per-mut"])
         groups = create_rollout_groups(rollout_pop, args["rollout-group-size"], args["rollout-groups-per-mut"])
-        #@info "gathering statistics"
-        #avg_set_len = 0
-        #avg_pop_lens = 0
-        #num_inds = 0
-        #union_set = Set()
-        #for g in groups
-        #    for ind in g
-        #        eset = ind[3]
-        #        avg_set_len += length(eset)
-        #        num_inds += 1
-        #        avg_pop_lens += length(ind[2])
-        #        union_set = union(union_set, eset)
-        #    end
-        #end
-        #@info "avg num_elites_cached len: $(avg_set_len/num_inds)"
-        #@info "union set: $(union_set)"
-        #@info "avg pop len: $(avg_pop_lens/num_inds)"
 
         @info "pmapping"
         fetches = pmap(wp, groups) do g
@@ -187,18 +171,6 @@ function main()
         @assert all(length.(F) .>= args["rollout-groups-per-mut"])
         F = [mean(f) for f in F]
         BC = [average_bc(bcs) for bcs in BC]
-        if eval_gen
-            global rollout_metrics
-            walks = [average_walk(w) for w in walks_list]
-            rollout_metrics = Dict()
-            # we get a stack overflow error if we do all metrics in one call
-            # so we do them one at a time
-            @info "Combining group rollout metrics of length $(length(group_rollout_metrics)), keys[1] $(keys(group_rollout_metrics[1]))"
-            for group_mets in group_rollout_metrics
-                mergewith!(vcat, rollout_metrics, group_mets)
-            end
-            @info "keys of final rollout mets: $(keys(rollout_metrics))"
-        end
 
 
         @assert length(F) == length(BC) == pop_size
@@ -232,6 +204,16 @@ function main()
 
         # Run evaluation, collect statistics, and checkpoint every 50 gens
         if eval_gen
+            walks = [average_walk(w) for w in walks_list]
+            rollout_metrics = Dict()
+            # we get a stack overflow error if we do all metrics in one call
+            # so we do them one at a time
+            @info "Combining group rollout metrics of length $(length(group_rollout_metrics)), keys[1] $(keys(group_rollout_metrics[1]))"
+            for group_mets in group_rollout_metrics
+                mergewith!(vcat, rollout_metrics, group_mets)
+            end
+            @info "keys of final rollout mets: $(keys(rollout_metrics))"
+
             prefixes = compute_prefixes(elites)
             @info "distributing prefixes: $(prefixes)"
             @everywhere prefixes = $prefixes
