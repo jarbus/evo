@@ -32,8 +32,12 @@ end
 function run_batch(env_config::Dict, models::Dict{String,<:Chain}, args; evaluation=false, render_str::Union{Nothing,String}=nothing, batch_size=nothing)
 
     batch_size = isnothing(batch_size) ? args["batch-size"] : batch_size
-    env_config["matchups"] = [tuple(keys(models)...)]
-    b_env = [PyTrade().Trade(env_config) for _ in 1:batch_size]
+    @assert batch_size == 2
+    ec1 = deepcopy(env_config)
+    ec2 = deepcopy(env_config)
+    ec1["matchups"] = [tuple(keys(models)...)]
+    ec2["matchups"] = [tuple(keys(models)...) |> reverse]
+    b_env = [PyTrade().Trade(ec) for ec in (ec1, ec2)]
     obs_size = (b_env[1].obs_size..., batch_size)
     num_actions = b_env[1].num_actions
     b_obs = batch_reset!(b_env, models)

@@ -63,8 +63,14 @@ function reset!(env::PyObject, models::Dict{String,<:Chain})
   reset!(env)
 end
 
+# TODO refactor this to work over union of all keys
 function batch_dict(d::Vector{<:AbstractDict})
-  Dict([key => ecat([di[key] for di in d]...) for key in keys(d[1])]...)
+  # make a set thats a union of all key sets in d
+  allkeys = Set{Any}()
+  for di in d
+    union!(allkeys, keys(di))
+  end
+  Dict([key => ecat([di[key] for di in d if key in keys(di)]...) for key in allkeys]...)
 end
 
 
@@ -85,40 +91,45 @@ function batch_pos!(envs::Vector{PyObject})
   poses
 end
 
+# TODO Refactor to make this work with different first agents
 function batch_reset!(envs::Vector{PyObject}, models::Dict{String,<:Chain})
   obss = [reset!(env, models) for env in envs]
-  @assert all(keys(obssi) == keys(obss[1]) for obssi in obss)
-  batch_dict(obss)
+  # @assert all(keys(obssi) == keys(obss[1]) for obssi in obss)
+  #batch_dict(obss)
+  obss
 end
 
-# TODO test batch size 1 on virtual batch normalization
-
-function batch_step!(envs::Vector{PyObject}, models::Dict{String,<:Chain}, obs::Dict{String,<:AbstractArray}; evaluation=false)
+# TODO Refactor to make this work with different agents
+function batch_step!(envs::Vector{PyObject}, models::Dict{String,<:Chain}, b_obs::Vector{<:AbstractDict{String,<:AbstractArray}}; evaluation=false)
   """Perform a batch step on a vector of environments and models. Actions begin at 1, and are
     converted to 0 for python inside this function."""
-  @assert length(obs) == 1
-  name, ob = first(obs)
-  ob = ob
-  probs = models[name](ob) # bottleneck
-  probs = probs
-  @assert !any(isnan.(probs))
-  if evaluation
-    # matrix of floats to matrix of cartesian indicies
-    # to vector of cartesian indicies to vector of ints
-    acts = argmax(probs, dims=1)[1, :] .|> z -> z[1]
-  else
-    acts = sample_batch(probs)
+  ret_obss, ret_rews, ret_dones = Vector{PyDict{String,PyArray,true}}(), [], []
+  ret_acts = []
+  for (i, obs) in enumerate(b_obs)
+    @assert length(obs) == 1
+    name, ob = first(obs)
+    ob = ob
+    probs = models[name](ob) # bottleneck
+    probs = probs
+    @assert !any(isnan.(probs))
+    if evaluation
+      # matrix of floats to matrix of cartesian indicies
+      # to vector of cartesian indicies to vector of ints
+      act = argmax(probs, dims=1)[1, :] .|> z -> z[1]
+    else
+      act = sample_batch(probs)
+    end
+    act .-= 1 # convert to python
+
+    @assert length(act) == 1
+    obs, rew, done = step!(envs[i], Dict(name => act[1])) # biggest bottleneck
+
+    push!(ret_obss, PyDict(obs))
+    push!(ret_rews, rew)
+    push!(ret_dones, done)
+    push!(ret_acts, act[1])
   end
-  acts .-= 1 # convert to python
-  @assert length(acts) == length(envs)
-  obss, rews, dones = Vector{PyDict{String,PyArray,true}}(), [], []
-  for (env, act) in zip(envs, acts)
-    obs, rew, done = step!(env, Dict(name => act)) # biggest bottleneck
-    push!(obss, PyDict(obs))
-    push!(rews, rew)
-    push!(dones, done)
-  end
-  batch_dict(obss), rews, dones, acts .+ 1
+  ret_obss, ret_rews, ret_dones, ret_acts .+ 1
 end
 
  
