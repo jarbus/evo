@@ -2,7 +2,7 @@ import os
 import numpy as np
 import random
 from math import floor
-from .utils import add_tup, directions, valid_pos, inv_dist, punish_region, matchup_shuffler, avg_tuple
+from .utils import add_tup, directions, valid_pos, punish_region, matchup_shuffler, avg_tuple, get_strategy_name, STRATEGIES
 from .light import Light
 from .spawners import FireCornerSpawner, FoodSpawner, DiscreteFoodSpawner, CenterSpawner
 import sys
@@ -106,6 +106,8 @@ class TradeMetricCollector():
             "rew_light": [self.rew_light],
             "rew_acts": [self.rew_acts],
         }
+        for st in STRATEGIES:
+            custom_metrics[st] = []
         for food, count in enumerate(self.num_exchanges):
             custom_metrics[f"exchange_{food}"] = [count]
         #for symbol, count in enumerate(self.comm_history):
@@ -139,6 +141,9 @@ class TradeMetricCollector():
             
             gives.append(total_agent_exchange["give"])
             takes.append(total_agent_exchange["take"])
+            strat = get_strategy_name(total_agent_exchange["give"], total_agent_exchange["take"])
+            for st in STRATEGIES:
+                custom_metrics[st].append(int(st == strat))
             for food in range(env.food_types):
                 picks[food].append(self.picked_counts[agent][food])
                 places[food].append(self.placed_counts[agent][food])

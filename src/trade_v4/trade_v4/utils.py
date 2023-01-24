@@ -33,6 +33,18 @@ def matchup_shuffler(matchups_list: List[Tuple]):
         for matchup in matchups:
             yield matchup
 
+STRATEGIES = ["strat_exchange", "strat_give", "strat_take", "strat_noop"]
+def get_strategy_name(gives, takes):
+    if gives > 0 and takes > 0:
+        return STRATEGIES[0]
+    elif gives > 0:
+        return STRATEGIES[1]
+    elif takes > 0:
+        return STRATEGIES[2]
+    else:
+        return STRATEGIES[3]
+    
+
 #POLICY_MAPPING_FN = {
 #    1: lambda aid, **kwargs: "pol1",
 #    2: lambda aid, **kwargs: "pol1" if aid in {"player_0", "player_2"} else "pol2",
