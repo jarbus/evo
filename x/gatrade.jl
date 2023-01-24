@@ -135,7 +135,7 @@ function main()
     end
 
     for g in start_gen:args["num-gens"]
-        eval_gen = g % 25 == 1
+        eval_gen = true #g % 25 == 1
         global prefixes
         @info "starting generation $g"
         @info "creating groups"
@@ -234,7 +234,7 @@ function main()
                eval_metrics_vec = pmap(wp, eval_group_seeds) do group_seeds
                   models = Dict("p$i" => re(reconstruct(sc, mi, seeds)) for (i, seeds) in enumerate(group_seeds))
                   str_name = joinpath(outdir, string(hash(group_seeds))*"-"*string(myid()))
-                  _, metrics, _, _ = run_batch(env, models, args, evaluation=true, render_str=str_name, batch_size=1)
+                  _, metrics, _, _ = run_batch(env, models, args, evaluation=true, render_str=str_name, batch_size=2)
                   metrics
                end
                @info "Logging evaluation metrics"
