@@ -112,3 +112,5 @@ function invert(m::Dict)
     end
     inverted_dict
 end
+
+elite(x::Vector) = length(x) > 2 ? x[1:end-2] : x

@@ -42,16 +42,12 @@ include("logger.jl")
 include("net.jl")
 include("construction.jl")
 using .Net
-
-
 include("trade.jl")
 using .Trade
 include("maze.jl")
 using .Maze
-include("es.jl")
 include("ga.jl")
-using .ES
-using .GANS
+include("compression.jl")
 include("rollout.jl")
 include("visual.jl")
 end
