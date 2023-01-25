@@ -25,6 +25,65 @@ update_df(df::Nothing, mets)   = DataFrame(mets)
 update_df(df::DataFrame, mets) = push!(df, mets)
 write_mets(file_name::String, df::Nothing) = nothing
 write_mets(file_name::String, df::AbstractDataFrame) = CSV.write(file_name, df)
+update_df_and_write_metrics(file_name::String, df::Nothing, mets::Nothing) = nothing
+update_df_and_write_metrics(file_name::String, df, mets::Nothing) = nothing
+function update_df_and_write_metrics(file_name::String, df, mets)
+    df = update_df(df, mets)
+    CSV.write(file_name, df)
+    df
+end
+
+function average_walk(walks)
+    """walks is ::Vector{Vector{Tuple{Float64, Float64}}}
+    but too much of a pain to specify type in main script
+    """
+    avg_walk = []
+    for step in zip(walks...)
+        avg_step = mean.(zip(step...))
+        push!(avg_walk, avg_step)
+    end
+    avg_walk
+end
+
+function average_bc(bcs::Vector)
+  @assert Set(length.(bcs)) |> length == 1
+  [mean(x) for x in zip(bcs...)]
+end
+
+function max_bc(bcs::Vector)
+  @assert Set(length.(bcs)) |> length == 1
+  [maximum(x) for x in zip(bcs...)]
+end
+
+function aggregate_metrics(metrics::Vector{<:AbstractDict})
+  # we get a stack overflow error if we do all metrics in one call
+  # so we do them one at a time
+  agg_metrics = Dict()
+  for met::AbstractDict in metrics
+       mergewith!(vcat, agg_metrics, met)
+  end
+  agg_metrics
+end
+
+function aggregate_rollouts(fetches, pop_size)
+    F = [[] for _ in 1:pop_size]
+    BC = [[] for _ in 1:pop_size]
+    walks_list = [[] for _ in 1:pop_size]
+    group_rollout_metrics::Vector{Dict} = []
+    for fet in fetches, idx in keys(fet[1])
+        push!(F[idx], fet[1][idx]...)
+        push!(BC[idx], fet[2][idx]...)
+        push!(walks_list[idx], fet[3]["avg_walks"][idx]...)
+        push!(group_rollout_metrics, fet[3]["mets"])
+    end
+    F = [mean(f) for f in F]
+    BC = [average_bc(bcs) for bcs in BC]
+    walks = [average_walk(w) for w in walks_list]
+    rollout_metrics = aggregate_metrics(group_rollout_metrics)
+
+    F, BC, walks, rollout_metrics
+end
+
 
 ts(x) = println(Dates.format(now(), "HH:MM:SS")*" $x")
 ts(f, x) = println(f, Dates.format(now(), "HH:MM:SS")*" $x")

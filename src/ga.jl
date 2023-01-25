@@ -8,9 +8,8 @@ using Infiltrator
 using NearestNeighbors
 export compute_novelty, compute_novelties,
 bc1, bc2, bc3, create_next_pop, add_to_archive!,
-reorder!, average_bc, compute_elite, dist, M, max_bc,
-elite, mr, create_rollout_groups, average_walk,
-add_elite_idxs_to_groups, compute_prefixes, compress_groups,
+reorder!, dist, M, elite, mr, create_rollout_groups, average_walk,
+compute_prefixes, 
 decompress_group, add_elite_idxs, compress_pop, all_v_all
 
 dist(a, b) = sum((a .- b).^2)
@@ -180,46 +179,6 @@ function bc3(avg_walks::Vector{NTuple{2, Float64}}, fitness::Float32)::Vector{Fl
     [start_pos..., mean_pos..., end_pos..., fitness]
 end
 
-function average_bc(bcs::Vector)
-  @assert Set(length.(bcs)) |> length == 1
-  [mean(x) for x in zip(bcs...)]
-end
-
-function max_bc(bcs::Vector)
-  @assert Set(length.(bcs)) |> length == 1
-  [maximum(x) for x in zip(bcs...)]
-end
-
-function average_walk(walks)
-    """walks is ::Vector{Vector{Tuple{Float64, Float64}}}
-    but too much of a pain to specify type in main script
-    """
-    avg_walk = []
-    for step in zip(walks...)
-        avg_step = mean.(zip(step...))
-        push!(avg_walk, avg_step)
-    end
-    avg_walk
-end
-
-function compute_elite(f, pop, F; k::Int=10, n::Int=30)
-  # run n evals in parallel on top k members to compute elite
-  top_F_idxs = sortperm(F, rev=true)[1:min(k, length(pop))]
-  @assert F[top_F_idxs[1]] >= maximum(F)
-  rollout_Fs = pmap(1:k*n) do rollout_idx
-      # get member ∈ [1,10] from rollout count
-      p = floor(Int, (rollout_idx-1) / n) + 1
-      @assert p in 1:k
-      fit = f(pop[top_F_idxs[p]], pop[top_F_idxs[p]])
-      (fit[1] + fit[2])/2
-  end
-  @assert rollout_Fs isa Vector{<:AbstractFloat}
-  accurate_Fs = [sum(rollout_Fs[i:i+n-1])/n for i in 1:n:length(rollout_Fs)]
-  @assert length(accurate_Fs) == k
-  elite_idx = argmax(accurate_Fs)
-  elite = maximum(accurate_Fs), pop[top_F_idxs[elite_idx]]
-  elite
-end
 
 function popn!(x, n::Int)
     [pop!(x) for _ in 1:n]
@@ -286,7 +245,7 @@ end
 
 
 function all_v_all(pop::Vector)
-    [[(i, p1...), (j, p2...)] for (i, p1) in enumerate(pop), (j, p2) in enumerate(pop)]
+    [[(i, p1...), (j, p2...)] for (i, p1) in enumerate(pop) for (j, p2) in enumerate(pop)]
 end
 
 function create_rollout_groups(pop::Vector,
@@ -341,31 +300,6 @@ function compute_elite_idxs(elites)
         elite_idxs[e1] = idxs
     end
     elite_idxs
-end
-
-function add_elite_idxs_to_groups(groups, elites)
-    """
-    groups: Vector of Tuples t, t[i][1] is identifier , t[i][2] is seed
-    elites: vector of dicts
-    returns: 
-    groups_with_idxs: Vector of Tuples t, t[i][1] is identifier , t[i][2] is seed, t[i][3] is a set of idxs
-    where 1:idx is an elite, whose reconstruction should be cached
-    """
-    elite_idxs = compute_elite_idxs(elites)
-    new_groups = []
-    for group in groups
-        push!(new_groups, [])
-        for (i, seed) in group
-            if haskey(elite_idxs, seed)
-                push!(new_groups[end], (i, seed, elite_idxs[seed]))
-            elseif haskey(elite_idxs, elite(seed))
-                push!(new_groups[end], (i, seed, elite_idxs[elite(seed)]))
-            else
-                push!(new_groups[end], (i, seed, Set{Int}()))
-            end
-        end
-    end
-    new_groups
 end
 
 function add_elite_idxs(pop, elites)
@@ -431,49 +365,27 @@ function compute_prefixes(elites; k::Int=10)
     Dict(string(hash(pre))=>pre for pre in best_prefixes)
 end
 
-function compress_groups(groups, prefixes)
-    """
-    groups: Vector of Tuples t, t[i][1] is identifier , t[i][2] is seed, t[i][3] is a set of idxs
-    returns: new_groups, prefix_dict with string(hash(seed)) as key
-    """
-    # we check prefixes in order of decreasing length in order to maximize 
-    # the number of characters we can replace
-    prefixes_by_len = sort([(length(v), k, v) for (k, v) in prefixes], rev=true)
-    new_groups = []
-    for group in groups
-        push!(new_groups, [])
-        for (i, seed, idxs) in group
-            for (len, id, prefix) in prefixes_by_len
-                if length(seed) >= length(prefix) && seed[1:length(prefix)] == prefix
-                    seed = vcat(id, seed[length(prefix)+1:end])
-                    break
-                end
-            end
-            push!(new_groups[end], (i, seed, idxs))
-        end
-    end
-    new_groups
-end
 
-function compress_pop(pop, prefixes)
+function compress_pop(pop, elites, prefixes)
     """
     groups: Vector of Tuples t, t[i][1] is identifier , t[i][2] is seed, t[i][3] is a set of idxs
     returns: new_groups, prefix_dict with string(hash(seed)) as key
     """
+    new_pop = add_elite_idxs(pop, elites)
     # we check prefixes in order of decreasing length in order to maximize 
     # the number of characters we can replace
     prefixes_by_len = copy(sort([(length(v), k, v) for (k, v) in prefixes], rev=true))
-    new_pop = []
-    for (seed, idx) in pop
+    compressed_pop = []
+    for (seed, idx) in new_pop
         for (len, id, prefix) in prefixes_by_len
-            if length(seed) >= length(prefix) && seed[1:length(prefix)] == prefix
-                seed = vcat(id, seed[length(prefix)+1:end])
+            if length(seed) >= len && seed[1:len] == prefix
+                seed = vcat(id, seed[len+1:end])
                 break
             end
         end
-        push!(new_pop, (seed, idx))
+        push!(compressed_pop, (seed, idx))
     end
-    new_pop
+    compressed_pop
 end
 
 function decompress_group(group, prefixes)
@@ -489,5 +401,26 @@ function decompress_group(group, prefixes)
     new_group
 end
 
+#function compute_elite(f, pop, F; k::Int=10, n::Int=30)
+#  # run n evals in parallel on top k members to compute elite
+#  top_F_idxs = sortperm(F, rev=true)[1:min(k, length(pop))]
+#  @assert F[top_F_idxs[1]] >= maximum(F)
+#  rollout_Fs = pmap(1:k*n) do rollout_idx
+#      # get member ∈ [1,10] from rollout count
+#      p = floor(Int, (rollout_idx-1) / n) + 1
+#      @assert p in 1:k
+#      fit = f(pop[top_F_idxs[p]], pop[top_F_idxs[p]])
+#      (fit[1] + fit[2])/2
+#  end
+#  @assert rollout_Fs isa Vector{<:AbstractFloat}
+#  accurate_Fs = [sum(rollout_Fs[i:i+n-1])/n for i in 1:n:length(rollout_Fs)]
+#  @assert length(accurate_Fs) == k
+#  elite_idx = argmax(accurate_Fs)
+#  elite = maximum(accurate_Fs), pop[top_F_idxs[elite_idx]]
+#  elite
+#end
 
 end
+
+
+

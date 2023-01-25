@@ -1,10 +1,12 @@
 using StableRNGs
 using Flux
 using LRUCache
+using JLD2
 
 struct ModelInfo
   sizes::Vector{Tuple}
   biases::Vector{Bool}
+  re
 end
 
 
@@ -92,10 +94,19 @@ function gen_params(rng, mi::ModelInfo, gen::Int)
 end
 
 
-function ModelInfo(m::Chain)
+function ModelInfo(m::Chain, re=nothing)
     lengths = [size(mo) for mo in Flux.params(m)]
     is_bias = [mo isa Vector for mo in Flux.params(m)]
-    ModelInfo(lengths, is_bias)
+    ModelInfo(lengths, is_bias, re)
+end
+
+function save_sc(sc_name::String, sc::SeedCache)
+  """Saves a copy of the seed cache without parameters"""
+  sc_no_params = SeedCache(maxsize=sc.maxsize)
+  for (k,v) in sc
+    sc_no_params[k] = Dict(ke=>ve for (ke,ve) in v if ke != :params)
+  end
+  save(sc_name, Dict("sc"=>sc_no_params))
 end
 
 
