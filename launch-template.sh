@@ -13,7 +13,7 @@
 #SBATCH --requeue
 #SBATCH --cpus-per-task=1
 #SBATCH --mem-per-cpu=6GB
-#SBATCH --exclude=compute-5-[0,12],compute-7-0
+#SBATCH --exclude=compute-7-7
 
 source /home/garbus/.bashrc
 conda activate trade
