@@ -80,7 +80,6 @@ function main()
         EvoTrade.Trade.reset!(env)
         grid = env.table 
         group_fn = all_v_all
-
     end
 
     m = make_model(Symbol(args["model"]),
@@ -119,7 +118,7 @@ function main()
   global prefixes
   for g in start_gen:args["num-gens"]
     @info "starting generation $g"
-    eval_gen = g % 2 == 1
+    eval_gen = g % 20 == 1
     @info "compressing pop"
     rollout_pop = compress_pop(pop, elites, prefixes)
     @info "creating rollout groups"
@@ -139,8 +138,8 @@ function main()
         @info "New best ind found, F=$(best[1]), γ decreased to $γ"
     else
         # TODO change gamma to clamped value once GA test passes
-        #γ = clamp(γ + 0.02, 0, 0.9)
-        γ = 0.1
+        γ = clamp(γ + 0.02, 0, 0.9)
+        #γ = 0.1
         @info "no better elite found, set γ to $γ"
     end
     
