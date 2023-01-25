@@ -40,9 +40,9 @@ using Logging
       aids = [aid(i, c) for c in 1:counts[i]]
       rews[i] = [rew_dict[aid_] for aid_ in aids]
       bcs[i] = [bc_dict[aid_] for aid_ in aids]
-      infos["avg_walks"][i] = eval_gen ? [info_dict["avg_walks"][aid_] for aid_ in aids] : []
+      infos["avg_walks"][i] = eval_gen ? [info_dict["avg_walks"][aid_] for aid_ in aids] : [[]]
     end
-    infos["mets"] = eval_gen ? filter(p->p.first in mets_to_return, mets) : []
+    infos["mets"] = eval_gen ? filter(p->p.first in mets_to_return, mets) : Dict()
     rews, bcs, infos
   end
 end
@@ -119,7 +119,7 @@ function main()
   global prefixes
   for g in start_gen:args["num-gens"]
     @info "starting generation $g"
-    eval_gen = true #g % 25 == 1
+    eval_gen = g % 2 == 1
     @info "compressing pop"
     rollout_pop = compress_pop(pop, elites, prefixes)
     @info "creating rollout groups"
