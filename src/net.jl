@@ -91,6 +91,14 @@ function make_model(size_symbol::Symbol,
     Chain(cnn, tail)
 end
 
+function make_model(env, args)
+  make_model(Symbol(args["model"]),
+      (env.obs_size..., args["batch-size"]),
+      env.num_actions,
+      vbn=args["algo"]=="es",
+      lstm=args["lstm"])
+end
+
 function fitness(model; print=false)::Float32
   # y_pred should be vector of probabilities
   x, y_gold = gen_temporal_data()

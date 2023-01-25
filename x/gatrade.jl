@@ -82,11 +82,7 @@ function main()
         group_fn = all_v_all
     end
 
-    m = make_model(Symbol(args["model"]),
-        (env.obs_size..., args["batch-size"]),
-        env.num_actions,
-        vbn=args["algo"]=="es",
-        lstm=args["lstm"])
+    m = make_model(env, args)
     θ, re = Flux.destructure(m)
     mi = ModelInfo(m, re)
     model_size = length(θ)
@@ -102,8 +98,8 @@ function main()
     df = isfile(met_csv_name) ? CSV.read(met_csv_name, DataFrame) : nothing 
     global check = try 
         load(check_name)
-    catch
-        load(check_name*".backup") # handle corrupt check
+    catch 
+        load(check_name*".backup") 
     end
     start_gen = check["gen"] + 1
     γ = check["gamma"]
@@ -115,10 +111,10 @@ function main()
     @info "resuming from gen $start_gen"
   end
 
-  global prefixes
   for g in start_gen:args["num-gens"]
+    global prefixes
     @info "starting generation $g"
-    eval_gen = g % 20 == 1
+    eval_gen = g % 2 == 1
     @info "compressing pop"
     rollout_pop = compress_pop(pop, elites, prefixes)
     @info "creating rollout groups"
@@ -131,7 +127,6 @@ function main()
     F, BC, walks, rollout_metrics = 
         aggregate_rollouts(fetches, pop_size)
 
-    # update elite and modify exploration rate
     if maximum(F) > best[1]
         γ = 0.1
         best = (maximum(F), pop[argmax(F)], BC[argmax(F)])
@@ -153,6 +148,7 @@ function main()
     @info "most fit bc: $(BC[argmax(F)]), fitness $(maximum(F))"
 
     if eval_gen # collect data only on evaluation generations
+      global prefixes
       @info "computing and distributing prefixes: $(prefixes)"
       prefixes = compute_prefixes(elites)
       @everywhere prefixes = $prefixes

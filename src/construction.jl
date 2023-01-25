@@ -76,6 +76,9 @@ end
 function ModelInfo(m::Chain, re=nothing)
     lengths = [size(mo) for mo in Flux.params(m)]
     is_bias = [mo isa Vector for mo in Flux.params(m)]
+    if !isnothing(re)
+      _, re = Flux.destructure(m)
+    end
     ModelInfo(lengths, is_bias, re)
 end
 
