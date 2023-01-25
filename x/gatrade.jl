@@ -164,8 +164,9 @@ function main()
         eval_groups = group_fn(eval_members)
         eval_metrics = pmap(wp, eval_groups) do group
            group = decompress_group(group, prefixes)
-           models = Dict("p$i" => re(reconstruct(sc, mi, seeds, eidxs))
-                         for (i, seeds, eidxs) in group)
+           models = Dict("p$i-$c" => 
+                re(reconstruct(sc, mi, seeds, eidxs))
+                for (c, (i, seeds, eidxs)) in enumerate(group))
            str_name = joinpath(outdir, string(hash(group))*"-"*string(myid()))
            metrics= run_batch(env, models, args, evaluation=true,
                               render_str=str_name)[2]
