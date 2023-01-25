@@ -183,7 +183,7 @@ function main()
         log_mmm!(metrics_csv, "fitness", F)
         log_mmm!(metrics_csv, "novelty", novelties)
         metrics_csv["gamma"] = γ
-        update_df_and_write_metrics(met_csv_name, df, metrics_csv)
+        df = update_df_and_write_metrics(met_csv_name, df, metrics_csv)
 
         @info "Visualizing outs"
         isnothing(args["maze"]) && vis_outs(outdir, args["local"])
