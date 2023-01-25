@@ -18,9 +18,10 @@ export plot_grid_and_walks, vis_outs
 export reconstruct, SeedCache, cache_elites!, rm_params,  ModelInfo, gen_params
 export compute_novelty, compute_novelties, bc1, bc2, bc3,
 create_next_pop, add_to_archive!, M, reorder!,
-elite, mr, create_rollout_groups, aid, 
-compute_prefixes, decompress_group, add_elite_idxs, compress_pop,
-all_v_all, singleton_groups
+elite, mr, create_rollout_groups, aid
+# compression
+export compute_prefixes, decompress_group, add_elite_idxs, compress_pop,
+all_v_all, singleton_groups, one_v_self
 export run_batch, invert
 export EvoTradeLogger
 

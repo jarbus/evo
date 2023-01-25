@@ -76,11 +76,11 @@ function aggregate_rollouts(fetches, pop_size)
         push!(walks_list[idx], fet[3]["avg_walks"][idx]...)
         push!(group_rollout_metrics, fet[3]["mets"])
     end
+    @assert all(length.(F) .> 0)
     F = [mean(f) for f in F]
     BC = [average_bc(bcs) for bcs in BC]
     walks = [average_walk(w) for w in walks_list]
     rollout_metrics = aggregate_metrics(group_rollout_metrics)
-    @assert length(F) == length(BC) == pop_size
     F, BC, walks, rollout_metrics
 end
 

@@ -79,7 +79,7 @@ function main()
         env = PyTrade().Trade(env_config)
         EvoTrade.Trade.reset!(env)
         grid = env.table 
-        group_fn = all_v_all
+        group_fn = one_v_self#all_v_all
     end
 
     m = make_model(env, args)
