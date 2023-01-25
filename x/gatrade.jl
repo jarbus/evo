@@ -157,8 +157,7 @@ function main()
       @info "computing and distributing prefixes: $(prefixes)"
       prefixes = compute_prefixes(elites)
       @everywhere prefixes = $prefixes
-      # @spawnat 1 begin
-      begin
+      begin # @spawnat 1 begin 
         @info "log start"
         metrics_csv = Dict()
         outdir = "outs/$clsname/$expname/"*string(g, pad=3, base=10)

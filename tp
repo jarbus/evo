@@ -268,7 +268,7 @@ async def main():
             global text, old_text
             time.sleep(0.1)
             old_text = text
-            text = await asyncio.wait_for(session.prompt_async('> ', vi_mode=True,  default='.*'), timeout=60)
+            text = await asyncio.wait_for(session.prompt_async('> ', vi_mode=True,  default='.*'), timeout=300)
         except KeyboardInterrupt:  # Ctrl-C
             continue
         except EOFError:           # Ctrl-D
