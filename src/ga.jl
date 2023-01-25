@@ -235,6 +235,9 @@ function create_rollout_groups(pop::Vector,
     groups
 end
 
+function one_v_self(pop::Vector)
+    [[(i, p1...), (i, p1...)] for (i, p1) in enumerate(pop)]
+end
 
 function all_v_all(pop::Vector)
     [[(i, p1...), (j, p2...)] for (i, p1) in enumerate(pop) for (j, p2) in enumerate(pop)]
