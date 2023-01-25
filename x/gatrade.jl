@@ -27,6 +27,7 @@ using Logging
     for (i, _) in group
         counts[i] = get(counts, i, 0) + 1
     end
+    global prefixes
     group = decompress_group(group, prefixes)
     # assign a player name like p[idx]_[count]
     models = Dict(aid(i, c)=>re(reconstruct(sc, mi, seeds, e_idxs))
@@ -128,13 +129,13 @@ function main()
         aggregate_rollouts(fetches, pop_size)
 
     if maximum(F) > best[1]
-        γ = 0.1
+        γ = 0.0
         best = (maximum(F), pop[argmax(F)], BC[argmax(F)])
         @info "New best ind found, F=$(best[1]), γ decreased to $γ"
     else
         # TODO change gamma to clamped value once GA test passes
-        γ = clamp(γ + 0.02, 0, 0.9)
-        #γ = 0.1
+        #γ = clamp(γ + 0.02, 0, 0.9)
+        γ = 0.0
         @info "no better elite found, set γ to $γ"
     end
     
@@ -148,56 +149,55 @@ function main()
     @info "most fit bc: $(BC[argmax(F)]), fitness $(maximum(F))"
 
     if eval_gen # collect data only on evaluation generations
-      global prefixes
-      @info "computing and distributing prefixes: $(prefixes)"
-      prefixes = compute_prefixes(elites)
-      @everywhere prefixes = $prefixes
-      begin # @spawnat 1 begin 
-        @info "log start"
-        metrics_csv = Dict()
-        outdir = "outs/$clsname/$expname/"*string(g, pad=3, base=10)
-        run(`mkdir -p $outdir`)
+      @info "log start"
+      metrics_csv = Dict()
+      outdir = "outs/$clsname/$expname/"*string(g, pad=3, base=10)
+      run(`mkdir -p $outdir`)
 
-        @info "Running elite eval"
-        n_fit_elites = ceil(Int, args["num-elites"]*(1-γ))
-        eval_members = rollout_pop[sortperm(F, rev=true)[1:n_fit_elites]]
-        eval_groups = group_fn(eval_members)
-        eval_metrics = pmap(wp, eval_groups) do group
-           group = decompress_group(group, prefixes)
-           models = Dict("p$i-$c" => 
-                re(reconstruct(sc, mi, seeds, eidxs))
-                for (c, (i, seeds, eidxs)) in enumerate(group))
-           str_name = joinpath(outdir, string(hash(group))*"-"*string(myid()))
-           metrics= run_batch(env, models, args, evaluation=true,
-                              render_str=str_name)[2]
-           metrics
-        end |> aggregate_metrics
-
-        @info "Logging metrics"
-        global rollout_metrics
-        for (met_name, met_vec) in rollout_metrics
-            log_mmm!(metrics_csv, "pop_"*met_name, met_vec)
-        end
-        for (met_name, met_vec) in eval_metrics
-            log_mmm!(metrics_csv, "eval_"*met_name, met_vec)
-        end
-        log_mmm!(metrics_csv, "fitness", F)
-        log_mmm!(metrics_csv, "novelty", novelties)
-        metrics_csv["gamma"] = γ
-        df = update_df_and_write_metrics(met_csv_name, df, metrics_csv)
-
-        @info "Visualizing outs"
-        isnothing(args["maze"]) && vis_outs(outdir, args["local"])
-        plot_grid_and_walks(env, "$outdir/pop.png", grid, walks,
-                            novelties, F, args["num-elites"], γ)
-
-        @info "Saving checkpoint and seed cache"
-        isfile(check_name) && run(`mv $check_name $check_name.backup`)
-        save(check_name, Dict("gen"=>g, "gamma"=>γ, "pop"=>pop, 
-                    "archive"=>archive, "BC"=> BC, "F"=>F,
-                    "best"=>best, "novelties"=>novelties, 
-                    "elites"=>elites, "sc"=>rm_params(sc)))
+      @info "Running elite eval"
+      n_fit_elites = ceil(Int, args["num-elites"]*(1-γ))
+      eval_members = rollout_pop[sortperm(F, rev=true)[1:n_fit_elites]]
+      eval_groups = group_fn(eval_members)
+      eval_metrics = pmap(wp, eval_groups) do group
+         group = decompress_group(group, prefixes)
+         models = Dict("p$i-$c" => 
+              re(reconstruct(sc, mi, seeds, eidxs))
+              for (c, (i, seeds, eidxs)) in enumerate(group))
+         str_name = joinpath(outdir, string(hash(group))*"-"*string(myid()))
+         metrics= run_batch(env, models, args, evaluation=true,
+                            render_str=str_name)[2]
+         metrics
+      end |> aggregate_metrics
+      @info "Logging metrics"
+      global rollout_metrics
+      for (met_name, met_vec) in rollout_metrics
+          log_mmm!(metrics_csv, "pop_"*met_name, met_vec)
       end
+      for (met_name, met_vec) in eval_metrics
+          log_mmm!(metrics_csv, "eval_"*met_name, met_vec)
+      end
+      log_mmm!(metrics_csv, "fitness", F)
+      log_mmm!(metrics_csv, "novelty", novelties)
+      metrics_csv["gamma"] = γ
+      df = update_df_and_write_metrics(met_csv_name, df, metrics_csv)
+
+      @info "Visualizing outs"
+      isnothing(args["maze"]) && vis_outs(outdir, args["local"])
+      plot_grid_and_walks(env, "$outdir/pop.png", grid, walks,
+                          novelties, F, args["num-elites"], γ)
+
+      @info "Saving checkpoint and seed cache"
+      isfile(check_name) && run(`mv $check_name $check_name.backup`)
+      save(check_name, Dict("gen"=>g, "gamma"=>γ, "pop"=>pop, 
+                  "archive"=>archive, "BC"=> BC, "F"=>F,
+                  "best"=>best, "novelties"=>novelties, 
+                  "elites"=>elites, "sc"=>rm_params(sc)))
+
+      global prefixes
+      @info "computing prefixes"
+      prefixes = compute_prefixes(elites)
+      @info "distributing prefixes: $(prefixes)"
+      @everywhere prefixes = $prefixes
     end
     if best[1] > 100
         @info "Returning: Best individal found with fitness $(best[1]) and BC $(best[3])"
