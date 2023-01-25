@@ -8,9 +8,9 @@ using Infiltrator
 using NearestNeighbors
 export compute_novelty, compute_novelties,
 bc1, bc2, bc3, create_next_pop, add_to_archive!,
-reorder!, dist, M, elite, mr, create_rollout_groups, average_walk,
-compute_prefixes, 
-decompress_group, add_elite_idxs, compress_pop, all_v_all
+reorder!, dist, M, elite, mr, create_rollout_groups, 
+compute_prefixes, decompress_group, add_elite_idxs,
+compress_pop, all_v_all, singleton_groups
 
 dist(a, b) = sum((a .- b).^2)
 
@@ -248,6 +248,10 @@ function all_v_all(pop::Vector)
     [[(i, p1...), (j, p2...)] for (i, p1) in enumerate(pop) for (j, p2) in enumerate(pop)]
 end
 
+function singleton_groups(pop::Vector)
+    [[(i, p...)] for (i, p) in enumerate(pop)]
+end
+
 function create_rollout_groups(pop::Vector,
         rollout_group_size::Int, rollouts_per_ind::Int)
 
@@ -400,27 +404,5 @@ function decompress_group(group, prefixes)
     end
     new_group
 end
-
-#function compute_elite(f, pop, F; k::Int=10, n::Int=30)
-#  # run n evals in parallel on top k members to compute elite
-#  top_F_idxs = sortperm(F, rev=true)[1:min(k, length(pop))]
-#  @assert F[top_F_idxs[1]] >= maximum(F)
-#  rollout_Fs = pmap(1:k*n) do rollout_idx
-#      # get member ∈ [1,10] from rollout count
-#      p = floor(Int, (rollout_idx-1) / n) + 1
-#      @assert p in 1:k
-#      fit = f(pop[top_F_idxs[p]], pop[top_F_idxs[p]])
-#      (fit[1] + fit[2])/2
-#  end
-#  @assert rollout_Fs isa Vector{<:AbstractFloat}
-#  accurate_Fs = [sum(rollout_Fs[i:i+n-1])/n for i in 1:n:length(rollout_Fs)]
-#  @assert length(accurate_Fs) == k
-#  elite_idx = argmax(accurate_Fs)
-#  elite = maximum(accurate_Fs), pop[top_F_idxs[elite_idx]]
-#  elite
-#end
-
 end
-
-
 

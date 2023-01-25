@@ -15,12 +15,12 @@ render, get_metrics, batch_pos!
 # viz
 export plot_grid_and_walks, vis_outs
 # construction
-export reconstruct, SeedCache, cache_elites!, save_sc,  ModelInfo, gen_params
+export reconstruct, SeedCache, cache_elites!, rm_params,  ModelInfo, gen_params
 export compute_novelty, compute_novelties, bc1, bc2, bc3,
 create_next_pop, add_to_archive!, M, reorder!,
 elite, mr, create_rollout_groups, aid, 
 compute_prefixes, decompress_group, add_elite_idxs, compress_pop,
-all_v_all
+all_v_all, singleton_groups
 export run_batch, invert
 export EvoTradeLogger
 

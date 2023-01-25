@@ -80,7 +80,7 @@ function aggregate_rollouts(fetches, pop_size)
     BC = [average_bc(bcs) for bcs in BC]
     walks = [average_walk(w) for w in walks_list]
     rollout_metrics = aggregate_metrics(group_rollout_metrics)
-
+    @assert length(F) == length(BC) == pop_size
     F, BC, walks, rollout_metrics
 end
 
