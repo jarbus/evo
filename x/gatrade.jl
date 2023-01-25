@@ -65,6 +65,7 @@ function main()
   BC = nothing
   F = nothing
   γ = args["exploration-rate"]
+  group_fn = isnothing(args["maze"]) ? all_v_all : singleton_groups
 
   @info "cls: $clsname"
   @info "exp: $expname"
@@ -75,12 +76,10 @@ function main()
     if !isnothing(args["maze"])
         env = maze_from_file(args["maze"])
         grid = env.grid 
-        group_fn = singleton_groups
     else
         env = PyTrade().Trade(env_config)
         EvoTrade.Trade.reset!(env)
         grid = env.table 
-        group_fn = one_v_self#all_v_all
     end
 
     m = make_model(env, args)
