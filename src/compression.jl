@@ -27,24 +27,23 @@ function compute_elite_idxs(elites)
 end
 
 function add_elite_idxs(pop, elites)
-    elite_idxs = compute_elite_idxs(elites)
-    new_pop = []
-    for seed in pop
-        if haskey(elite_idxs, seed)
-            push!(new_pop, (seed, elite_idxs[seed]))
-        elseif haskey(elite_idxs, elite(seed))
-            push!(new_pop, (seed, elite_idxs[elite(seed)]))
-        else
-            push!(new_pop, (seed, Set{Int}()))
-        end
+  elite_idxs = compute_elite_idxs(elites)
+  new_pop = []
+  for seed in pop
+    if haskey(elite_idxs, seed)
+      push!(new_pop, (seed, elite_idxs[seed]))
+    elseif haskey(elite_idxs, elite(seed))
+      push!(new_pop, (seed, elite_idxs[elite(seed)]))
+    else
+      push!(new_pop, (seed, Set{Int}()))
     end
-    new_pop
+  end
+  new_pop
 end
 
 function compute_prefixes(elites; k::Int=10)
-  """
-  Returns the prefixes of elite seeds with the greatest 
-  length(prefix)*number_of_elites_with_prefix
+  """Returns the prefixes of elite seeds with the 
+  greatest length(prefix)*number_of_elites_with_prefix
   """
   eseeds = [e[:seeds] for e in elites]
   # dict of prefixes => chars_reduced
@@ -109,7 +108,6 @@ function compress_pop(pop, elites, prefixes)
 end
 
 function decompress_group(group, prefixes)
-
     new_group = []
     for (id, seeds, elite_idxs) in group
         if typeof(seeds[1]) == String

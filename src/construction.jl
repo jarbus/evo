@@ -56,6 +56,8 @@ function reconstruct(param_cache::SeedCache, mi::ModelInfo, seeds_and_muts::Vect
   end
   return elite
 end
+reconstruct(sc::SeedCache, mi::ModelInfo, ind::Ind) =
+  reconstruct(sc, mi, ind.geno, ind.elite_idxs)
 
 
 lb(rng, l::Tuple, b::Bool) = b ? zeros(Float32, l) : glorot_normal(rng, l...)
@@ -91,3 +93,4 @@ function rm_params(sc::SeedCache)
   end
   sc_no_params
 end
+

@@ -16,11 +16,9 @@ function plot_walks(name::String,
         novs::Vector{<:Real},
         fits::Vector{<:Real}, num_elites::Int, γ::AbstractFloat)
     """walks::{Vector{NTuple{2, Float64}}}"""
-    # Make sure following 2 lines is the same as src/ga.jl::create_next_pop()
-    num_elite_explorers = floor(Int, γ * num_elites)
-    num_elite_exploiters = num_elites - num_elite_explorers
-    elite_exploiter_idxs = sortperm(fits, rev=true)[1:num_elite_exploiters]
-    elite_explorer_idxs = sortperm(novs, rev=true)[1:num_elite_explorers]
+    nums = compute_ratios(length(walks), γ, num_elites)
+    elite_exploiter_idxs = sortperm(fits, rev=true)[1:nums[:n_e_exploit]]
+    elite_explorer_idxs = sortperm(novs, rev=true)[1:nums[:n_e_explore]]
     colors = :blue
     @assert length(novs) == length(walks) == length(fits)
     color_fits = copy(fits) .- minimum(fits)
@@ -68,6 +66,16 @@ function plot_grid_and_walks(env,
     """walks::{Vector{NTuple{2, Float64}}}"""
     grid = prep_grid(env, grid)
     plot_walks(name, grid, walks, novs, fits, num_elites, γ)
+end
+function plot_grid_and_walks(env,
+        outroot::String,
+        grid::AbstractArray,
+        pops::Vector{Pop},
+        num_elites::Int, γ::AbstractFloat)
+    grid = prep_grid(env, grid)
+    for (i, pop) in enumerate(pops)
+      plot_walks(outroot*"-$i.png", grid, walks(pop), novelties(pop), fitnesses(pop), num_elites, γ)
+    end
 end
 
 function vis_outs(dirname::String, islocal::Bool)

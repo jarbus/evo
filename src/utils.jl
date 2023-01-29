@@ -1,24 +1,24 @@
 mk_env_config(args) = Dict(
-    "window" => args["window"],
-    "grid" => (args["gx"], args["gy"]),
-    "food_types" => args["food-types"],
-    "latest_agent_ids" => [0, 0],
-    "matchups" => [Tuple("f$(i)a0" for i in 0:args["rollout-group-size"]-1)],
-    "episode_length" => args["episode-length"],
-    "respawn" => true,
-    "fires" => [Tuple(args["fires"][i:i+1]) for i in 1:2:length(args["fires"])],
-    "foods" => [Tuple(args["foods"][i:i+2]) for i in 1:3:length(args["foods"])],
-    "health_baseline" => true,
-    "pickup_coeff" => args["pickup-coeff"],
-    "light_coeff" => args["light-coeff"],
-    "spawn_agents" => "center",
-    "spawn_food" => "corner",
-    "food_agent_start" => args["food-agent-start"],
-    "food_env_spawn" => args["food-env-spawn"],
-    "day_night_cycle" => true,
-    "day_steps" => args["day-steps"],
-    "seed" => args["seed"],
-    "vocab_size" => 0)
+  "window" => args["window"],
+  "grid" => (args["gx"], args["gy"]),
+  "food_types" => args["food-types"],
+  "latest_agent_ids" => [0, 0],
+  "matchups" => [Tuple("f$(i)a0" for i in 0:args["rollout-group-size"]-1)],
+  "episode_length" => args["episode-length"],
+  "respawn" => true,
+  "fires" => [Tuple(args["fires"][i:i+1]) for i in 1:2:length(args["fires"])],
+  "foods" => [Tuple(args["foods"][i:i+2]) for i in 1:3:length(args["foods"])],
+  "health_baseline" => true,
+  "pickup_coeff" => args["pickup-coeff"],
+  "light_coeff" => args["light-coeff"],
+  "spawn_agents" => "center",
+  "spawn_food" => "corner",
+  "food_agent_start" => args["food-agent-start"],
+  "food_env_spawn" => args["food-env-spawn"],
+  "day_night_cycle" => true,
+  "day_steps" => args["day-steps"],
+  "seed" => args["seed"],
+  "vocab_size" => 0)
 
 update_df(df::Nothing, mets::Nothing) = nothing
 update_df(df::Nothing, mets)   = DataFrame(mets)
@@ -55,33 +55,63 @@ function max_bc(bcs::Vector)
   [maximum(x) for x in zip(bcs...)]
 end
 
-function aggregate_metrics(metrics::Vector{<:AbstractDict})
+function aggregate_metrics(batches::Vector{Batch})
+  agg_metrics = Dict()
+  for batch in batches
+    mergewith!(vcat, agg_metrics, batch.mets)
+  end
+  agg_metrics
+end
+function aggregate_metrics(metrics::Vector{<:Dict})
   # we get a stack overflow error if we do all metrics in one call
   # so we do them one at a time
   agg_metrics = Dict()
-  for met::AbstractDict in metrics
+  for met in metrics
        mergewith!(vcat, agg_metrics, met)
   end
   agg_metrics
 end
 
-function aggregate_rollouts(fetches, pop_size)
-    F = [[] for _ in 1:pop_size]
-    BC = [[] for _ in 1:pop_size]
-    walks_list = [[] for _ in 1:pop_size]
-    group_rollout_metrics::Vector{Dict} = []
-    for fet in fetches, idx in keys(fet[1])
-        push!(F[idx], fet[1][idx]...)
-        push!(BC[idx], fet[2][idx]...)
-        push!(walks_list[idx], fet[3]["avg_walks"][idx]...)
-        push!(group_rollout_metrics, fet[3]["mets"])
+function mk_id2idx_map(pop::Pop)
+    id2idx = Dict{String, Int}()
+    for (idx, ind) in enumerate(pop.inds)
+        id2idx[ind.id] = idx
     end
-    @assert all(length.(F) .> 0)
-    F = [mean(f) for f in F]
-    BC = [average_bc(bcs) for bcs in BC]
-    walks = [average_walk(w) for w in walks_list]
-    rollout_metrics = aggregate_metrics(group_rollout_metrics)
-    F, BC, walks, rollout_metrics
+    id2idx
+end
+
+function aggregate_rollouts!(rollouts::Vector{Batch}, pops::Vector{Pop})
+  id2idx_maps = [mk_id2idx_map(pop) for pop in pops]
+  for pop in pops, ind in pop.inds
+    ind.fitnesses = []
+    ind.bcs = []
+    ind.walks = Vector{Walk}[]
+  end
+
+  group_rollout_metrics::Vector{Dict} = []
+  for batch in rollouts
+    push!(group_rollout_metrics, batch.mets)
+    for id in keys(batch.rews)
+      for (p, pop) in enumerate(pops)
+        id ∉ keys(id2idx_maps[p]) && continue
+        idx = id2idx_maps[p][id]
+        push!(pop.inds[idx].fitnesses, batch.rews[id]...)
+        push!(pop.inds[idx].bcs, batch.bcs[id]...)
+        push!(pop.inds[idx].walks, batch.info["avg_walks"][id]...)
+        break
+      end
+    end
+  end
+  for pop in pops
+    for ind in pop.inds
+      @assert length(ind.fitnesses) == length(ind.bcs) >= 1
+      ind.fitnesses = [mean(ind.fitnesses)]
+      ind.bcs = [average_bc(ind.bcs)]
+      ind.walks = [average_walk(ind.walks)]
+    end
+  end
+  rollout_metrics = aggregate_metrics(group_rollout_metrics)
+  rollout_metrics
 end
 
 
@@ -105,12 +135,31 @@ function aid(i::Int, j::Int)
     end
 end
 
+# for writing tests without having f0 everywhere
+v32(x::Vector) = Vector{Float32}(x)
+
 function invert(m::Dict)
-    inverted_dict = Dict{valtype(m), Vector{keytype(m)}}()
-    for (k, v) in m
-        push!(get!(() -> valtype(inverted_dict)[], inverted_dict, v), k)
-    end
-    inverted_dict
+  inverted_dict = Dict{valtype(m), Vector{keytype(m)}}()
+  for (k, v) in m
+    push!(get!(() -> valtype(inverted_dict)[], inverted_dict, v), k)
+  end
+  inverted_dict
+end
+
+aid(i::String, j::Int) = "$(i)_$j"
+
+function mk_id_player_map(group::Vector{Ind})
+  # if we have multiple of the same ind in a group,
+  # we need to make sure that multiple players
+  # are made
+  counts = Dict{String, Int}()
+  for ind in group
+      counts[ind.id] = get(counts, ind.id, 0) + 1
+  end
+  id_map = Dict(aid(ind.id, c)=> ind.id 
+            for ind in group
+              for c in 1:counts[ind.id])
+  id_map, counts
 end
 
 elite(x::Vector) = length(x) > 2 ? x[1:end-2] : x

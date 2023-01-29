@@ -1,5 +1,3 @@
-module Net
-
 using Flux
 using Statistics
 using Functors
@@ -124,6 +122,4 @@ function test_lstm()
   # [m(xi) for xi in x[1:end-1]]
   # z = m(x[end])
   fitness(m)
-end
-
 end

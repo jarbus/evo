@@ -33,6 +33,8 @@ using StableRNGs
   @test reconstruct(param_cache, mi, pop[1], elite_idxs) == params1
   elite_idxs = Set([0,1,3,7])
   @test reconstruct(param_cache, mi, pop[1], elite_idxs) == params1
+  param_cache2::SeedCache = SeedCache(maxsize=n_elites*3)
+  @test reconstruct(param_cache, mi, pop[1]) == reconstruct(param_cache2, mi, pop[1])
 end
 
 # @testset "test_new_gen" begin

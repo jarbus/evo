@@ -1,60 +1,45 @@
-@testset "test_integration" begin
-  pop_size = 100
-  n_elites = 3
-  model_size = 10_000
-  param_cache::SeedCache = SeedCache(maxsize=n_elites*3)
-  m = make_model(:large, (11, 11, 7, 10), 4, lstm=true)
-  mi = ModelInfo(m)
-  pop = [rand(1.0f0:1000.0f0, 1) for _ in 1:pop_size]
-  elites = []
-  fitnesses = rand(pop_size)
-  novelties = rand(pop_size)
-  bcs = [rand(3) for _ in 1:pop_size]
-  γ=0.5
+root_dir = dirname(@__FILE__)  |> dirname |> String
+@testset "integration" begin
+  pops = [Pop(string(i), 4) for i in 1:2]
+  n_elites = 2
+  γ = 0.5
+  sc = SeedCache(maxsize=10)
+  obs_size = (10, 10, 3, 1)
+  n_actions = 9
+  m = make_model(:small, obs_size, n_actions, lstm=false)
+  θ, re = Flux.destructure(m)
+  mi = ModelInfo(m, re)
+  prefixes = compute_prefixes([])
+  compops = compress_pops(pops, prefixes)
+  groups = all_v_all(compops...)
 
-  pop, elites = create_next_pop(1, param_cache, pop, fitnesses, novelties, bcs, γ, n_elites)
-  cache_elites!(param_cache, mi, elites)
+  expname = ["--exp-name", "test", "--cls-name","test", "--local", "--datime", "test"]
+  arg_vector = read("$root_dir/afiles/cls-test/test-ga-trade.arg", String) |> split
+  args = parse_args(vcat(arg_vector, expname), get_arg_table())
+  env_config = mk_env_config(args)
+  env = PyTrade().Trade(env_config)
 
-  function get_groups(pop, elites)
-    prefixes = compute_prefixes(elites)
-    rollout_pop = add_elite_idxs(pop, elites)
-    compop = compress_pop(rollout_pop, prefixes)
-    rollout_elites = add_elite_idxs([e[:seeds] for e in elites], elites)
-    compelites = compress_pop(rollout_elites, prefixes)
-    groups = create_rollout_groups(compop, compelites, 10, 10)
-    groups, prefixes
+  sc = SeedCache(maxsize=10)
+  m = make_model(:small,
+          (env.obs_size..., 2),
+          env.num_actions,
+          lstm=true)
+  θ, re = Flux.destructure(m)
+  mi = ModelInfo(m, re)
+  id_batches = Vector{Batch}()
+  for group in groups
+    dc = decompress_group(group, prefixes)
+    models, id_map = mk_mods(sc, mi, dc)
+    gamebatch = run_batch(env_config, models, args, batch_size=2)
+    id_batch = process_batch(gamebatch, id_map, true)
+    push!(id_batches, id_batch)
   end
-
-  ef, efp, en, enp = nothing, nothing, nothing, nothing
-  for i in 2:3
-      pop, elites = create_next_pop(i, param_cache, pop, fitnesses, novelties, bcs, γ, n_elites)
-      if i > 2
-        eseeds = [e[:seeds] for e in elites]
-        @test ef in eseeds
-        @test reconstruct(param_cache, mi, ef) == efp
-        @test en in eseeds
-        @test reconstruct(param_cache, mi, en) == enp
-      end
-
-      fitnesses = rand(pop_size)
-      novelties = rand(pop_size)
-      bcs = [rand(3) for _ in 1:pop_size]
-      ef = pop[argmax(fitnesses)]
-      en = pop[argmax(novelties)]
-      efp = reconstruct(param_cache, mi, ef)
-      enp = reconstruct(param_cache, mi, en)
-
-      cache_elites!(param_cache, mi, elites)
-      groups, prefixes = get_groups(pop, elites)
-      for group in groups
-        d_group = decompress_group(group, prefixes)
-        for ind in d_group
-          id, seeds, e_idx = ind
-          id > 0 && @test pop[id] == seeds
-          id < 0 && @test elites[-id][:seeds] == seeds
-          seeds == ef && @test reconstruct(param_cache, mi, seeds, e_idx) == efp
-          seeds == en && @test reconstruct(param_cache, mi, seeds, e_idx) == enp
-        end
-      end
+  EvoTrade.update_pops!(pops, id_batches)
+  for pop in pops, ind in pop.inds
+    @test length(ind.fitnesses) > 0
+    @test length(ind.bcs) > 0
   end
+  @test pops[1].inds[1].novelty > 0
+  next_pop = create_next_pop(pops[1], γ, n_elites)
+  @test next_pop.elites[1].geno == next_pop.inds[1].geno
 end

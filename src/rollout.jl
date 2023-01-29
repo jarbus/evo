@@ -21,11 +21,12 @@ function run_batch(env::MazeEnv, models::Dict{String,<:Chain}, args; evaluation=
             done && break
         end
         push!(rewards, r)
-        push!(bcs, env.locations[4])
+        loc = env.locations[4] .|> Float32
+        push!(bcs, [loc[1], loc[2]])
     end
-    rews = Dict(key => mean(rewards))
+    rews = Dict(key => sum(rewards))
     bc = Dict(key => average_bc(bcs))
-    rews, Dict(), bc, Dict("avg_walks"=>Dict(key=>walk))
+    Batch(rews, Dict(), bc, Dict("avg_walks"=>Dict(key=>walk)))
 end
 
 # Run trade
@@ -76,5 +77,42 @@ function run_batch(env_config::Dict, models::Dict{String,<:Chain}, args; evaluat
     b_bc = [get_bcs(env) for env in b_env]
     bc = Dict(name => average_bc([bc[name] for bc in b_bc]) for name in keys(models))
     info = Dict{String, Any}("avg_walks"=>avg_walks)
-    rew_dict, mets, bc, info
+    Batch(rew_dict, mets, bc, info)
+end
+
+function mk_mods(sc::SeedCache, 
+                 mi::ModelInfo,
+                 group::Vector{Ind})
+  id_map, counts = mk_id_player_map(group)
+  # assign a player name like p[idx]_[count]
+  models = Dict(aid(ind.id, c)=> mi.re(reconstruct(sc, mi, ind))
+    for ind in group for c in 1:counts[ind.id])
+  models, id_map
+end
+
+
+mets_to_return = "gives takes exchange_0 
+picks_0 places_0 exchange_1 picks_1 places_1
+strat_noop strat_give strat_take strat_exchange
+rew_base_health rew_acts rew_light mut_exchanges" |> split
+
+function process_batch(game_batch::Batch, id_map::Dict, eval_gen::Bool)
+  "Converts batch that uses player name to batch that uses player ids."
+  rews, bcs= Dict(), Dict()
+  infos = Dict{Any, Any}("avg_walks"=>Dict())
+  # convert from player name mapping back to index mapping
+  for p_name in keys(id_map)
+    id = id_map[p_name]
+    rews[id] = [get(rews, id, V32()); [game_batch.rews[p_name]]]
+    bcs[id] = [get(bcs, id, V32()); [game_batch.bcs[p_name]]]
+    if eval_gen
+      infos["avg_walks"][id] = vcat(
+                        get(infos["avg_walks"], id, Vector{Walk}()),
+                        [game_batch.info["avg_walks"][p_name]])
+    else
+      infos["avg_walks"][id] = [[]]
+    end
+  end
+  mets = eval_gen ? filter(p->p.first in mets_to_return, game_batch.mets) : Dict()
+  Batch(rews, mets, bcs, infos)
 end
