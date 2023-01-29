@@ -420,13 +420,14 @@ function compute_novelties!(pop::Pop, k=25)
   end
 end
 
+average_walks!(pops::Vector{Pop}) = map(average_walks!, pops)
 function average_walks!(pop::Pop)
   """Compute the average walk for each ind in pop"""
   for ind in pop.inds
     avg_walk::Vector{Tuple{Float32, Float32}} = []
     for step in zip(ind.walks...)
         avg_step = mean.(zip(step...)) .|> Float32
-        push!(avg_walk, avg_step)
+        push!(avg_walk, tuple(avg_step...))
     end
     ind.walks = [avg_walk]
   end
@@ -464,6 +465,7 @@ function update_pops!(pops::Vector{Pop}, batches::Vector{Batch}, arxiv_prob::Flo
   add_to_archive!(pops, arxiv_prob)
   compute_novelties!(pops)
   compute_fitnesses!(pops)
+  average_walks!(pops)
 end
 
 function update_pops!(pop::Pop, batches::Vector{Batch})
