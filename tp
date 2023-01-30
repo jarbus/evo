@@ -30,7 +30,6 @@ with open(mpl_settings, "w") as f:
     f.write("")
 old_matches = []
 px = 1/plt.rcParams['figure.dpi']  # pixel in inches
-# load runs
 
 async def read_csv(file: str):
     return pd.read_csv(file, dtype=np.float16, engine="pyarrow")
@@ -97,24 +96,7 @@ def delete_all_imgs(**cmd):
     sys.stdout.flush()
 
 
-# Image generation
-def make_grid(unfiltered_metrics: list):
-    if len(unfiltered_metrics) == 0:
-        print("no metrics")
-        return None
-    unfiltered_metrics.sort()
-    metrics = [m for m in unfiltered_metrics if not m.endswith("_min") and not m.endswith("_max") and not m.endswith("_std")]
-    # make things graphs with 4, 8, 16 etc metrics 2 columns wide
-    if len(metrics) % 2 == 0 and len(metrics) % 6 != 0:
-        num_cols = 2
-    else:
-        num_cols = min(len(metrics), 3)
-    num_rows = ceil(len(metrics) / num_cols)
-    # users can change visible runs by commenting or deleting lines in runlist
-    with open(runlist) as f:
-        runs_to_plot = [r.strip() for r in f.readlines() if not r.startswith("#")]
-
-
+def apply_settings_before_plot():
     # run mpl commands before plotting
     with open(mpl_settings) as f:
         for line in f:
@@ -124,76 +106,104 @@ def make_grid(unfiltered_metrics: list):
                     plt.style.use(["dark_background", "fast"])
                 else:
                     plt.style.use(["classic", "fast"])
+
+def apply_settings_to_ax(ax):
+    with open(mpl_settings) as f:
+        for line in f:
+            line = line.strip().split()
+            if len(line) not in (1, 2, 3):
+                continue
+            
+            if line[0] == "ylog":
+                ax.set_yscale('log')
+            if line[0] == "xmin":
+                ax.set_xlim(max(ax.get_xlim()[0],float(line[1])))
+            elif line[0] == "ymin":
+                ax.set_ylim(max(ax.get_ylim()[0],float(line[1])))
+            elif line[0] == "xmax":
+                ax.set_xlim(None, min(ax.get_xlim()[1],float(line[1])))
+            elif line[0] == "ymax":
+                ax.set_ylim(None, min(ax.get_ylim()[1],float(line[1])))
+            elif line[0] == "legend":
+                ax.legend(loc=" ".join(line[1:])) 
+
+def plot(ax, metrics: dict, metric: str, label: str):
+    if metric not in metrics.keys():
+        return
+    ax.plot(metrics[metric], label=label, linewidth=4)
+
+    # Skip processing plot statistics if there are none
+    if not metric.endswith("_mean"):
+        ax.set_title(metric)
+        return
+    ax.set_title(metric[:-5])
+    # plot shaded area between min and max of metric
+    min_met = metric[:-5]+"_min"
+    max_met = metric[:-5]+"_max"
+    std_met = metric[:-5]+"_std"
+    ax.fill_between(list(range(len(metrics[metric]))),
+                    metrics[min_met],
+                    metrics[max_met],alpha=0.2)
+    if std_met not in metrics.keys():
+        return
+    # plot std if exists
+    ax.fill_between(list(range(len(metrics[metric]))),
+        [max(_min, mean-sqrt(std)) for _min, mean, std in 
+            zip(metrics[min_met], metrics[metric], metrics[std_met])],
+        [min(_max, mean+sqrt(std)) for _max, mean, std in 
+            zip(metrics[max_met], metrics[metric], metrics[std_met])],
+         alpha=0.2) 
+
+def compute_num_rows_and_cols(num_metrics: int):
+    """Determines the size of the graph grid"""
+    if num_metrics % 2 == 0 and num_metrics % 6 != 0:
+        num_cols = 2
+    else:
+        num_cols = min(num_metrics, 3)
+    num_rows = ceil(num_metrics / num_cols)
+    return num_rows, num_cols
+
+def get_ax(axes, i, num_rows, num_cols):
+    """Gets axis i from matrix of axes"""
+    r, c = i // num_cols, i % num_cols
+    ax = 0
+    # matplotlib doesn't make 2d grid a dimension is len 1
+    if num_cols==1:
+        ax = axes
+    elif num_rows==1:
+        ax = axes[c]
+    else:
+        ax = axes[r,c]
+    return ax
+
+
+# Image generation
+def make_grid(unfiltered_metrics: list):
+    if len(unfiltered_metrics) == 0:
+        print("no metrics")
+        return None
+    unfiltered_metrics.sort()
+    metrics = [m for m in unfiltered_metrics if not m.endswith("_min") and not m.endswith("_max") and not m.endswith("_std")]
     
+    num_rows, num_cols = compute_num_rows_and_cols(len(metrics))
+    # users can change visible runs by commenting or deleting lines in runlist
+    with open(runlist) as f:
+        runs_to_plot = [r.strip() for r in f.readlines() if not r.startswith("#")]
+
+    apply_settings_before_plot()
+
     fig, axes = plt.subplots(num_rows, num_cols, figsize=(600*px*3, 350*px*max(num_rows, 2)))
     for i, metric in enumerate(metrics):
-        r, c = i // num_cols, i % num_cols
-        ax = 0
-        # matplotlib doesn't make 2d grid a dimension is len 1
-        if num_cols==1:
-            ax = axes
-        elif num_rows==1:
-            ax = axes[c]
-        else:
-            ax = axes[r,c]
+        ax = get_ax(axes, i, num_rows, num_cols)
 
         if len(runs) > 1:
             ax.legend(loc="upper left")
 
         for run in runs_to_plot:
-            if metric not in runs[run].keys():
-                continue
             label = None if len(runs) < 2 else run
-            ax.plot(runs[run][metric], label=label, linewidth=4)
-
-            # Skip processing plot statistics if there are none
-            if not metric.endswith("_mean"):
-                ax.set_title(metric)
-                continue
-            ax.set_title(metric[:-5])
-            # plot shaded area between min and max of metric
-            min_met = metric[:-5]+"_min"
-            max_met = metric[:-5]+"_max"
-            std_met = metric[:-5]+"_std"
-            assert min_met in unfiltered_metrics
-            assert max_met in unfiltered_metrics
-            ax.fill_between(list(range(len(runs[run][metric]))),
-                            runs[run][min_met],
-                            runs[run][max_met],alpha=0.2)
-            if std_met not in runs[run].keys():
-                continue
-            # plot std if exists
-            ax.fill_between(list(range(len(runs[run][metric]))),
-                [max(_min, mean-sqrt(std)) for _min, mean, std in 
-                    zip(runs[run][min_met], runs[run][metric], runs[run][std_met])],
-                [min(_max, mean+sqrt(std)) for _max, mean, std in 
-                    zip(runs[run][max_met], runs[run][metric], runs[run][std_met])],
-                 alpha=0.2)
-
-
-
-        
-        # run mpl commands after plotting
-        with open(mpl_settings) as f:
-            for line in f:
-                line = line.strip().split()
-                if len(line) not in (1, 2, 3):
-                    continue
-                
-                if line[0] == "ylog":
-                    ax.set_yscale('log')
-                if line[0] == "xmin":
-                    ax.set_xlim(max(ax.get_xlim()[0],float(line[1])))
-                elif line[0] == "ymin":
-                    ax.set_ylim(max(ax.get_ylim()[0],float(line[1])))
-                elif line[0] == "xmax":
-                    ax.set_xlim(None, min(ax.get_xlim()[1],float(line[1])))
-                elif line[0] == "ymax":
-                    ax.set_ylim(None, min(ax.get_ylim()[1],float(line[1])))
-                elif line[0] == "legend":
-                    ax.legend(loc=" ".join(line[1:]))
-
-                
+            plot(ax, runs[run], metric, label)
+            
+        apply_settings_to_ax(ax)
     return 1
 
 
@@ -215,18 +225,8 @@ def update_and_draw_grid():
         plt.close("all")
         print()
 
-
 def get_matches(text):
     return list(filter(lambda x: re.match(text, x), keys))
-
-#@bindings.add('"')
-#def _(event):
-#    global text, matches
-#    load()
-#    if text:
-#        matches = get_matches(text)
-#        update_and_draw_grid()
-#    event.app.exit()
 
 @bindings.add('?')
 def _(event):
@@ -292,101 +292,3 @@ if __name__ == '__main__':
     asyncio.run(load())
     print(f"Loading {len(runs)} asynchronously took {time.time() - start} seconds")
     asyncio.run(main())
-
-
-#def match_counter():
-#class RegexValidator(Validator):
-#    def validate(self, document):
-#        text = document.text
-#        if not text: 
-#            return
-#        matches = get_matches(text)
-#        #if "?" in text:
-#        #    subprocess.run("vim /tmp/test.txt", shell=True)
-#        if len(text) > 0:
-#            raise ValidationError(message=f'{len(matches)} matches')
-
-#buf = ""
-#getch = _GetchUnix()
-#print("\r0 ", end="")
-# Read keyboard input from python
-#class _GetchUnix:
-#    def __init__(self):
-#        import tty, sys
-#
-#    def __call__(self):
-#        import sys, tty, termios
-#        fd = sys.stdin.fileno()
-#        old_settings = termios.tcgetattr(fd)
-#        try:
-#            tty.setraw(sys.stdin.fileno())
-#            ch = sys.stdin.read(1)
-#        finally:
-#            termios.tcsetattr(fd, termios.TCSADRAIN, old_settings)
-#        return ch
-#def draw_text():
-#    try:
-#        num_matches = len(list(filter(lambda x: re.match(buf, x), keys)))
-#    except:
-#        num_matches = 0
-#    print("\r" + " "*40, end="")
-#    print("\r" + str(num_matches) + " " + buf, end="")
-
-
-
-
-#while True:
-#    char = getch()
-#    # Control-C
-#    if ord(char) == 3:
-#        break
-#        
-#    # C-S
-#    elif ord(char) == 19:
-#        with open(plot_name, "w") as f:
-#            f.write("")
-#
-#        make_grid([metric for metric in matches[:30*3]])
-#        subprocess.run(["vim", plot_name])
-#        with open(plot_name) as f:
-#            name = f.read().strip()
-#            plt.savefig(name, format="png")
-#        print("\r"*40)
-#        print("plot saved to", name)
-#    # Delete
-#    elif ord(char) == 127:
-#        buf = buf[:-1]
-#    elif ord(char) == 24:
-#        buf = ""
-#    # ? open settings
-#    elif ord(char) == 63:
-#        subprocess.run(["vim", mpl_settings])
-#        update_and_draw_grid()
-#    # / list matches
-#    elif ord(char) == 47:
-#        try:
-#            matches = list(filter(lambda x: re.match(buf, x), keys))
-#            match_str = "\n".join(matches)       
-#            print("\r" + " "*40,end="")  # clear line
-#            print("\r", end="")           # reset cursor pos for img
-#            subprocess.run("echo \"" + match_str + "\" | column --fillrows", shell=True)
-#            #print()
-#            #print(" ".join(sorted(map(str,matches))))
-#        except:
-#            pass
-#        #update_and_draw_grid()
-#    # Enter 
-#    elif ord(char) == 13:
-#        try:
-#            matches = list(filter(lambda x: re.match(buf, x), keys))
-#        except:
-#            matches = []
-#            old_matches = []
-#            pass
-#        if old_matches != matches:
-#            update_and_draw_grid()
-#            old_matches = matches
-#    else:
-#        buf += char
-#    draw_text()
-#sys.exit(0)
