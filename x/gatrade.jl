@@ -105,7 +105,9 @@ function main()
      eval_metrics = pmap(wp, eval_groups) do group
        dc = decompress_group(group, prefixes)
        models, id_map = mk_mods(sc, mi, dc)
-       gamebatch = run_batch(env, models, args, evaluation=true)
+       model_names = models |> keys |> collect
+       str_name = joinpath(outdir, string(hash(model_names))*"-"*string(myid()))
+       gamebatch = run_batch(env, models, args, evaluation=true, render_str=str_name)
        id_batch = process_batch(gamebatch, id_map, eval_gen)
        id_batch.mets
      end |> aggregate_metrics
