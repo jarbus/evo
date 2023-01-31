@@ -35,7 +35,6 @@ function main()
   wp = WorkerPool(workers())
   n_pops = isnothing(args["maze"]) ? 2 : 1
   pops = [Pop(string(i), args["pop-size"]) for i in 1:n_pops]
-  best = (-Inf, [])
   γ = args["exploration-rate"]
   @info "cls: $clsname"
   @info "exp: $expname"
@@ -72,7 +71,7 @@ function main()
         load(check_name*".backup") 
     end
     start_gen = check["gen"] + 1
-    pops,best,γ = getindex.((check,),["pops","best","gamma"])
+    pops,γ = getindex.((check,),["pops","gamma"])
     global sc = check["sc"]
     @info "resuming from gen $start_gen"
   end
@@ -132,7 +131,7 @@ function main()
      @info "Saving checkpoint and seed cache"
      isfile(check_name) && run(`mv $check_name $check_name.backup`)
      save(check_name, Dict("gen"=>g, "gamma"=>γ, "pops"=>pops, 
-                 "best"=>best, "sc"=>rm_params(sc)))
+                        "sc"=>rm_params(sc)))
 
      global prefixes
      @info "computing prefixes"
