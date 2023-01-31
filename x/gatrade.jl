@@ -71,7 +71,7 @@ function main()
         load(check_name*".backup") 
     end
     start_gen = check["gen"] + 1
-    pops,γ = getindex.((check,),["pops","gamma"])
+    pops,γ,prefixes = getindex.((check,),["pops","gamma","prefixes"])
     global sc = check["sc"]
     @info "resuming from gen $start_gen"
   end
@@ -94,52 +94,53 @@ function main()
     next_pops = create_next_pop(pops, γ, args["num-elites"])
 
     if eval_gen # collect data only on evaluation generations
-     @info "log start"
-     metrics_csv = Dict()
-     outdir="outs/$clsname/$expname/"*string(g,pad=3,base=10)
-     run(`mkdir -p $outdir`)
+      @info "log start"
+      metrics_csv = Dict()
+      outdir="outs/$clsname/$expname/"*string(g,pad=3,base=10)
+      run(`mkdir -p $outdir`)
 
-     @info "Running elite eval"
-     rollout_elites = compress_elites(next_pops, prefixes)
-     eval_groups = group_fn(rollout_elites...)
-     eval_metrics = pmap(wp, eval_groups) do group
-       dc = decompress_group(group, prefixes)
-       models, id_map = mk_mods(sc, mi, dc)
-       model_names = models |> keys |> collect
-       str_name = joinpath(outdir, string(hash(model_names))*"-"*string(myid()))
-       gamebatch = run_batch(env, models, args, evaluation=true, render_str=str_name)
-       id_batch = process_batch(gamebatch, id_map, eval_gen)
-       id_batch.mets
-     end |> aggregate_metrics
-     @info "Logging metrics"
-     rollout_metrics = aggregate_metrics(id_batches)
-     for (met_name, met_vec) in rollout_metrics
-         log_mmm!(metrics_csv, "pop_"*met_name, met_vec)
-     end
-     for (met_name, met_vec) in eval_metrics
-         log_mmm!(metrics_csv, "eval_"*met_name, met_vec)
-     end
-     for pop in pops
-       log_mmm!(metrics_csv, "fitness", fitnesses(pop))
-       log_mmm!(metrics_csv, "novelty", novelties(pop))
-     end
-     metrics_csv["gamma"] = γ
-     df = update_df_and_write_metrics(met_csv_name, df, metrics_csv)
+      @info "Running elite eval"
+      rollout_elites = compress_elites(next_pops, prefixes)
+      eval_groups = group_fn(rollout_elites...)
+      eval_metrics = pmap(wp, eval_groups) do group
+        dc = decompress_group(group, prefixes)
+        models, id_map = mk_mods(sc, mi, dc)
+        model_names = models |> keys |> collect
+        str_name = joinpath(outdir, string(hash(model_names))*"-"*string(myid()))
+        gamebatch = run_batch(env, models, args, evaluation=true, render_str=str_name)
+        id_batch = process_batch(gamebatch, id_map, eval_gen)
+        id_batch.mets
+      end |> aggregate_metrics
+      @info "Logging metrics"
+      rollout_metrics = aggregate_metrics(id_batches)
+      for (met_name, met_vec) in rollout_metrics
+          log_mmm!(metrics_csv, "pop_"*met_name, met_vec)
+      end
+      for (met_name, met_vec) in eval_metrics
+          log_mmm!(metrics_csv, "eval_"*met_name, met_vec)
+      end
+      for pop in pops
+        log_mmm!(metrics_csv, "fitness", fitnesses(pop))
+        log_mmm!(metrics_csv, "novelty", novelties(pop))
+      end
+      metrics_csv["gamma"] = γ
+      df = update_df_and_write_metrics(met_csv_name, df, metrics_csv)
 
-     @info "Visualizing outs"
-     #isnothing(args["maze"]) && vis_outs(outdir, args["local"])
-     plot_grid_and_walks(env, "$outdir/pop", grid, pops, args["num-elites"], γ)
+      @info "Visualizing outs"
+      #isnothing(args["maze"]) && vis_outs(outdir, args["local"])
+      plot_grid_and_walks(env, "$outdir/pop", grid, pops, args["num-elites"], γ)
 
-     @info "Saving checkpoint and seed cache"
-     isfile(check_name) && run(`mv $check_name $check_name.backup`)
-     save(check_name, Dict("gen"=>g, "gamma"=>γ, "pops"=>pops, 
-                        "sc"=>rm_params(sc)))
 
-     global prefixes
-     @info "computing prefixes"
-     prefixes = compute_prefixes(pops)
-     @info "distributing prefixes: $(prefixes)"
-     @everywhere prefixes = $prefixes
+      global prefixes
+      @info "computing prefixes"
+      prefixes = compute_prefixes(pops)
+      @info "distributing prefixes: $(prefixes)"
+      @everywhere prefixes = $prefixes
+
+      @info "Saving checkpoint and seed cache"
+      isfile(check_name) && run(`mv $check_name $check_name.backup`)
+      save(check_name, Dict("gen"=>g, "gamma"=>γ, "pops"=>next_pops, 
+                         "sc"=>rm_params(sc),"prefixes"=>prefixes))
     end
     pops = next_pops
   end
