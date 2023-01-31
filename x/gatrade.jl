@@ -79,7 +79,7 @@ function main()
   for g in start_gen:args["num-gens"]
     global prefixes
     @info "starting generation $g"
-    eval_gen = g % 2 == 1
+    eval_gen = true#g % 2 == 1
     @info "compressing pop"
     rollout_pops = compress_pops(pops, prefixes)
     @info "creating rollout groups"
