@@ -127,7 +127,7 @@ function main()
      df = update_df_and_write_metrics(met_csv_name, df, metrics_csv)
 
      @info "Visualizing outs"
-     isnothing(args["maze"]) && vis_outs(outdir, args["local"])
+     #isnothing(args["maze"]) && vis_outs(outdir, args["local"])
      plot_grid_and_walks(env, "$outdir/pop", grid, pops, args["num-elites"], γ)
 
      @info "Saving checkpoint and seed cache"
