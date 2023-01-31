@@ -88,7 +88,7 @@ end
   fits = [4, 3, 2, 1]
   novs = [1, 2, 3, 4]
   for (i, (f, n)) in enumerate(zip(fits, novs))
-    pop.inds[i].fitnesses = [f]
+    pop.inds[i].fitness = f
     pop.inds[i].novelty = n
   end
   next_pop = create_next_pop(pop, γ, n_elites)

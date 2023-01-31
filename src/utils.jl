@@ -33,14 +33,11 @@ function update_df_and_write_metrics(file_name::String, df, mets)
     df
 end
 
-function average_walk(walks)
-    """walks is ::Vector{Vector{Tuple{Float64, Float64}}}
-    but too much of a pain to specify type in main script
-    """
-    avg_walk = []
+function average_walk(walks::Vector{Walk})
+    avg_walk = Walk()
     for step in zip(walks...)
         avg_step = mean.(zip(step...))
-        push!(avg_walk, avg_step)
+        push!(avg_walk, tuple(avg_step...))
     end
     avg_walk
 end

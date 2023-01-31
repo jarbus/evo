@@ -12,13 +12,15 @@ mutable struct Ind4
   id::String
   geno::Geno
   bcs::Vector{BC}
+  bc::Optional{BC} # some combination of bcs
   novelty::Optional{F}
   fitnesses::Vector{F}
+  fitness::Optional{F} # some combination of fitnesses
   elite_idxs::Optional{EliteIdxs}
   walks::Vector{Walk}
 end
 Ind4(id::String, geno::Geno, eidx::EliteIdxs) =
-Ind4(id, geno, [], missing, [], eidx, Vector{Walk}())
+Ind4(id, geno, [], missing, missing, [], missing, eidx, Vector{Walk}())
 Ind4(id::String, geno::Geno) =
   Ind4(id, geno, EliteIdxs())
 Ind4(id::String) = Ind4(id, rand(Seed,1) |> v32)
