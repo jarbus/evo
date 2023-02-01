@@ -20,11 +20,12 @@ ModelInfo, gen_params
 # ga
 export compute_novelties!, compute_fitnesses!, walks,
 create_next_pop, add_to_archive!, M, elite, fitnesses,
-mr, create_rollout_groups, aid, update_pops!, novelties
+mr, create_rollout_groups, aid, update_pops!, novelties,
+all_v_all, singleton_groups, random_groups
+
 # compression
 export compute_prefixes, decompress_group, add_elite_idxs,
-compress_pop, compress_pops, all_v_all, singleton_groups,
-one_v_self, compress_elites
+compress_pop, compress_pops, compress_elites
 # rollout & logger
 export run_batch, mk_mods, process_batch
 export EvoTradeLogger

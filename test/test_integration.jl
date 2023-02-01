@@ -4,6 +4,8 @@ root_dir = dirname(@__FILE__)  |> dirname |> String
   n_elites = 2
   n_iter = 3
   γ = 0.5
+  rollout_group_size = 2
+  rollouts_per_ind = 2
   sc = SeedCache(maxsize=10)
   n_actions = 9
 
@@ -24,7 +26,9 @@ root_dir = dirname(@__FILE__)  |> dirname |> String
 
   for iter in 1:n_iter
     compops = compress_pops(pops, prefixes)
-    groups = all_v_all(compops...)
+    groups = random_groups(compops..., 
+                rollout_group_size=rollout_group_size,
+                rollouts_per_ind=rollouts_per_ind)
 
 
     id_batches = Vector{Batch}()

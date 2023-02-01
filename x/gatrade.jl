@@ -49,7 +49,7 @@ function main()
         env = PyTrade().Trade(env_config)
         EvoTrade.Trade.reset!(env)
         grid = env.table 
-        group_fn = all_v_all
+        group_fn = random_groups
     end
     m = make_model(env, args)
     θ, re = Flux.destructure(m)
@@ -83,7 +83,9 @@ function main()
     @info "compressing pop"
     rollout_pops = compress_pops(pops, prefixes)
     @info "creating rollout groups"
-    groups = group_fn(rollout_pops...)
+    groups = group_fn(rollout_pops...,
+                      rollout_group_size=args["rollout-group-size"],
+                      rollouts_per_ind=args["rollout-groups-per-mut"])
     @info "pmapping"
     id_batches = pmap(wp, groups) do g
         fitness(g, eval_gen)
@@ -101,7 +103,9 @@ function main()
 
       @info "Running elite eval"
       rollout_elites = compress_elites(next_pops, prefixes)
-      eval_groups = group_fn(rollout_elites...)
+      eval_groups = group_fn(rollout_elites..., 
+                      rollout_group_size=args["rollout-group-size"],
+                      rollouts_per_ind=args["rollout-groups-per-mut"])
       eval_metrics = pmap(wp, eval_groups) do group
         dc = decompress_group(group, prefixes)
         models, id_map = mk_mods(sc, mi, dc)
