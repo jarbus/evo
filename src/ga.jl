@@ -125,7 +125,7 @@ function all_v_best(pop1::Vector{RolloutInd},
   rollouts_per_ind::Int,
   rollout_group_size::Int)
   n_elites = rollouts_per_ind
-  @assert n_elites < length(pop1)
+  @assert n_elites <= length(pop1)
   @assert length(pop1) == length(pop2)
   @assert rollout_group_size == 2
   n_groups = length(pop1) * n_elites * 2
