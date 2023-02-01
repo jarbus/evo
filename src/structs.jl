@@ -7,6 +7,7 @@ CompGeno = Vector{Union{String, Float32}}
 EliteIdxs = Set{Int}
 V32 = Vector{Float32}
 Walk = Vector{Tuple{Float32, Float32}}
+Prefixes = Dict{String, Geno}
 
 mutable struct Ind4
   id::String
@@ -64,10 +65,6 @@ struct RolloutInd1
 end
 RolloutInd = RolloutInd1
 
-struct Prefixes1
-  d::Dict{String, Geno}
-end
-
 struct Batch3
   rews::Dict{<:Any, <:Any}
   mets::Dict{<:Any, <:Any}
@@ -75,4 +72,3 @@ struct Batch3
   info::Dict{<:Any, <:Any}
 end
 Batch = Batch3
-Prefixes = Prefixes1
