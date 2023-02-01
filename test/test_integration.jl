@@ -26,9 +26,9 @@ root_dir = dirname(@__FILE__)  |> dirname |> String
 
   for iter in 1:n_iter
     compops = compress_pops(pops, prefixes)
-    groups = random_groups(compops..., 
-                rollout_group_size=rollout_group_size,
-                rollouts_per_ind=rollouts_per_ind)
+    groups = all_v_best(compops..., 
+                rollouts_per_ind=rollouts_per_ind,
+                rollout_group_size=rollout_group_size)
 
 
     id_batches = Vector{Batch}()

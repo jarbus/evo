@@ -49,7 +49,7 @@ function main()
         env = PyTrade().Trade(env_config)
         EvoTrade.Trade.reset!(env)
         grid = env.table 
-        group_fn = random_groups
+        group_fn = all_v_best
     end
     m = make_model(env, args)
     θ, re = Flux.destructure(m)
