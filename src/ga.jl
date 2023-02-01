@@ -119,22 +119,50 @@ function pop_group!(pop1::Vector{RolloutInd},
   @assert group_size % 2 == 0
   [pop!(p) for p in (pop1,pop2) for _ in 1:(group_size/2)]
 end
+
+function all_v_best(pop1::Vector{RolloutInd},
+  pop2::Vector{RolloutInd};
+  rollouts_per_ind::Int,
+  rollout_group_size::Int)
+  n_elites = rollouts_per_ind
+  @assert n_elites < length(pop1)
+  @assert length(pop1) == length(pop2)
+  @assert rollout_group_size == 2
+  n_groups = length(pop1) * n_elites * 2
+  groups = Vector{Vector{RolloutInd}}(undef, n_groups)
+  group_idx::Int = 0
+  # Do all v best where all is from pop1, then all_v_best 
+  # where all is from pop2
+  for (all_pop, best_pop) in [(pop1, pop2), (pop2, pop1)]
+    for ind_all in all_pop
+      # The first agents in each group are the elites
+      for i in 1:n_elites
+        group_idx += 1
+        ind_best = best_pop[i]
+        groups[group_idx] = [ind_all, ind_best]
+      end
+    end
+  end
+  @assert group_idx == n_groups
+  groups
+end
+
 function random_groups(pop1::Vector{RolloutInd},
-    pop2::Vector{RolloutInd};
-    rollout_group_size::Int,
-    rollouts_per_ind::Int)
-    # random matchups between members of pop1 and members of pop2
-    # where each individual is paired approx the same # of times
-    @assert length(pop1) == length(pop2)
-    pop_size = length(pop1)
-    n_groups = ceil(Int, rollouts_per_ind*pop_size/rollout_group_size)
-    n_agents = n_groups * rollout_group_size
-    n_duplicates = ceil(Int, n_agents / pop_size)
-    dupop1 = repeat(pop1, n_duplicates) |> shuffle
-    dupop2 = repeat(pop2, n_duplicates) |> shuffle
-    @assert length(dupop1) >= n_agents
-    groups = [pop_group!(dupop1, dupop2, rollout_group_size) for _ in 1:n_groups*2]
-    groups
+  pop2::Vector{RolloutInd};
+  rollout_group_size::Int,
+  rollouts_per_ind::Int)
+  # random matchups between members of pop1 and members of pop2
+  # where each individual is paired approx the same # of times
+  @assert length(pop1) == length(pop2)
+  pop_size = length(pop1)
+  n_groups = ceil(Int, rollouts_per_ind*pop_size/rollout_group_size)
+  n_agents = n_groups * rollout_group_size
+  n_duplicates = ceil(Int, n_agents / pop_size)
+  dupop1 = repeat(pop1, n_duplicates) |> shuffle
+  dupop2 = repeat(pop2, n_duplicates) |> shuffle
+  @assert length(dupop1) >= n_agents
+  groups = [pop_group!(dupop1, dupop2, rollout_group_size) for _ in 1:n_groups*2]
+  groups
 end
 
 # function singleton_groups(pop::Pop)

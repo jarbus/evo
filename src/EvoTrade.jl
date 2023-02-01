@@ -21,7 +21,7 @@ ModelInfo, gen_params
 export compute_novelties!, compute_fitnesses!, walks,
 create_next_pop, add_to_archive!, M, elite, fitnesses,
 mr, create_rollout_groups, aid, update_pops!, novelties,
-all_v_all, singleton_groups, random_groups
+all_v_all, singleton_groups, random_groups, all_v_best
 
 # compression
 export compute_prefixes, decompress_group, add_elite_idxs,
