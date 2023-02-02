@@ -147,12 +147,12 @@ def plot(ax, metrics: dict, metric: str, label: str):
     if std_met not in metrics.keys():
         return
     # plot std if exists
-    ax.fill_between(list(range(len(metrics[metric]))),
-        [max(_min, mean-sqrt(std)) for _min, mean, std in 
-            zip(metrics[min_met], metrics[metric], metrics[std_met])],
-        [min(_max, mean+sqrt(std)) for _max, mean, std in 
-            zip(metrics[max_met], metrics[metric], metrics[std_met])],
-         alpha=0.2) 
+    xs = list(range(len(metrics[metric])))
+    std_mins = [max(_min, mean-sqrt(std)) for _min, mean, std in 
+            zip(metrics[min_met], metrics[metric], metrics[std_met])]
+    std_maxes = [min(_max, mean+sqrt(std)) for _max, mean, std in 
+            zip(metrics[max_met], metrics[metric], metrics[std_met])]
+    ax.fill_between(xs, std_mins, std_maxes, alpha=0.2) 
 
 def compute_num_rows_and_cols(num_metrics: int):
     """Determines the size of the graph grid"""
@@ -208,11 +208,13 @@ def make_grid(unfiltered_metrics: list):
 
 
 def update_and_draw_grid():
+    global matches 
+    if len(matches) == 0:
+        return
     os.system("clear")
     # move cursor to bottom of screen
     for i in range(50):
         print()
-    global matches 
     plt.clf()
     grid = make_grid([metric for metric in matches])
     if grid is not None:
@@ -288,7 +290,5 @@ async def main():
 
 if __name__ == '__main__':
     text = None
-    start = time.time()
     asyncio.run(load())
-    print(f"Loading {len(runs)} asynchronously took {time.time() - start} seconds")
     asyncio.run(main())
