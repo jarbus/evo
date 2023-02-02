@@ -7,7 +7,7 @@ function prep_grid(::Dict, grid::AbstractArray{<:Real})
     food_2 = grid[:,:,2,end] * 4
     food_mat = food_1 .+ food_2
     food_mat *= 100
-    food_mat
+    food_mat'
 end
 
 function plot_walks(name::String,
