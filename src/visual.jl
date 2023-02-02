@@ -95,8 +95,8 @@ end
 function plot_8bcs(name::String, bcs::Vector{BC}, colors::Vector{<:RGB})
   @assert length(bcs[1]) == 8
   titles="pick_0 pick_1 place_0 place_1 xpos ypos light fit"|>split
-  mins = [0,  0, 0,  0, 0, 0,-50, 0]
-  maxs = [10,10,10, 10, 1, 1,  0,30]
+  mins = [0,  0, 0,  0, 0, 0, 0, 0]
+  maxs = [10,10,10, 10, 1, 1,30,30]
   p = plot(layout=(1,8),
            size=(1000, 300),
            background_color=colorant"black",
