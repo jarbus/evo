@@ -13,7 +13,7 @@ get_obs, MazeEnv, print_maze
 export reset!, step!, batch_reset!, batch_step!, PyTrade, 
 render, get_metrics, batch_pos!
 # viz
-export plot_grid_and_walks, vis_outs, plot_8bcs
+export plot_grid_and_walks, vis_outs, plot_bcs
 # construction
 export reconstruct, SeedCache, cache_elites!, rm_params,
 ModelInfo, gen_params

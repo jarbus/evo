@@ -23,12 +23,12 @@ using Plots
 @testset "plot_bcs" begin
     inds = [Ind([1f0]) for i in 1:10]
     for ind in inds
-        ind.bc = rand(Float32, 8)
+        ind.bc = rand(Float32, 9)
         ind.novelty = 1f0
     end
     pop = Pop("1", 10, inds)
-    push!(pop.archive, rand(Float32, 8))
-    p = plot_8bcs("bcs.png", pop, 3)
+    push!(pop.archive, rand(Float32, 9))
+    EvoTrade.plot_rewbcs("bcs.png", pop, 3)
     @test true
 end
 

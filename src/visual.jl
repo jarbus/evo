@@ -78,27 +78,59 @@ function plot_grid_and_walks(env,
     end
 end
 
+elite_color = colorant"blue"
+pop_color = colorant"lightblue"
+archive_color = colorant"pink"
+
+function get_colors_and_bc(pop::Pop, n_elites::Int)
+  colors = [[elite_color  for _ in 1:n_elites];
+            [pop_color for _ in 1:length(pop.inds)-n_elites];
+            [archive_color   for _ in 1:length(pop.archive)]]
+  _bcs = [bcs(pop); collect(pop.archive)]
+  @assert length(_bcs) == length(colors)
+  _bcs, RGB.(colors)
+end
+
 Coord = Tuple{Float32, Float32}
-function plot_8bcs(outroot::String, pops::Vector{Pop}, n_elites::Int)
+function plot_bcs(outroot::String, pops::Vector{Pop}, n_elites::Int)
+  "User interface for plotting bcs"
   for (i, pop) in enumerate(pops)
-    plot_8bcs(outroot*"-$i.png",pop, n_elites)
+    "Change this function to change the bc handler"
+    plot_rewbcs(outroot*"-$i.png",pop, n_elites)
   end
 end
 function plot_8bcs(outroot::String, pop::Pop, n_elites::Int)
-  _bcs = [bcs(pop); collect(pop.archive)]
-  colors = [[colorant"blue"  for _ in 1:n_elites];
-            [colorant"lightblue" for _ in 1:length(pop.inds)-n_elites];
-            [colorant"pink"   for _ in 1:length(pop.archive)]]
-  @assert length(_bcs) == length(colors)
-  plot_8bcs(outroot, _bcs, colors)
+  titles="pick_0 pick_1 place_0 place_1 xpos ypos light pos_fit" |>
+            split .|> string
+  mins = [0,  0, 0,  0, 0, 0,  0, 0]
+  maxs = [10,10,10, 10, 1, 1, 30,30]
+  @assert length(titles) == length(mins) == length(maxs)
+  _bcs, colors = get_colors_and_bc(pop, n_elites)
+  plot_bcs(outroot, _bcs, colors,
+            titles=titles, mins=mins, maxs=maxs)
+  @assert length(_bcs[1]) == 8
 end
-function plot_8bcs(name::String, bcs::Vector{BC}, colors::Vector{<:RGB})
-  @assert length(bcs[1]) == 8
-  titles="pick_0 pick_1 place_0 place_1 xpos ypos light fit"|>split
-  mins = [0,  0, 0,  0, 0, 0, 0, 0]
-  maxs = [10,10,10, 10, 1, 1,30,30]
-  p = plot(layout=(1,8),
-           size=(1000, 300),
+function plot_rewbcs(outroot::String, pop::Pop, n_elites::Int)
+  titles="pick_0 pick_1 place_0 place_1 xpos ypos light health acts" |>
+            split .|> string
+  mins = [0,  0, 0,  0, 0, 0, -50,  0, 0]
+  maxs = [10,10,10, 10, 1, 1,   0, 30,10]
+  @assert length(titles) == length(mins) == length(maxs)
+  _bcs, colors = get_colors_and_bc(pop, n_elites)
+  plot_bcs(outroot, _bcs, colors,
+            titles=titles, mins=mins, maxs=maxs)
+  @assert length(_bcs[1]) == 9
+end
+function plot_bcs(name::String,
+    bcs::Vector{BC},
+    colors::Vector{<:RGB};
+    titles::Vector{String},
+    mins::Vector{<:Real},
+    maxs::Vector{<:Real})
+  "core bc plotter, indifferent to the type of bc"
+  bc_len = length(bcs[1])
+  p = plot(layout=(1,bc_len),
+           size=(125*bc_len, 300),
            background_color=colorant"black",
            foreground_color=colorant"white",
            legend=false)
@@ -109,6 +141,10 @@ function plot_8bcs(name::String, bcs::Vector{BC}, colors::Vector{<:RGB})
     end
     scatter!(p[bc_idx], title=titles[bc_idx],
              coords, color=colors)
+    # plot elites on top for better visibility
+    elites_idxs = colors .== colorant"blue"
+    scatter!(p[bc_idx], title=titles[bc_idx],
+             coords[elites_idxs], color=colors[elites_idxs])
     xticks!(p[bc_idx], 0:-1)
     ylims!(p[bc_idx], mins[bc_idx], maxs[bc_idx])
   end

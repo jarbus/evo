@@ -9,6 +9,9 @@ import sys
 from collections import defaultdict
 from typing import List, Tuple, Dict
 
+def avg(x):
+    return sum(x) / len(x)
+
 def llogmmm(dic, name, arr):
     dic[f"{name}_min"] = min(arr)
     dic[f"{name}_max"] = max(arr)
@@ -16,14 +19,6 @@ def llogmmm(dic, name, arr):
 
 class TradeMetricCollector():
     def __init__(self, env):
-        self.rew_base_health          = 0
-        self.rew_nn                   = 0
-        self.rew_other_survival_bonus = 0
-        self.rew_pun                  = 0
-        self.rew_mov                  = 0
-        self.rew_light                = 0
-        self.rew_acts                 = 0
-
         self.poses = {agent: [] for agent in env.agents}
         self.num_exchanges = [0]*env.food_types
         self.picked_counts = {agent: [0] * env.food_types for agent in env.agents}
@@ -33,6 +28,9 @@ class TradeMetricCollector():
         # per agent dict for light reward
         self.night_penalties_avoided = {agent: 0 for agent in env.agents}
         self.rews = {agent: 0 for agent in env.agents}
+        self.rew_health = {agent: 0 for agent in env.agents}
+        self.rew_acts = {agent: 0 for agent in env.agents}
+        self.rew_light = {agent: 0 for agent in env.agents}
 
     def collect_lifetimes(self, dones):
         for agent, done in dones.items():
@@ -51,21 +49,10 @@ class TradeMetricCollector():
         self.picked_counts[agent][food] += env.compute_pick_amount(x, y, food, agent_id)
         pass
 
-    def collect_avoided_darkness(self, env, agent):
-        if env.light.contains(env.agent_positions[agent]) and env.light.light_level < 0:
-            self.night_penalties_avoided[agent] += 1
-
-    def collect_rews(self, _, base_health, nn, other_survival_bonus, pun_rew, mov_rew, light, action_rewards):
-        self.rew_base_health          += base_health
-        self.rew_nn                   += nn
-        self.rew_other_survival_bonus += other_survival_bonus
-        self.rew_pun                  += pun_rew
-        self.rew_mov                  += mov_rew
-        self.rew_light                += light
-        self.rew_acts                 += action_rewards
-
-    def collect_rew(self, agent, rew):
-        self.rews[agent] += rew
+    def collect_rews(self, agent, base_health, light, action_rewards):
+        self.rew_health[agent] += base_health
+        self.rew_light[agent]  += light
+        self.rew_acts[agent]   += action_rewards
 
     def collect_pos(self, agent, pos):
         self.poses[agent].append(pos)
@@ -73,7 +60,7 @@ class TradeMetricCollector():
     def get_bcs(self, env):
         return {agent: self.get_bc(env, agent) for agent in env.agents}
 
-    def get_bc(self, env, agent):
+    def get_bc8(self, env, agent):
         """
         BC is a length-8 list:
             0:1 picked counts
@@ -99,12 +86,40 @@ class TradeMetricCollector():
         bc[f] = max(0, self.rews[agent])
         return bc
 
+    def get_bc(self, env, agent):
+        """
+        BC is a length-8 list:
+            0:1 picked counts
+            2:3 placed counts
+            4:5 avg pos
+            6   rew_light
+            7   rew_base
+            8   rew_acts
+        """
+        bc = [0 for _ in range(9)]
+        f = 0 
+        bc[0:env.food_types] = self.picked_counts[agent]
+        f += env.food_types
+        bc[f:f+env.food_types] = self.placed_counts[agent]
+        f += env.food_types
+        avg_pos = avg_tuple(self.poses[agent]) 
+        avg_pos = [avg_pos[i] / env.grid_size[i] for i in range(len(env.grid_size))]
+        bc[f:(f+2)] = avg_pos
+        f +=2
+        bc[f] = self.rew_light[agent]
+        f +=1
+        bc[f] = self.rew_health[agent]
+        f +=1
+        bc[f] = self.rew_acts[agent]
+        # we only want to compare positive rewards along this dimension, since we compare light penalty separately
+        return bc
+
 
     def return_metrics(self, env):
         custom_metrics = {
-            "rew_base_health": [self.rew_base_health],
-            "rew_light": [self.rew_light],
-            "rew_acts": [self.rew_acts],
+            "rew_base_health": [avg(self.rew_health.values())],
+            "rew_light": [avg(self.rew_light.values())],
+            "rew_acts": [avg(self.rew_acts.values())],
         }
         for st in STRATEGIES:
             custom_metrics[st] = []
@@ -430,28 +445,22 @@ class Trade:
         rew = 0
         if self.compute_done(agent):
             return rew
-        pos = self.agent_positions[agent]
-        # same_poses = 0
-        dists = [0, 0]
-        other_survival_bonus = 0
-        punishment = 0
 
         num_of_food_types = sum(1 for f in self.agent_food_counts[agent] if f >= 0.1)
         base_health = [0, 0.1, 1][num_of_food_types]
+        if self.light.contains(self.agent_positions[agent]):
+            light_rew = 0 
+        else:
+            pos = self.agent_positions[agent]
+            light_rew = self.light_coeff *\
+                self.light.frame[pos]
 
-        light_rew = 0 if self.light.contains(self.agent_positions[agent]) else self.light_coeff * self.light.frame[self.agent_positions[agent]]
-
-        nn_rew    =  (self.dist_coeff * dists[-1])
-        pun_rew   = -self.punish_coeff * punishment
-        mov_rew   = -self.move_coeff * int(self.moved_last_turn[agent])
-        act_rew   = self.pickup_coeff * self.action_rewards[agent]
+        act_rew = self.pickup_coeff * self.action_rewards[agent]
 
         # Remember to update this function whenever you add a new reward
-        self.mc.collect_rews(agent, base_health, nn_rew, other_survival_bonus, pun_rew, mov_rew, light_rew, act_rew)
-        self.mc.collect_avoided_darkness(self, agent)
+        self.mc.collect_rews(agent, base_health, light_rew, act_rew)
 
         rew  = base_health + light_rew + act_rew
-        self.mc.collect_rew(agent, rew)
         return rew
 
     def compute_exchange_amount(self, x: int, y: int, food: int, picker: int):
@@ -467,22 +476,12 @@ class Trade:
             self.dones[agent] = self.steps >= self.max_steps
     def next_agent(self, agent):
         return self.agents[(self.agents.index(agent)+1) % len(self.agents)]
-        #    if max(self.agent_food_counts[agent]) < 0.1:
-        #        self.dones[agent] = True
-        #    else:
-        #        for f in self.agent_food_counts[agent]:
-        #            if f < 0.1 and random() < self.death_prob:
-        #                self.dones[agent] = True
-        #    if not self.light.contains(self.agent_positions[agent]) and random() < self.night_time_death_prob:
-        #        self.dones[agent] = True
-
     def step(self, actions):
         # placed goods will not be available until next turn
         for agent in actions.keys():
             if agent not in self.agents:
                 breakpoint()
                 print(f"ERROR: received act for {agent} which is not in {self.agents}")
-        gx, gy = self.grid_size
         for agent, action in actions.items():
             self.action_rewards[agent] = 0
             # MOVEMENT
@@ -506,13 +505,7 @@ class Trade:
                 if pick:
                     self.mc.collect_pick(self, agent, x, y, food, aid)
                     self.agent_food_counts[agent][food] += np.sum(self.table[x, y, food])
-                    # pickup reward
-                    #self.action_rewards[agent] += np.sum(self.table[x, y, food, :aid])
                     self.action_rewards[agent] += np.sum(self.table[x, y, food, -1])
-                    # Sharing reward
-                    #for oaid, oa in enumerate(self.agents):
-                    #    if oa != agent:
-                    #        self.action_rewards[oa] += np.sum(self.table[x, y, food, oaid])
                     self.table[x, y, food, :] = 0
                 elif self.agent_food_counts[agent][food] >= PLACE_AMOUNT:
                     actual_place_amount = PLACE_AMOUNT
