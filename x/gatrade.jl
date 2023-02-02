@@ -133,6 +133,7 @@ function main()
       @info "Visualizing outs"
       #isnothing(args["maze"]) && vis_outs(outdir, args["local"])
       plot_grid_and_walks(env, "$outdir/pop", grid, pops, args["num-elites"], γ)
+      plot_8bcs("$outdir/bcs", pops, args["num-elites"])
 
 
       global prefixes

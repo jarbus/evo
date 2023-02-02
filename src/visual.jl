@@ -78,6 +78,43 @@ function plot_grid_and_walks(env,
     end
 end
 
+Coord = Tuple{Float32, Float32}
+function plot_8bcs(outroot::String, pops::Vector{Pop}, n_elites::Int)
+  for (i, pop) in enumerate(pops)
+    plot_8bcs(outroot*"-$i.png",pop, n_elites)
+  end
+end
+function plot_8bcs(outroot::String, pop::Pop, n_elites::Int)
+  _bcs = [bcs(pop); collect(pop.archive)]
+  colors = [[colorant"blue"  for _ in 1:n_elites];
+            [colorant"lightblue" for _ in 1:length(pop.inds)-n_elites];
+            [colorant"pink"   for _ in 1:length(pop.archive)]]
+  @assert length(_bcs) == length(colors)
+  plot_8bcs(outroot, _bcs, colors)
+end
+function plot_8bcs(name::String, bcs::Vector{BC}, colors::Vector{<:RGB})
+  @assert length(bcs[1]) == 8
+  titles="pick_0 pick_1 place_0 place_1 xpos ypos light fit"|>split
+  mins = [0,  0, 0,  0, 0, 0,-50, 0]
+  maxs = [10,10,10, 10, 1, 1,  0,30]
+  p = plot(layout=(1,8),
+           size=(1000, 300),
+           background_color=colorant"black",
+           foreground_color=colorant"white",
+           legend=false)
+  for bc_idx in eachindex(titles)
+    coords=Vector{Coord}(undef, length(bcs))
+    for (i, bc) in enumerate(bcs)
+      coords[i] = (rand(Float32), bc[bc_idx])
+    end
+    scatter!(p[bc_idx], title=titles[bc_idx],
+             coords, color=colors)
+    xticks!(p[bc_idx], 0:-1)
+    ylims!(p[bc_idx], mins[bc_idx], maxs[bc_idx])
+  end
+  savefig(p, name)
+end
+
 function vis_outs(dirname::String, islocal::Bool)
     islocal && return
     run(`sbatch run-batch-vis.sh $dirname`, wait=false)

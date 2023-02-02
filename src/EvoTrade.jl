@@ -13,7 +13,7 @@ get_obs, MazeEnv, print_maze
 export reset!, step!, batch_reset!, batch_step!, PyTrade, 
 render, get_metrics, batch_pos!
 # viz
-export plot_grid_and_walks, vis_outs
+export plot_grid_and_walks, vis_outs, plot_8bcs
 # construction
 export reconstruct, SeedCache, cache_elites!, rm_params,
 ModelInfo, gen_params
@@ -21,7 +21,8 @@ ModelInfo, gen_params
 export compute_novelties!, compute_fitnesses!, walks,
 create_next_pop, add_to_archive!, M, elite, fitnesses,
 mr, create_rollout_groups, aid, update_pops!, novelties,
-all_v_all, singleton_groups, random_groups, all_v_best
+all_v_all, singleton_groups, random_groups, all_v_best,
+bcs
 
 # compression
 export compute_prefixes, decompress_group, add_elite_idxs,

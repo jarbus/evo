@@ -25,6 +25,13 @@ end
 mr(x) = 0.002f0
 M(x) = 0.002f0
 
+function bcs(pop::Pop)
+    _bcs = Vector{BC}(undef, pop.size)
+    @simd for i in 1:pop.size
+        @inbounds _bcs[i] = pop.inds[i].bc
+    end
+    _bcs
+end
 function fitnesses(pop::Pop)
     fitnesses = Vector{F}(undef, pop.size)
     @simd for i in 1:pop.size
@@ -41,10 +48,11 @@ function walks(pop::Pop)
     walks
 end
 
-function novelties(pop::Pop)
-    novelties = Vector{F}(undef, pop.size)
-    @simd for i in 1:pop.size
-        @inbounds novelties[i] = pop.inds[i].novelty
+novelties(pop::Pop) = novelties(pop.inds)
+function novelties(inds::Vector{Ind})
+    novelties = Vector{F}(undef, length(inds))
+    @simd for i in 1:length(inds)
+        @inbounds novelties[i] = inds[i].novelty
     end
     novelties
 end
@@ -235,7 +243,7 @@ function compute_novelties!(pop::Pop, k=25)
   @assert length(dists) == n_pop_bcs
   @assert length(bc_ids) == length(pop.inds)
   for (i, idxs) in bc_ids
-    max_nov::Float32 = 0f0
+    max_nov::Float32 = -1f0
     most_nov_bc::BC = BC()
     for idx in idxs
       if sum(dists[idx]) > max_nov
@@ -294,6 +302,9 @@ function update_pops!(pops::Vector{Pop}, batches::Vector{Batch}, arxiv_prob::Flo
   compute_novelties!(pops)
   compute_fitnesses!(pops)
   average_walks!(pops)
+  for pop in pops, ind in pop.inds
+      @assert length(ind.bcs) > 0
+  end
 end
 
 function update_pops!(pop::Pop, batches::Vector{Batch})

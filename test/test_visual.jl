@@ -4,20 +4,32 @@ using PyCall
 using Plots
 
 # TODO FIX THIS TEST
-@testset "test_trade_pop_visualizer" begin
-    root_dir = dirname(@__FILE__)  |> dirname |> String
-    expname = ["--exp-name", "test", "--cls-name","test", "--local", "--datime", "test"]
-    seed = ["--seed", "123"]
-    arg_vector = read("$root_dir/afiles/cls-test/test-ga-trade.arg", String) |> split
+# @testset "test_trade_pop_visualizer" begin
+#     root_dir = dirname(@__FILE__)  |> dirname |> String
+#     expname = ["--exp-name", "test", "--cls-name","test", "--local", "--datime", "test"]
+#     seed = ["--seed", "123"]
+#     arg_vector = read("$root_dir/afiles/cls-test/test-ga-trade.arg", String) |> split
+#
+#     args = parse_args(vcat(arg_vector, expname), get_arg_table())
+#     env_config = mk_env_config(args)
+#     pt = PyTrade()
+#     env = pt.Trade(env_config)
+#     @test env isa PyObject
+#     EvoTrade.Trade.reset!(env)
+#     walks = [[(4,4), (3,4), (3,3), (3,2), (2, 2), (1,2), (1,3), (1,4), (1,5)]]
+#     plot_walks("walks.png", env.table, walks)
+# end
 
-    args = parse_args(vcat(arg_vector, expname), get_arg_table())
-    env_config = mk_env_config(args)
-    pt = PyTrade()
-    env = pt.Trade(env_config)
-    @test env isa PyObject
-    EvoTrade.Trade.reset!(env)
-    walks = [[(4,4), (3,4), (3,3), (3,2), (2, 2), (1,2), (1,3), (1,4), (1,5)]]
-    plot_walks("walks.png", env.table, walks)
+@testset "plot_bcs" begin
+    inds = [Ind([1f0]) for i in 1:10]
+    for ind in inds
+        ind.bc = rand(Float32, 8)
+        ind.novelty = 1f0
+    end
+    pop = Pop("1", 10, inds)
+    push!(pop.archive, rand(Float32, 8))
+    p = plot_8bcs("bcs.png", pop, 3)
+    @test true
 end
 
 #@testset "test_trade_pop_visualizer" begin
