@@ -44,13 +44,17 @@ async def load():
     matches = []
     labels = []
     futures = []
+    read_file = False
     for f in sys.argv[1:]:
-        file = os.path.join(os.path.join("", f),"metrics.csv")
-        if not os.path.exists(file):
-            file = os.path.join(os.path.join("", f),"results.txt")
-            if not os.path.exists(file):
-                print(f"WARNING: {file} does not exist!")
-                continue
+        metrics_file = os.path.join(os.path.join("", f),"metrics.csv")
+        results_file = os.path.join(os.path.join("", f),"results.txt")
+        if os.path.exists(metrics_file):
+            file = metrics_file
+        elif os.path.exists(results_file): 
+            file = results_file
+        else:
+            print(f"WARNING: {metrics_file} and {results_file} not found")
+            continue
         try:
             label = os.path.basename(f)
             futures.append(read_csv(file))
@@ -59,8 +63,11 @@ async def load():
             # bug: all runs will appear after reload
             with open(runlist, "a") as f:
                 f.write(f"{label}\n")
+            read_file = True
         except:
             raise OSError(f"Could not read {file}")
+    if not read_file:
+        raise OSError(f"Could not read any file")
     run_data = await asyncio.gather(*futures)
     assert len(labels) == len(run_data)
 
