@@ -90,7 +90,9 @@ end
   for (i, (f, n)) in enumerate(zip(fits, novs))
     pop.inds[i].fitness = f
     pop.inds[i].novelty = n
+    pop.inds[i].bc = [0f0]
   end
+  add_to_archive!(pop, 1)
   next_pop = create_next_pop(pop, γ, n_elites)
   @test next_pop.size == 4
   e_genos = [e.geno for e in next_pop.elites]
@@ -103,6 +105,7 @@ end
   @test length(next_pop.inds[3].geno) == 3
   @test length(next_pop.inds[4].geno) == 3
   @test length(next_pop.inds[1].bcs) == 0
+  @test next_pop.archive == pop.archive
 end
 
 @testset "add_to_archive!" begin
@@ -110,10 +113,13 @@ end
   γ=0.5
   n_elites = 2
   fits = [4, 3, 2, 1]
-  pop.inds[1].bcs = [[1]]
+  pop.inds[1].bc = [1]
+  pop.inds[2].bc = [0]
+  pop.inds[3].bc = [0]
+  pop.inds[4].bc = [0]
   add_to_archive!(pop, 1.00)
   @test [1] ∈ pop.archive
-  pop.inds[2].bcs = [[2]]
+  pop.inds[2].bc = [2]
   add_to_archive!(pop, 0.00)
   @test [2] ∉ pop.archive
 end

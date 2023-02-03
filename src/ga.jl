@@ -13,9 +13,9 @@ function add_to_archive!(pops::Vector{Pop}, prob)
   end
 end
 function add_to_archive!(pop::Pop, prob)
-  for i in 1:length(pop.inds), bc in pop.inds[i].bcs
+  for i in 1:length(pop.inds)
     if rand() <= prob
-      push!(pop.archive, bc)
+      push!(pop.archive, pop.inds[i].bc)
     end
   end
 end
@@ -109,6 +109,7 @@ function create_next_pop(pop::Pop, γ::Float64, num_elites::Int)
     end
     next_pop = Pop(pop.id, pop.size, next_inds)
     next_pop.elites = elites
+    next_pop.archive = pop.archive
     next_pop
 end
 
@@ -298,9 +299,9 @@ function update_pops!(pops::Vector{Pop}, batches::Vector{Batch}, arxiv_prob::Flo
   for pop in pops, ind in pop.inds
       @assert length(ind.bcs) > 0
   end
-  add_to_archive!(pops, arxiv_prob)
   compute_novelties!(pops)
   compute_fitnesses!(pops)
+  add_to_archive!(pops, arxiv_prob)
   average_walks!(pops)
   for pop in pops, ind in pop.inds
       @assert length(ind.bcs) > 0
