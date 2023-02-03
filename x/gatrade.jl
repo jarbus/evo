@@ -124,8 +124,9 @@ function main()
           log_mmm!(metrics_csv, "eval_"*met_name, met_vec)
       end
       for pop in pops
-        log_mmm!(metrics_csv, "fitness", fitnesses(pop))
-        log_mmm!(metrics_csv, "novelty", novelties(pop))
+        log_mmm!(metrics_csv, "fitness-$(pop.id)", fitnesses(pop))
+        log_mmm!(metrics_csv, "novelty-$(pop.id)", novelties(pop))
+        metrics_csv["archive-size-$(pop.id)"] = length(pop.archive)
       end
       metrics_csv["gamma"] = γ
       df = update_df_and_write_metrics(met_csv_name, df, metrics_csv)
