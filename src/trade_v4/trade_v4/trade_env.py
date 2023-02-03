@@ -100,7 +100,12 @@ class TradeMetricCollector():
         f = 0 
         bc[0:env.food_types] = self.picked_counts[agent]
         f += env.food_types
-        bc[f:f+env.food_types] = self.placed_counts[agent]
+        # an agent shouldn't place more than they forage
+        # by repeatedly placing/picking
+        clamped_placed = [min(pi, pl) for pi, pl in 
+            zip(self.picked_counts[agent],
+                self.placed_counts[agent])]
+        bc[f:f+env.food_types] = clamped_placed
         f += env.food_types
         avg_pos = avg_tuple(self.poses[agent]) 
         avg_pos = [avg_pos[i] / env.grid_size[i] for i in range(len(env.grid_size))]
