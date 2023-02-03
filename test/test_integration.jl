@@ -35,7 +35,7 @@ root_dir = dirname(@__FILE__)  |> dirname |> String
     for group in groups
       dc = decompress_group(group, prefixes)
       models, id_map = mk_mods(sc, mi, dc)
-      gamebatch = run_batch(env_config, models, args, batch_size=2)
+      gamebatch = run_batch(env_config, models, args, batch_size=1)
       id_batch = process_batch(gamebatch, id_map, true)
       push!(id_batches, id_batch)
     end

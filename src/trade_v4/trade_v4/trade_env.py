@@ -275,6 +275,7 @@ class Trade:
         if self.matchups == [] or self.matchups == [()]:
             return {}
 
+        self.render_lines = []
         self.light.reset()
         self.agents = list(next(self.matchup_iterator)) # self.possible_agents[:]
         #print(f"Running env with agents {self.agents}")
@@ -304,27 +305,29 @@ class Trade:
 
     def render(self, outfile=None):
         try:
-            if not outfile:
-                out=sys.stdout
-            else:
-                out=open(outfile, "a")
-            out.write(f"--------STEP-{self.steps}------\n")
+            self.render_lines.append(f"--------STEP-{self.steps}------\n")
             for agent in self.agents:
-                out.write(f"{agent}: {self.agent_positions[agent]} {[round(fc, 2) for fc in self.agent_food_counts[agent]]} {self.compute_done(agent)}\n")
+                self.render_lines.append(f"{agent}: {self.agent_positions[agent]} {[round(fc, 2) for fc in self.agent_food_counts[agent]]} {self.compute_done(agent)}\n")
             for food in range(self.food_types):
-                out.write(f"food{food}:\n")
+                self.render_lines.append(f"food{food}:\n")
                 for row in self.table[:,:,food].sum(axis=2).round(2):
-                    out.write(str(list(row)).replace(",","")+"\n")
-            out.write(f"Total exchanged so far: {self.mc.num_exchanges}\n")
+                    self.render_lines.append(str(list(row)).replace(",","")+"\n")
+            self.render_lines.append(f"Total exchanged so far: {self.mc.num_exchanges}\n")
             if self.day_night_cycle:
-                out.write(f"Light:\n")
+                self.render_lines.append(f"Light:\n")
                 for row in self.light.frame.round(2):
-                    out.write(str(list(row)).replace(",","")+"\n")
+                    self.render_lines.append(str(list(row)).replace(",","")+"\n")
             for agent, comm in self.communications.items():
                 if comm and max(comm) >= 1:
-                    out.write(f"{agent} said {comm.index(1)}\n")
-            if outfile:
-                out.close()
+                    self.render_lines.append(f"{agent} said {comm.index(1)}\n")
+            # Only write to file once episode is done
+            print("rendering")
+            if all(self.dones.values()) or self.steps >= self.max_steps:
+                print("writing render")
+                out= open(outfile, "a") if outfile else sys.stdout
+                out.write("".join(self.render_lines))
+                if outfile:
+                    out.close()
         except Exception as e:
             print(e)
 

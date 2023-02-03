@@ -4,6 +4,7 @@ using BenchmarkTools
 using EvoTrade
 using StableRNGs
 using Test
+using Flux
 
 
 # file = "test/test_noisetable.jl"
