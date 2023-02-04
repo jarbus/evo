@@ -86,9 +86,9 @@ class TradeMetricCollector():
         bc[f] = max(0, self.rews[agent])
         return bc
 
-    def get_bc(self, env, agent):
+    def get_bc9(self, env, agent):
         """
-        BC is a length-8 list:
+        BC is a length-9 list:
             0:1 picked counts
             2:3 placed counts
             4:5 avg pos
@@ -117,6 +117,23 @@ class TradeMetricCollector():
         f +=1
         bc[f] = self.rew_acts[agent]
         # we only want to compare positive rewards along this dimension, since we compare light penalty separately
+        return bc
+    
+    def get_bc(self, env, agent):
+        """BC is a length-4 list:
+            0:1 avg pos
+            2   rew_light
+            3   rew_health
+        """
+        bc = [0 for _ in range(4)]
+        f = 0 
+        avg_pos = avg_tuple(self.poses[agent]) 
+        avg_pos = [avg_pos[i] / env.grid_size[i] for i in range(len(env.grid_size))]
+        bc[f:(f+2)] = avg_pos
+        f +=2
+        bc[f] = self.rew_light[agent]
+        f +=1
+        bc[f] = self.rew_health[agent]
         return bc
 
 
