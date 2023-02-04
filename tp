@@ -20,6 +20,7 @@ from prompt_toolkit.completion import Completer, Completion
 
 from base64 import standard_b64encode
 from collections import defaultdict
+import array, fcntl, termios # for get_terminal_size
 
 plt.style.use(['dark_background', 'fast'])
 bindings = KeyBindings()
@@ -30,6 +31,11 @@ with open(mpl_settings, "w") as f:
     f.write("")
 old_matches = []
 px = 1/plt.rcParams['figure.dpi']  # pixel in inches
+
+def get_terminal_size():
+    buf = array.array('H', [0, 0, 0, 0])
+    fcntl.ioctl(1, termios.TIOCGWINSZ, buf)
+    return buf[2], buf[3]
 
 async def read_csv(file: str):
     return pd.read_csv(file, dtype=np.float16, engine="pyarrow")
@@ -199,7 +205,8 @@ def make_grid(unfiltered_metrics: list):
 
     apply_settings_before_plot()
 
-    fig, axes = plt.subplots(num_rows, num_cols, figsize=(600*px*3, 350*px*max(num_rows, 2)))
+
+    fig, axes = plt.subplots(num_rows, num_cols, figsize=(get_terminal_size()[0]*px, 350*px*max(num_rows, 2)))
     for i, metric in enumerate(metrics):
         ax = get_ax(axes, i, num_rows, num_cols)
 
