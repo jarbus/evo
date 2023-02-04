@@ -91,7 +91,7 @@ function main()
         fitness(g, eval_gen)
     end
     @info "updating population"
-    update_pops!(pops, id_batches)
+    update_pops!(pops, id_batches, args["archive-prob"])
     @info "Creating next pop"
     next_pops = create_next_pop(pops, γ, args["num-elites"])
 
