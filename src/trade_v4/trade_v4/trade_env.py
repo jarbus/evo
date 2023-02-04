@@ -1,3 +1,4 @@
+import re
 import os
 import numpy as np
 import random
@@ -8,6 +9,8 @@ from .spawners import FireCornerSpawner, FoodSpawner, DiscreteFoodSpawner, Cente
 import sys
 from collections import defaultdict
 from typing import List, Tuple, Dict
+
+first_number_regex = re.compile(r'\d+')
 
 def avg(x):
     return sum(x) / len(x)
@@ -343,7 +346,6 @@ class Trade:
                 if comm and max(comm) >= 1:
                     self.render_lines.append(f"{agent} said {comm.index(1)}\n")
             if all(self.dones.values()) or self.steps >= self.max_steps:
-                print("writing render")
                 out= open(outfile, "a") if outfile else sys.stdout
                 out.write("".join(self.render_lines))
                 if outfile:
@@ -490,7 +492,7 @@ class Trade:
         return sum(count for a, count in enumerate(self.table[x][y][food]) if a != picker and a != len(self.agents))
 
     def compute_pick_amount(self, x: int, y: int, food: int, picker: int):
-        return self.table[x][y][food][len(self.agents)]
+        return self.table[x][y][food][len(self.agents)] * self.collection_modifier(self.agents[picker], food)
 
     def update_dones(self):
         for agent in self.agents:
@@ -499,6 +501,21 @@ class Trade:
             self.dones[agent] = self.steps >= self.max_steps
     def next_agent(self, agent):
         return self.agents[(self.agents.index(agent)+1) % len(self.agents)]
+
+    def collection_modifier(self, agent: str, food: int):
+        # search the string for the first number
+        match = first_number_regex.search(agent)
+        if match is None:
+            raise ValueError(f"Agent name {agent} does not contain a number")
+        pop_idx = int(match.group()) - 1 # convert from 1,2 to 0,1
+        if pop_idx not in range(0, self.food_types):
+            raise ValueError(f"Agent name {agent} is from population that is outside food types")
+
+        if pop_idx == food:
+            return 1.0
+        return 0.5
+
+
     def step(self, actions):
         # placed goods will not be available until next turn
         for agent in actions.keys():
@@ -527,8 +544,10 @@ class Trade:
                 food = floor((action - ndir - int(self.punish)) / 2)
                 if pick:
                     self.mc.collect_pick(self, agent, x, y, food, aid)
-                    self.agent_food_counts[agent][food] += np.sum(self.table[x, y, food])
-                    self.action_rewards[agent] += np.sum(self.table[x, y, food, -1])
+                    self.agent_food_counts[agent][food] += np.sum(self.table[x, y, food,:-1])+\
+                        self.table[x,y,food,-1]*self.collection_modifier(agent, food)
+                    self.action_rewards[agent] += np.sum(self.table[x, y, food, -1])*\
+                        self.collection_modifier(agent, food)
                     self.table[x, y, food, :] = 0
                 elif self.agent_food_counts[agent][food] >= PLACE_AMOUNT:
                     actual_place_amount = PLACE_AMOUNT

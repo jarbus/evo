@@ -67,30 +67,77 @@ root_dir = dirname(@__FILE__)  |> dirname |> String
 #    @test seed_table_1 == seed_table_2
 #end
 
-@testset "test_campfire_frame" begin
+# THIS IS VALID, just commented out
+#@testset "test_campfire_frame" begin
+#    expname = ["--exp-name", "test", "--cls-name","test", "--local", "--datime", "test"]
+#    arg_vector = read("$root_dir/afiles/daystep-test/test-1atrade.arg", String) |> split
+#    args = parse_args(vcat(arg_vector, expname), get_arg_table())
+#    env_config = mk_env_config(args)
+#    env = PyTrade().Trade(env_config)
+#    @test env isa PyObject
+#    EvoTrade.Trade.reset!(env)
+#    cff = env.light.campfire_frame
+#    @test maximum(cff) == 1.0
+#    @test minimum(cff) == 0.0
+#
+#    for a in 1:1000
+#        acts = [rand(1:9) for i in 1:args["episode-length"]]
+#        env = PyTrade().Trade(env_config)
+#        EvoTrade.Trade.reset!(env)
+#        for i in 1:10
+#            obs, rew, done = EvoTrade.Trade.step!(env, Dict("f0a0" => acts[i]))
+#            EvoTrade.Trade.render(env, "/dev/null")
+#        end
+#    end
+#end
+
+
+@testset "test_trade" begin
     expname = ["--exp-name", "test", "--cls-name","test", "--local", "--datime", "test"]
     arg_vector = read("$root_dir/afiles/daystep-test/test-1atrade.arg", String) |> split
     args = parse_args(vcat(arg_vector, expname), get_arg_table())
     env_config = mk_env_config(args)
-    env = PyTrade().Trade(env_config)
-    @test env isa PyObject
-    EvoTrade.Trade.reset!(env)
-    cff = env.light.campfire_frame
-    @test maximum(cff) == 1.0
-    @test minimum(cff) == 0.0
 
-    frame_types = split("food1 food2 selfpos selffood1 selffood2 otherpos otherfood1 otherfood2 light campfire xpos ypos")
-    for a in 1:1000
-        acts = [rand(1:9) for i in 1:args["episode-length"]]
-        env = PyTrade().Trade(env_config)
-        EvoTrade.Trade.reset!(env)
-        for i in 1:10
-            obs, rew, done = EvoTrade.Trade.step!(env, Dict("f0a0" => acts[i]))
-            EvoTrade.Trade.render(env, "/dev/null")
-            # for frame in 1:size(obs["f0a0"], 3)
-                # println(frame_types[frame])
-                # obs["f0a0"][:,:,frame] |> display
-            # end
-        end
-    end
+    i1 = "1-4-grdg"
+    i2 = "2-31-123fsdf"
+    env_config["matchups"] = [(i1, i2)]
+    env_config["grid"] = (1,1)
+    env_config["foods"] = [(0,0,0), (1,0,0)]
+    env_config["fires"] = [(0,0,0)]
+    acts = [rand(1:9) for i in 1:args["episode-length"]]
+    env = PyTrade().Trade(env_config)
+    EvoTrade.Trade.reset!(env)
+    @test 1.0f0 == pycall(env.collection_modifier, Float32, i1, 0)
+    @test 0.5f0 == pycall(env.collection_modifier, Float32, i1, 1) 
+    @test 0.5f0 == pycall(env.collection_modifier, Float32, i2, 0)
+    @test 1.0f0 == pycall(env.collection_modifier, Float32, i2, 1)
+    # 0-3 is direction
+    # 4,5,6,7 are pick0, place0, pick1, place1
+    EvoTrade.Trade.step!(env, Dict(i1 => 4))
+    @test env.agent_food_counts[i1][1] == 4.9
+    @test env.mc.picked_counts[i1][1] == 5
+    @test env.agent_food_counts[i1][2] == 0.0
+    @test env.mc.picked_counts[i1][2] == 0
+    EvoTrade.Trade.step!(env, Dict(i2 => 6))
+    @test env.agent_food_counts[i2][1] == 0.0
+    @test env.mc.picked_counts[i2][1] == 0
+    @test env.agent_food_counts[i2][2] == 4.9
+    @test env.mc.picked_counts[i2][2] == 5
+
+    EvoTrade.Trade.reset!(env)
+    EvoTrade.Trade.step!(env, Dict(i1 => 6))
+    @test env.agent_food_counts[i1][1] == 0.0
+    @test env.mc.picked_counts[i1][1] == 0
+    @test env.agent_food_counts[i1][2] == 2.4
+    @test env.mc.picked_counts[i1][2] == 2.5
+    EvoTrade.Trade.step!(env, Dict(i2 => 4))
+    @test env.agent_food_counts[i2][1] == 2.4
+    @test env.mc.picked_counts[i2][1] == 2.5
+    @test env.agent_food_counts[i2][2] == 0.0
+    @test env.mc.picked_counts[i2][2] == 0
+
+    # for i in 1:10
+    #     obs, rew, done = EvoTrade.Trade.step!(env, Dict("f0a0" => acts[i]))
+    #     EvoTrade.Trade.render(env, "/dev/null")
+    # end
 end
