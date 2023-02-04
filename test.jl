@@ -2,6 +2,7 @@ using Revise
 using ProfileView
 using BenchmarkTools
 using EvoTrade
+using Flux
 using StableRNGs
 using Test
 using Flux
