@@ -342,8 +342,6 @@ class Trade:
             for agent, comm in self.communications.items():
                 if comm and max(comm) >= 1:
                     self.render_lines.append(f"{agent} said {comm.index(1)}\n")
-            # Only write to file once episode is done
-            print("rendering")
             if all(self.dones.values()) or self.steps >= self.max_steps:
                 print("writing render")
                 out= open(outfile, "a") if outfile else sys.stdout
