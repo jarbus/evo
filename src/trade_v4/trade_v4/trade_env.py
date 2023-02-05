@@ -123,12 +123,13 @@ class TradeMetricCollector():
         return bc
     
     def get_bc(self, env, agent):
-        """BC is a length-4 list:
+        """BC is a length-5 list:
             0:1 avg pos
             2   rew_light
             3   rew_health
+            4   rew_light + rew_health
         """
-        bc = [0 for _ in range(4)]
+        bc = [0 for _ in range(5)]
         f = 0 
         avg_pos = avg_tuple(self.poses[agent]) 
         avg_pos = [avg_pos[i] / env.grid_size[i] for i in range(len(env.grid_size))]
@@ -137,6 +138,8 @@ class TradeMetricCollector():
         bc[f] = self.rew_light[agent]
         f +=1
         bc[f] = self.rew_health[agent]
+        f +=1
+        bc[f] = self.rew_light[agent] + self.rew_health[agent]
         return bc
 
 

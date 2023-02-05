@@ -96,7 +96,7 @@ function plot_bcs(outroot::String, pops::Vector{Pop}, n_elites::Int)
   "User interface for plotting bcs"
   for (i, pop) in enumerate(pops)
     "Change this function to change the bc handler"
-    plot_4bcs(outroot*"-$i.png",pop, n_elites)
+    plot_5bcs(outroot*"-$i.png",pop, n_elites)
   end
 end
 function plot_8bcs(outroot::String, pop::Pop, n_elites::Int)
@@ -122,16 +122,16 @@ function plot_9bcs(outroot::String, pop::Pop, n_elites::Int)
   @assert length(_bcs[1]) == 9
 end
 
-function plot_4bcs(outroot::String, pop::Pop, n_elites::Int)
-  titles="xpos ypos light health" |>
+function plot_5bcs(outroot::String, pop::Pop, n_elites::Int)
+  titles="xpos ypos light health fit" |>
             split .|> string
-  mins = [0, 0, -50,  0]
-  maxs = [1, 1,   0, 30]
+  mins = [0, 0, -50,  0, -50]
+  maxs = [1, 1,   0, 30,  30]
   @assert length(titles) == length(mins) == length(maxs)
   _bcs, colors = get_colors_and_bc(pop, n_elites)
   plot_bcs(outroot, _bcs, colors,
             titles=titles, mins=mins, maxs=maxs)
-  @assert length(_bcs[1]) == 4
+  @assert length(_bcs[1]) == 5
 end
 function plot_bcs(name::String,
     bcs::Vector{BC},

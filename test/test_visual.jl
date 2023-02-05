@@ -33,14 +33,14 @@ using Plots
 # end
 
 
-@testset "plot_4bcs" begin
+@testset "plot_5bcs" begin
     inds = [Ind([1f0]) for i in 1:10]
     for ind in inds
-        ind.bc = rand(Float32, 4)
+        ind.bc = rand(Float32, 5)
         ind.novelty = 1f0
     end
     pop = Pop("1", 10, inds)
-    push!(pop.archive, rand(Float32, 4))
+    push!(pop.archive, rand(Float32, 5))
     EvoTrade.plot_bcs("bcs", [pop], 3)
     @test true
 end
