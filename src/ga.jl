@@ -177,7 +177,10 @@ end
 # function singleton_groups(pop::Pop)
 #     [[ind] for ind in pop]
 # end
-function singleton_groups(rollout_inds::Vector{RolloutInd})
+function singleton_groups(rollout_inds::Vector{RolloutInd};
+    rollout_group_size::Int, rollouts_per_ind::Int)
+    @assert rollout_group_size == 1
+    @assert rollouts_per_ind == 1
   [[ro] for ro in rollout_inds]
 end
 

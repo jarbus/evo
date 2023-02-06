@@ -160,3 +160,28 @@ function mk_id_player_map(group::Vector{Ind})
 end
 
 elite(x::Vector) = length(x) > 2 ? x[1:end-2] : x
+
+function compute_compression_data(compop::Vector{RolloutInd}, prefixes)
+  bytes_compressed = 0
+  bytes_uncompressed = 0
+  for ro_ind in compop
+    if typeof(ro_ind.geno[1]) == String
+      prefix_seed = prefixes[ro_ind.geno[1]]
+      geno = [prefix_seed; ro_ind.geno[2:end]] |> v32
+      bytes_compressed += sizeof(prefix_seed) - sizeof(ro_ind.geno[1])
+      bytes_uncompressed += sizeof(ro_ind.geno[2:end])
+    else
+      bytes_uncompressed += sizeof(ro_ind.geno)
+    end
+  end
+  (compressed=bytes_compressed, uncompressed=bytes_uncompressed)
+end
+function compute_compression_data(compops::Vector{Vector{RolloutInd}}, prefixes)
+  bytes_compressed = 0
+  bytes_uncompressed = 0
+  for compop in compops
+    bytes_compressed += compute_compression_data(compop, prefixes).compressed
+    bytes_uncompressed += compute_compression_data(compop, prefixes).uncompressed
+  end
+  (compressed=bytes_compressed, uncompressed=bytes_uncompressed)
+end

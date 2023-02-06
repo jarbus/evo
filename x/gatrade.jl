@@ -85,6 +85,10 @@ function main()
     # save start time to variable start
     gen_start = time()
     rollout_pops = compress_pops(pops, prefixes)
+
+    bytes = compute_compression_data(rollout_pops, prefixes)
+    @info "bytes.compressed: $(bytes.compressed)"
+    @info "bytes.uncompressed: $(bytes.uncompressed)"
     @info "creating rollout groups"
     groups = group_fn(rollout_pops...,
                       rollout_group_size=args["rollout-group-size"],
@@ -139,18 +143,17 @@ function main()
       @info "Visualizing outs"
       #isnothing(args["maze"]) && vis_outs(outdir, args["local"])
       plot_grid_and_walks(env, "$outdir/pop", grid, pops, args["num-elites"], γ)
-      plot_bcs("$outdir/bcs", pops, args["num-elites"])
+      # plot_bcs("$outdir/bcs", pops, args["num-elites"])
 
 
       global prefixes
       @info "computing prefixes"
       prefixes = compute_prefixes(pops)
-      @info "distributing prefixes: $(prefixes)"
       @everywhere prefixes = $prefixes
 
       @info "Saving checkpoint and seed cache"
       isfile(check_name) && run(`mv $check_name $check_name.backup`)
-      save(check_name, Dict("gen"=>g, "gamma"=>γ, "pops"=>next_pops, 
+      save(check_name, Dict("gen"=>g, "gamma"=>γ, "pops"=>next_pops,
                          "sc"=>rm_params(sc),"prefixes"=>prefixes))
     end
     pops = next_pops

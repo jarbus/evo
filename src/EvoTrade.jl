@@ -32,8 +32,8 @@ export run_batch, mk_mods, process_batch
 export EvoTradeLogger
 
 # structs
-export Ind, Pop, BC, F, Geno, CompGeno,
-RolloutInd, Prefixes, V32, Batch
+export Ind, Pop, BC, F, Geno, CompGeno, RolloutInd,
+Prefixes, V32, Batch, compute_compression_data
 
 
 using ArgParse
