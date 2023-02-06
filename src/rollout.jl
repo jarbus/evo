@@ -80,10 +80,16 @@ function mk_mods(sc::SeedCache,
                  mi::ModelInfo,
                  group::Vector{Ind})
   id_map, counts = mk_id_player_map(group)
+  rdc = ReconDataCollector()
   # assign a player name like p[idx]_[count]
-  models = Dict(aid(ind.id, c)=> mi.re(reconstruct(sc, mi, ind))
-    for ind in group for c in 1:counts[ind.id])
-  models, id_map
+  models = Dict{String, Chain}()
+  for ind in group, c in 1:counts[ind.id]
+    rdc.num_reconstructions += 1
+    start = time()
+    models[aid(ind.id, c)] = mi.re(reconstruct!(sc, mi, ind, rdc))
+    push!(rdc.time_deltas, time() - start)
+  end
+  models, id_map, Dict(rdc)
 end
 
 
@@ -111,4 +117,9 @@ function process_batch(game_batch::Batch, id_map::Dict, eval_gen::Bool)
   end
   mets = eval_gen ? filter(p->p.first in mets_to_return, game_batch.mets) : Dict()
   Batch(rews, mets, bcs, infos)
+end
+
+function add_metrics(batch::Batch, metrics::Dict)
+    new_metrics = merge(batch.mets, metrics)
+    Batch(batch.rews, new_metrics, batch.bcs, batch.info)
 end

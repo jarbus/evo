@@ -11,11 +11,11 @@ root_dir = dirname(@__FILE__)  |> dirname |> String
   m = make_model(:small, obs_size, n_actions, lstm=false)
   θ, re = Flux.destructure(m)
   mi = ModelInfo(m, re)
-  models, _ = mk_mods(sc, mi, [ind1, ind1])
+  models, _, _ = mk_mods(sc, mi, [ind1, ind1])
   @test length(models) == 2
   @test collect(keys(models)) == ["1_1", "1_2"]
   @test Flux.params(models["1_1"]) == Flux.params(models["1_2"])
-  models, _ = mk_mods(sc, mi, [ind1, ind2])
+  models, _, _ = mk_mods(sc, mi, [ind1, ind2])
   @test length(models) == 2
   @test collect(keys(models)) == ["1_1", "2_1"]
   @test Flux.params(models["1_1"]) != Flux.params(models["2_1"])
@@ -37,7 +37,7 @@ end
             lstm=true)
     θ, re = Flux.destructure(m)
     mi = ModelInfo(m, re)
-    models, id_map = mk_mods(sc, mi, [ind1, ind1])
+    models, id_map, _ = mk_mods(sc, mi, [ind1, ind1])
     gamebatch = run_batch(env_config, models, args, batch_size=2)
     idbatch = process_batch(gamebatch, id_map, true)
     @test "1_1" in keys(idbatch.rews)
@@ -46,4 +46,3 @@ end
     metrics = aggregate_rollouts!([idbatch], [pop])
     @test length(metrics) > 0
 end
-

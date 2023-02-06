@@ -1,3 +1,4 @@
+import Base: Dict
 BC = Vector{Float32}
 F = Float32
 Novelty = Float32
@@ -39,6 +40,7 @@ function mk_id_map(inds::Vector{Ind})
   id_map
 end
 
+
 mutable struct Pop6
   id::String
   size::Int
@@ -72,3 +74,17 @@ struct Batch3
   info::Dict{<:Any, <:Any}
 end
 Batch = Batch3
+
+mutable struct ReconDataCollector
+  num_reconstructions::Int
+  num_recursions::Int
+  time_deltas::Vector{Float32}
+end
+ReconDataCollector() = ReconDataCollector(0, 0, Float64[])
+function Dict(rdc::ReconDataCollector) 
+  Dict{String, Any}(
+    "num_reconstructions" => rdc.num_reconstructions,
+    "num_recursions" => rdc.num_recursions,
+    "time_deltas" => rdc.time_deltas,
+  )
+end

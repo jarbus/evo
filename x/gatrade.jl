@@ -17,9 +17,10 @@ using Logging
 
   function fitness(group::Vector{RolloutInd}, eval_gen)
     dc = decompress_group(group, prefixes)
-    models, id_map = mk_mods(sc, mi, dc)
+    models, id_map, rdc_mets = mk_mods(sc, mi, dc)
     gamebatch = run_batch(env, models, args, evaluation=true)
     id_batch = process_batch(gamebatch, id_map, eval_gen)
+    id_batch = EvoTrade.add_metrics(id_batch, rdc_mets)
     id_batch
   end
 end
@@ -81,6 +82,8 @@ function main()
     @info "starting generation $g"
     eval_gen = true#g % 2 == 1
     @info "compressing pop"
+    # save start time to variable start
+    gen_start = time()
     rollout_pops = compress_pops(pops, prefixes)
     @info "creating rollout groups"
     groups = group_fn(rollout_pops...,
@@ -90,6 +93,7 @@ function main()
     id_batches = pmap(wp, groups) do g
         fitness(g, eval_gen)
     end
+    gen_end = time()
     @info "updating population"
     update_pops!(pops, id_batches, args["archive-prob"])
     @info "Creating next pop"
@@ -108,7 +112,7 @@ function main()
                       rollouts_per_ind=args["rollout-groups-per-mut"])
       eval_metrics = pmap(wp, eval_groups) do group
         dc = decompress_group(group, prefixes)
-        models, id_map = mk_mods(sc, mi, dc)
+        models, id_map, _ = mk_mods(sc, mi, dc)
         model_names = models |> keys |> collect
         str_name = joinpath(outdir, string(hash(model_names))*"-"*string(myid()))
         gamebatch = run_batch(env, models, args, evaluation=true, render_str=str_name)
@@ -123,6 +127,7 @@ function main()
       for (met_name, met_vec) in eval_metrics
           log_mmm!(metrics_csv, "eval_"*met_name, met_vec)
       end
+      metrics_csv["Time Per Generation"] = round(gen_end - gen_start, digits=2)
       for pop in pops
         log_mmm!(metrics_csv, "fitness-$(pop.id)", fitnesses(pop))
         log_mmm!(metrics_csv, "novelty-$(pop.id)", novelties(pop))

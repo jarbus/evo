@@ -131,38 +131,3 @@ end
 #   # end
 #  end 
 #end
-
-# @testset "test_cache_elites" begin
-#
-#   pop_size = 100
-#   n_elites = 3
-#   model_size = 10_000
-#   param_cache::SeedCache = SeedCache(maxsize=n_elites*3)
-#   m = make_model(:large, (11, 11, 7, 10), 4, lstm=true)
-#   mi = ModelInfo(m)
-#   pop = [rand(1.0f0:1000.0f0, 1) for _ in 1:pop_size]
-#   fitnesses = rand(pop_size)
-#   novelties = rand(pop_size)
-#   bcs = [rand(3) for _ in 1:pop_size]
-#   γ=0.5
-#   pop, elites = create_next_pop(1, param_cache, pop, fitnesses, novelties, bcs, γ, n_elites)
-#   compressed_elites, prefix = compress_elites(param_cache, elites)
-#   @test length(compressed_elites) == length(elites)
-#   @test length(prefix) == 1
-#   cache_elites!(param_cache, mi, compressed_elites, prefix)
-#   compressed_elites, prefix = compress_elites(param_cache, elites)
-#   @test length(compressed_elites) == 0
-#   @test length(prefix) == 0
-#   cache_elites!(param_cache, mi, compressed_elites, prefix)
-#   for i in 1:10
-#       fitnesses = rand(pop_size)
-#       novelties = rand(pop_size)
-#       bcs = [rand(3) for _ in 1:pop_size]
-#       pop, elites = create_next_pop(2, param_cache, pop, fitnesses, novelties, bcs, γ, n_elites)
-#       compressed_elites, prefix = compress_elites(param_cache, elites)
-#       cache_elites!(param_cache, mi, compressed_elites, prefix)
-#   end
-#   
-# end
-
-

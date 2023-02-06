@@ -31,7 +31,7 @@ function cache_elites!(param_cache::SeedCache, mi::ModelInfo, elites::Vector{<:A
   end
 end
 
-function reconstruct(param_cache::SeedCache, mi::ModelInfo, seeds_and_muts::Vector, elite_idxs::Set{Int}=Set{Int}())
+function reconstruct!(param_cache::SeedCache, mi::ModelInfo, seeds_and_muts::Vector, elite_idxs::Set{Int}, rdc::ReconDataCollector)
   """Reconstruction function that finds the nearest cached ancestor and
   reconstructs all future generations. Creates a new parameter vector if
   no ancestor is found.
@@ -46,18 +46,20 @@ function reconstruct(param_cache::SeedCache, mi::ModelInfo, seeds_and_muts::Vect
   # Get cached parent
   elseif seeds_and_muts[1:end-2] in keys(param_cache) && haskey(param_cache[seeds_and_muts[1:end-2]], :params)
     @inline @inbounds elite = param_cache[seeds_and_muts[1:end-2]][:params] |> deepcopy
-  # Recurse if not cached
+  # Recurse if not cached to get parent
   else
-    @inline @inbounds elite = reconstruct(param_cache, mi, seeds_and_muts[1:end-2], elite_idxs)
+    rdc.num_recursions += 1
+    @inline @inbounds elite = reconstruct!(param_cache, mi, seeds_and_muts[1:end-2], elite_idxs, rdc)
   end
+  # apply mutation to parent
   @inline @inbounds elite .+= gen_params(StableRNG(Int(seeds_and_muts[end])), mi, 2) * seeds_and_muts[end-1]
   if length(seeds_and_muts) ∈ elite_idxs
     param_cache[seeds_and_muts] = Dict(:params => deepcopy(elite))
   end
   return elite
 end
-reconstruct(sc::SeedCache, mi::ModelInfo, ind::Ind) =
-  reconstruct(sc, mi, ind.geno, ind.elite_idxs)
+reconstruct!(sc::SeedCache, mi::ModelInfo, ind::Ind, rdc::ReconDataCollector) =
+  reconstruct!(sc, mi, ind.geno, ind.elite_idxs, rdc)
 
 
 lb(rng, l::Tuple, b::Bool) = b ? zeros(Float32, l) : glorot_normal(rng, l...)
