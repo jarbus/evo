@@ -95,14 +95,20 @@ function create_next_pop(pop::Pop, γ::Float64, num_elites::Int)
     exploiter_elites = make_elites(fitnesses(pop), nums[:n_e_exploit])
     explorer_elites  = make_elites(novelties(pop), nums[:n_e_explore])
 
+    # TODO CHANGE THIS BACK
+    # WE ARE RUNNING EXPERIMENTS ASSUMING γ ∈ [0, 1]
+    # THIS BREAKS THE VISUALIZATIONS
+    @assert length(explorer_elites) == 0 || length(exploiter_elites) == 0
     elites = [exploiter_elites; explorer_elites]
-    next_inds = deepcopy(elites)
-    for _ in 1:nums[:n_n_exploit] # add exploiters
+    next_inds = [deepcopy(elites[1])]
+    for _ in 1:(nums[:n_n_exploit]+nums[:n_e_exploit]) # add exploiters
         push!(next_inds, mutate(rand(exploiter_elites), Fσs[1]))
     end
-    for _ in 1:nums[:n_n_explore] # add explorers
+    for _ in 1:(nums[:n_n_explore]+nums[:n_e_explore]) # add explorers
         push!(next_inds, mutate(rand(explorer_elites), Nσs[1]))
     end
+    next_inds = next_inds[1:pop.size]
+    @assert length(next_inds) == pop.size
     # set ids of next gen
     for (i, ind) in enumerate(next_inds)
         ind.id = pop.id*"_"*string(i)
