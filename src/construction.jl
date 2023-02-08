@@ -93,10 +93,15 @@ function reconstruct!(param_cache::SeedCache, nt::NoiseTable, mi::ModelInfo, see
       param_cache[seeds_and_muts] = Dict(:params => deepcopy(ancestor))
     end
   end
-  if length(elite_idxs) > 0 
+  if length(elite_idxs) > 0
     oldest_n = minimum(elite_idxs)
     if seeds_and_muts[1:oldest_n] ∈ keys(param_cache)
       _ = param_cache[seeds_and_muts[1:oldest_n]]
+    elseif oldest_n > 3
+      param_cache[seeds_and_muts[1:oldest_n]] = Dict(:params =>
+        reconstruct!(param_cache, nt, mi,
+                     seeds_and_muts[1:oldest_n],
+                     elite_idxs, rdc))
     end
   end
   return ancestor
