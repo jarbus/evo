@@ -17,7 +17,7 @@ using Logging
 
   function fitness(group::Vector{RolloutInd}, eval_gen)
     dc = decompress_group(group, prefixes)
-    models, id_map, rdc_mets = mk_mods(sc, mi, dc)
+    models, id_map, rdc_mets = mk_mods(sc, mi, nt, dc)
     gamebatch = run_batch(env, models, args, evaluation=true)
     id_batch = process_batch(gamebatch, id_map, eval_gen)
     id_batch = EvoTrade.add_metrics(id_batch, rdc_mets)
@@ -56,6 +56,7 @@ function main()
     θ, re = Flux.destructure(m)
     mi = ModelInfo(m, re)
     model_size = length(θ)
+    nt = NoiseTable(StableRNG(1), length(mi), args["mutation-rate"])
     # pass mazeenv struct or trade config dict
     env = env isa MazeEnv ? env : env_config
     global sc = SeedCache(maxsize=args["num-elites"]*3)
@@ -116,7 +117,7 @@ function main()
                       rollouts_per_ind=args["rollout-groups-per-mut"])
       eval_metrics = pmap(wp, eval_groups) do group
         dc = decompress_group(group, prefixes)
-        models, id_map, _ = mk_mods(sc, mi, dc)
+        models, id_map, _ = mk_mods(sc, mi, nt, dc)
         model_names = models |> keys |> collect
         str_name = joinpath(outdir, string(hash(model_names))*"-"*string(myid()))
         gamebatch = run_batch(env, models, args, evaluation=true, render_str=str_name)
@@ -131,7 +132,7 @@ function main()
       for (met_name, met_vec) in eval_metrics
           log_mmm!(metrics_csv, "eval_"*met_name, met_vec)
       end
-      metrics_csv["Time Per Generation"] = round(gen_end - gen_start, digits=2)
+      metrics_csv["Time_Per_Generation"] = round(gen_end - gen_start, digits=2)
       for pop in pops
         log_mmm!(metrics_csv, "fitness-$(pop.id)", fitnesses(pop))
         log_mmm!(metrics_csv, "novelty-$(pop.id)", novelties(pop))

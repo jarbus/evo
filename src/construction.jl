@@ -2,11 +2,19 @@ using StableRNGs
 using Flux
 using LRUCache
 using JLD2
+import Base: length
 
 struct ModelInfo
   sizes::Vector{Tuple}
   biases::Vector{Bool}
   re
+end
+function length(mi::ModelInfo)
+  nparams = 0
+  for s in mi.sizes
+    nparams += prod(s)
+  end
+  nparams
 end
 
 
@@ -55,18 +63,52 @@ function reconstruct!(param_cache::SeedCache, mi::ModelInfo, seeds_and_muts::Vec
   @inline @inbounds elite .+= gen_params(StableRNG(Int(seeds_and_muts[end])), mi, 2) * seeds_and_muts[end-1]
   if length(seeds_and_muts) ∈ elite_idxs
     param_cache[seeds_and_muts] = Dict(:params => deepcopy(elite))
-    oldest_n               = minimum(elite_idxs)
-    oldest_ancestor        = seeds_and_muts[1:oldest_n]
-    second_oldest_n        = minimum(filter(x->x!=oldest_n, elite_idxs))
-    second_oldest_ancestor = seeds_and_muts[1:second_oldest_n] 
-    length(oldest_ancestor) > 1 && param_cache[oldest_ancestor]
-    length(second_oldest_ancestor) > 1 && param_cache[second_oldest_ancestor]
   end
   return elite
 end
+
+function reconstruct!(param_cache::SeedCache, nt::NoiseTable, mi::ModelInfo, seeds_and_muts::Vector, elite_idxs::Set{Int}, rdc::ReconDataCollector)
+  """Reconstruction function that finds the nearest cached ancestor and
+  reconstructs all future generations. Creates a new parameter vector if
+  no ancestor is found.
+  """
+  cached_ancestor_n = 1
+  ancestor::Vector{Float32} = []
+  for n in length(seeds_and_muts):-2:3
+    if seeds_and_muts[1:n] in keys(param_cache) && 
+      haskey(param_cache[seeds_and_muts[1:n]], :params)
+      #@inline @inbounds
+      ancestor = param_cache[seeds_and_muts[1:n]][:params] |> deepcopy
+      cached_ancestor_n = n
+      break
+    end
+    rdc.num_recursions += 1
+  end
+  if cached_ancestor_n == 1
+    ancestor = gen_params(StableRNG(Int(seeds_and_muts[1])), mi, 1)
+  end
+  for n in cached_ancestor_n+2:2:length(seeds_and_muts)
+    add_noise!(nt, ancestor, Int(seeds_and_muts[n]))
+    if n ∈ elite_idxs
+      param_cache[seeds_and_muts] = Dict(:params => deepcopy(ancestor))
+    end
+  end
+  if length(elite_idxs) > 0 
+    oldest_n = minimum(elite_idxs)
+    if seeds_and_muts[1:oldest_n] ∈ keys(param_cache)
+      _ = param_cache[seeds_and_muts[1:oldest_n]]
+    end
+  end
+  return ancestor
+end
+
+
+
 reconstruct!(sc::SeedCache, mi::ModelInfo, ind::Ind, rdc::ReconDataCollector) =
   reconstruct!(sc, mi, ind.geno, ind.elite_idxs, rdc)
 
+reconstruct!(sc::SeedCache, nt::NoiseTable, mi::ModelInfo, ind::Ind, rdc::ReconDataCollector) =
+  reconstruct!(sc, nt, mi, ind.geno, ind.elite_idxs, rdc)
 
 lb(rng, l::Tuple, b::Bool) = b ? zeros(Float32, l) : glorot_normal(rng, l...)
 init_params(rng, sizes::Vector{Tuple}, biases::Vector{Bool}) = vcat([lb(rng,l,b)[:] for (l,b) in zip(sizes, biases)]...)
@@ -76,11 +118,7 @@ function gen_params(rng, lens, biases, gen)
     gen == 1 && return init_params(rng, lens, biases) 
     non_init_params(rng, lens, biases)
 end
-
-function gen_params(rng, mi::ModelInfo, gen::Int)
-    gen == 1 && return init_params(rng, mi.sizes, mi.biases) 
-    non_init_params(rng, mi.sizes, mi.biases)
-end
+gen_params(rng, mi::ModelInfo, gen::Int) = gen_params(rng, mi.sizes, mi.biases, gen)
 
 
 function ModelInfo(m::Chain, re=nothing)

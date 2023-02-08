@@ -92,6 +92,23 @@ function mk_mods(sc::SeedCache,
   models, id_map, Dict(rdc)
 end
 
+function mk_mods(sc::SeedCache, 
+                 mi::ModelInfo,
+                 nt::NoiseTable,
+                 group::Vector{Ind})
+  id_map, counts = mk_id_player_map(group)
+  rdc = ReconDataCollector()
+  # assign a player name like p[idx]_[count]
+  models = Dict{String, Chain}()
+  for ind in group, c in 1:counts[ind.id]
+    rdc.num_reconstructions += 1
+    start = time()
+    models[aid(ind.id, c)] = mi.re(reconstruct!(sc, nt, mi, ind, rdc))
+    push!(rdc.time_deltas, time() - start)
+  end
+  models, id_map, Dict(rdc)
+end
+
 
 mets_to_return = "gives takes exchange_0 
 picks_0 places_0 exchange_1 picks_1 places_1

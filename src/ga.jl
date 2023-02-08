@@ -90,6 +90,7 @@ function create_next_pop(pop::Pop, γ::Float64, num_elites::Int)
     function make_elites(order_metric, num)
         Ind.(pop.inds[sortperm(order_metric, rev=true)[1:num]])
     end
+    # NOTE: WE USE THE HARD-CODED MUT IN NT INSTEAD
     Fσs = [0.002f0] # fitness mutation rate
     Nσs = [0.002f0] # novelty mutation rate
     exploiter_elites = make_elites(fitnesses(pop), nums[:n_e_exploit])

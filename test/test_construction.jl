@@ -8,33 +8,31 @@ using StableRNGs
   n_elites = 3
   model_size = 10_000
   param_cache::SeedCache = SeedCache(maxsize=n_elites*3)
+  rdc = EvoTrade.ReconDataCollector()
   m = make_model(:large, (11, 11, 7, 10), 4, lstm=true)
   mi = ModelInfo(m)
-  pop = [rand(1.0f0:10.0f0, 1) for _ in 1:pop_size]
-  for i in 1:10
-    for p in pop
-      push!(p, 0.1)
-      push!(p, rand(0:10))
-    end
-  end
-  params1 = reconstruct(param_cache, mi, pop[1])
-  # elite_idxs = Set([0])
-  # @test reconstruct(param_cache, mi, pop[1], elite_idxs) == params1
-  # elite_idxs = Set([1]reconstruct(param_cache, mi, pop[1][1:3]))
-  # @test reconstruct(param_cache, mi, pop[1], elite_idxs) == params1
-  elite_idxs = Set([3])
-  p3 = reconstruct(param_cache, mi, pop[1][1:3])
-  @test reconstruct(param_cache, mi, pop[1], elite_idxs) == params1
-  @test param_cache[pop[1][1:3]][:params] == 
-          reconstruct(param_cache, mi, pop[1][1:3])
-  #
-  @test reconstruct(param_cache, mi, pop[1][1:3]) == p3
-  elite_idxs = Set([5])
-  @test reconstruct(param_cache, mi, pop[1], elite_idxs) == params1
-  elite_idxs = Set([0,1,3,7])
-  @test reconstruct(param_cache, mi, pop[1], elite_idxs) == params1
-  param_cache2::SeedCache = SeedCache(maxsize=n_elites*3)
-  @test reconstruct(param_cache, mi, pop[1]) == reconstruct(param_cache2, mi, pop[1])
+  ind1 = Ind("1", [1f0])
+  ind2 = Ind("2", [ind1.geno; [0.5f0]; ind1.geno])
+  ind3 = Ind("3", [ind2.geno; [0.5f0]; ind2.geno])
+  bigind = Ind("4", [1f0 for _ in 1:1001])
+
+  nt = NoiseTable(StableRNG(1), length(mi), 0.5f0)
+  params1 = reconstruct!(param_cache, nt, mi, ind1, rdc)
+  @test rdc.num_recursions == 0
+  params2 = reconstruct!(param_cache, nt, mi, ind2, rdc)
+  @test params1 != params2
+  @test rdc.num_recursions == 1
+  params3 = reconstruct!(param_cache, nt, mi, ind3, rdc)
+  @test params2 != params3
+  @test rdc.num_recursions == 4
+
+  bigind.elite_idxs = Set([length(bigind.geno)])
+  bigparams = reconstruct!(param_cache, nt, mi, bigind, rdc)
+  @test rdc.num_recursions == 504
+  bigparams = reconstruct!(param_cache, nt, mi, bigind, rdc)
+  @test rdc.num_recursions == 504
+
+
 end
 
 # @testset "test_new_gen" begin

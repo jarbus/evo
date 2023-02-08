@@ -30,6 +30,8 @@ compress_pop, compress_pops, compress_elites
 # rollout & logger
 export run_batch, mk_mods, process_batch
 export EvoTradeLogger
+# noisetable
+export NoiseTable
 
 # structs
 export Ind, Pop, BC, F, Geno, CompGeno, RolloutInd,
@@ -51,6 +53,7 @@ using Random
 using Optionals
 include("structs.jl")
 include("utils.jl")
+include("noisetable.jl")
 include("args.jl")
 include("multiproc.jl")
 include("logger.jl")

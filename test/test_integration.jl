@@ -3,7 +3,7 @@ root_dir = dirname(@__FILE__)  |> dirname |> String
   pops = [Pop(string(i), 4) for i in 1:2]
   n_elites = 2
   n_iter = 3
-  γ = 0.5
+  γ = 1.0
   rollout_group_size = 2
   rollouts_per_ind = 2
   sc = SeedCache(maxsize=10)
@@ -13,6 +13,7 @@ root_dir = dirname(@__FILE__)  |> dirname |> String
 
   expname = ["--exp-name", "test-int", "--cls-name", "test-int", "--local", "--datime", "fsdf"] # get rid of .arg
   args = parse_args(vcat(arg_vector, expname), get_arg_table())
+  args["exploration-rate"] = 1.0
   env_config = mk_env_config(args)
   env = PyTrade().Trade(env_config)
 
@@ -22,6 +23,7 @@ root_dir = dirname(@__FILE__)  |> dirname |> String
           lstm=true)
   θ, re = Flux.destructure(m)
   mi = ModelInfo(m, re)
+  nt = NoiseTable(StableRNG(1), length(mi), 0.5f0)
   prefixes = compute_prefixes([])
 
   for iter in 1:n_iter
@@ -34,8 +36,7 @@ root_dir = dirname(@__FILE__)  |> dirname |> String
     id_batches = Vector{Batch}()
     for group in groups
       dc = decompress_group(group, prefixes)
-      models, id_map, rdc_dict = mk_mods(sc, mi, dc)
-      print(rdc_dict)
+      models, id_map, rdc_dict = mk_mods(sc, mi, nt, dc)
       gamebatch = run_batch(env_config, models, args, batch_size=1)
       id_batch = process_batch(gamebatch, id_map, true)
       push!(id_batches, id_batch)
