@@ -55,6 +55,12 @@ function reconstruct!(param_cache::SeedCache, mi::ModelInfo, seeds_and_muts::Vec
   @inline @inbounds elite .+= gen_params(StableRNG(Int(seeds_and_muts[end])), mi, 2) * seeds_and_muts[end-1]
   if length(seeds_and_muts) ∈ elite_idxs
     param_cache[seeds_and_muts] = Dict(:params => deepcopy(elite))
+    oldest_n               = minimum(elite_idxs)
+    oldest_ancestor        = seeds_and_muts[1:oldest_n]
+    second_oldest_n        = minimum(filter(x->x!=oldest_n, elite_idxs))
+    second_oldest_ancestor = seeds_and_muts[1:second_oldest_n] 
+    length(oldest_ancestor) > 1 && param_cache[oldest_ancestor]
+    length(second_oldest_ancestor) > 1 && param_cache[second_oldest_ancestor]
   end
   return elite
 end
