@@ -7,8 +7,10 @@ import time
 import sys
 import asyncio
 import subprocess
+import logging as log
 from math import ceil, sqrt
 from io import BytesIO
+from collections import defaultdict
 
 import numpy as np
 import pandas as pd
@@ -38,50 +40,116 @@ def get_terminal_size():
     fcntl.ioctl(1, termios.TIOCGWINSZ, buf)
     return buf[2], buf[3]
 
+#########################
+# Read csv files in a dir
+#########################
+
+def load_csv(filename: str, futures, labels):
+    try:
+        label = os.path.basename(filename)
+        futures.append(read_csv(filename))
+        labels.append(label)
+
+        # bug: all runs will appear after reload
+        with open(runlist, "a") as f:
+            f.write(f"{label}\n")
+    except:
+        raise OSError(f"Could not read {filename}")
+
 async def read_csv(file: str):
     return pd.read_csv(file, dtype=np.float16, engine="pyarrow")
 
+# each load needs to parse run data and labels
+def getfile_csv(f: str):
+    metrics_file = os.path.join(os.path.join("", f),"metrics.csv")
+    results_file = os.path.join(os.path.join("", f),"results.txt")
+    if os.path.exists(metrics_file):
+        return metrics_file
+    elif os.path.exists(results_file): 
+        return results_file
+    else:
+        return False
+
+
+##############
+# Read log files
+##############
+float_re = r"([-+]?[0-9]*\.?[0-9]+)"
+mmms_re = re.compile(f".* (.+): \|{float_re}, {float_re} ± {float_re}, {float_re}\|")
+single_re = re.compile(f".* (.+): \|{float_re}\|")
+
+def match(regex, line):
+    m = re.match(regex, line)
+    if m and all(m.groups()):
+        return m
+    return False
+
+STATS = "_min _mean _std _max".split()
+def add_metric(metrics: defaultdict, line):
+    """collects all metrics in line and adds them
+    to metrics dict"""
+    if m := match(mmms_re, line):
+        met, *vals = m.groups()
+        assert len(vals) == len(STATS)
+        for s, v  in zip(STATS, vals):
+            metrics[met+s].append(float(v))
+    elif m := match(single_re, line):
+        met, vals = m.groups()
+        metrics[met].append(float(vals))
+
+async def read_log(file: str):
+    """Reads log data into metrics"""
+    metrics = defaultdict(list)
+    with open(file) as f:
+        for line in f:
+            add_metric(metrics, line)
+    return metrics
+
+def load_log(filename, futures, labels):
+    """creates an async req to read log data
+    and adds the log name to the list of labels"""
+    label = os.path.basename(filename)
+    if label.endswith(".log"):
+        label = label[:-4]
+    futures.append(read_log(filename))
+    labels.append(label)
+
+    with open(runlist, "a") as f:
+        f.write(f"{label}\n")
+
+def getfile_log(filename: str):
+    """returns filename if a valid logfile, else False"""
+    if not filename.endswith(".log"):
+        return False
+    metrics_file = filename
+    if os.path.exists(metrics_file):
+        return metrics_file
+
 
 async def load():
+    log.debug("loading data")
     global runs, keys, matches
     with open(runlist, "w") as f:
         f.write("")
     runs = {}
     keys = None
-    matches = []
-    labels = []
-    futures = []
+    matches, labels, futures = [], [], []
     read_file = False
-    for f in sys.argv[1:]:
-        metrics_file = os.path.join(os.path.join("", f),"metrics.csv")
-        results_file = os.path.join(os.path.join("", f),"results.txt")
-        if os.path.exists(metrics_file):
-            file = metrics_file
-        elif os.path.exists(results_file): 
-            file = results_file
-        else:
-            print(f"WARNING: {metrics_file} and {results_file} not found")
-            continue
-        try:
-            label = os.path.basename(f)
-            futures.append(read_csv(file))
-            labels.append(label)
-
-            # bug: all runs will appear after reload
-            with open(runlist, "a") as f:
-                f.write(f"{label}\n")
+    for arg in sys.argv[1:]:
+        if filename := getfile_csv(arg):
             read_file = True
-        except:
-            raise OSError(f"Could not read {file}")
+            load_csv(filename, futures, labels)
+        elif filename := getfile_log(arg):
+            read_file = True
+            load_log(filename, futures, labels)
     if not read_file:
-        raise OSError(f"Could not read any file")
+        print(f"ERROR: could not read {sys.argv[1:]}")
     run_data = await asyncio.gather(*futures)
     assert len(labels) == len(run_data)
-
     runs = dict(zip(labels, run_data))
     keys = list(set().union(*[v.keys() for v in runs.values()]))
 
-# KITTY Graphics
+# kitty graphics
 def serialize_gr_command(**cmd):
     payload = cmd.pop('payload', None)
     cmd = ','.join(f'{k}={v}' for k, v in cmd.items())
@@ -229,9 +297,6 @@ def update_and_draw_grid():
     if len(matches) == 0:
         return
     os.system("clear")
-    # move cursor to bottom of screen
-    #for i in range(50):
-    #    print()
     plt.clf()
     grid = make_grid([metric for metric in matches])
     if grid is not None:
@@ -288,7 +353,7 @@ async def main():
             global text, old_text
             time.sleep(0.1)
             old_text = text
-            text = await asyncio.wait_for(session.prompt_async('> ', vi_mode=True,  default='.*'), timeout=300)
+            text = await asyncio.wait_for(session.prompt_async('> ', vi_mode=True,  default='.*'), timeout=30)
         except KeyboardInterrupt:  # Ctrl-C
             continue
         except EOFError:           # Ctrl-D
