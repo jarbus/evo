@@ -10,6 +10,23 @@ function find_last_matching_idx(e1::Ind, e2::Ind)
     return min(length(e1.geno), length(e2.geno))
 end
 
+function compute_idx_metrics(elite_idxs::Dict{Geno, EliteIdxs})
+  """Compute range, mean, std, and # of unique elite idxs
+  """
+  # get set of all nodes in genealogical tree
+  ancestor_set = Set()
+  for (geno, idxs) in elite_idxs
+    for idx in idxs
+      push!(ancestor_set, geno[1:idx])
+    end
+  end
+  num_nodes = length(ancestor_set)
+  # compute metrics
+  ranges = [maximum(idxs) - minimum(idxs) for (_, idxs) in elite_idxs]
+  # num indexes per agent
+  num_idxs = [length(idxs) for (_, idxs) in elite_idxs]
+  (num_nodes=num_nodes, ranges=ranges, num_idxs=num_idxs)
+end
 
 function compute_elite_idxs!(elites::Vector{Ind})
   """
@@ -26,11 +43,17 @@ function compute_elite_idxs!(elites::Vector{Ind})
       elite_idxs[e1.geno] = idxs
       e1.elite_idxs = idxs
   end
+  mets = compute_idx_metrics(elite_idxs)
+  @info "idx_num_unique: |$(mets.num_nodes)|"
+  @info "idx_ranges: $(mmms(mets.ranges))"
+  @info "idx_num_idxs: $(mmms(mets.num_idxs))"
   elite_idxs
 end
 
 
 function get_elite_idxs(pop::Pop)
+    """Apply indicies of parent to each individual 
+    """
     eidxs = compute_elite_idxs!(pop.elites)
     pop_idxs::Vector{EliteIdxs} = []
     for ind in pop.inds

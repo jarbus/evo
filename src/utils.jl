@@ -185,3 +185,8 @@ function compute_compression_data(compops::Vector{Vector{RolloutInd}}, prefixes)
   end
   (compressed=bytes_compressed, uncompressed=bytes_uncompressed)
 end
+
+function mmms(vec::Vector)
+  length(vec) == 0 && return "empty"
+  "|$(minimum(vec)), $(mean(vec)) ± $(std(vec)), $(maximum(vec))|"
+end
