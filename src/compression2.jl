@@ -38,7 +38,10 @@ function compute_elite_idxs!(elites::Vector{Ind})
   for e1 in elites
       idxs = Set{Int}()
       for e2 in elites
-          push!(idxs, find_last_matching_idx(e1, e2))
+          last_idx = find_last_matching_idx(e1, e2)
+          if last_idx > 0
+              push!(idxs, last_idx)
+          end
       end
       elite_idxs[e1.geno] = idxs
       e1.elite_idxs = idxs
