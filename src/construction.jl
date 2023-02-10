@@ -73,10 +73,6 @@ function reconstruct!(param_cache::SeedCache, nt::NoiseTable, mi::ModelInfo, see
   no ancestor is found.
   """
   # if we already have node in tree, just perform an access
-  if length(elite_idxs) == 0 && seeds_and_muts in keys(param_cache)
-    param_cache[seeds_and_muts][:params]
-    return
-  end
   cached_ancestor_n = 1
   ancestor::Vector{Float32} = []
   for n in length(seeds_and_muts):-2:3
@@ -94,11 +90,9 @@ function reconstruct!(param_cache::SeedCache, nt::NoiseTable, mi::ModelInfo, see
   end
   for n in cached_ancestor_n+2:2:length(seeds_and_muts)
     add_noise!(nt, ancestor, Int(seeds_and_muts[n]))
-  end
-  # if we just reconstructed a node, add it to cache
-  if length(elite_idxs) == 0
-    param_cache[seeds_and_muts] = Dict(:params => deepcopy(ancestor))
-    return param_cache[seeds_and_muts][:params]
+    if n ∈ elite_idxs
+      param_cache[seeds_and_muts[1:n]]= Dict(:params=>deepcopy(ancestor))
+    end
   end
   # otherwise, we are reconstructing leaf. ensure all ancestors
   # nodes are still in cache, then return ancestor. Let's do this
@@ -108,8 +102,12 @@ function reconstruct!(param_cache::SeedCache, nt::NoiseTable, mi::ModelInfo, see
   # the lower parts of the tree change more than the top, this should
   # not happen to might.
   for eidx in sort(collect(elite_idxs))
-    reconstruct!(param_cache, nt, mi,
-                 seeds_and_muts[1:eidx], Set{Int}(), rdc)
+    if seeds_and_muts[1:eidx] in keys(param_cache)
+      param_cache[seeds_and_muts[1:eidx]][:params]
+    else
+      param_cache[seeds_and_muts[1:eidx]]= Dict(:params=>reconstruct!(param_cache, nt, mi,
+                                seeds_and_muts[1:eidx], Set{Int}(), rdc))
+    end
   end
   return ancestor
 end

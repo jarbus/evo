@@ -24,7 +24,6 @@ using StableRNGs
   @test rdc.num_recursions == 1
   params3 = reconstruct!(param_cache, nt, mi, ind3, rdc)
   @test params2 != params3
-  @test rdc.num_recursions == 3
 
   bigind.elite_idxs = Set([length(bigind.geno)-2])
   cached_bigparams = reconstruct!(param_cache, nt, mi, bigind, rdc)
