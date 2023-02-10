@@ -88,8 +88,8 @@ function main()
     rollout_pops = compress_pops(pops, prefixes)
 
     bytes = compute_compression_data(rollout_pops, prefixes)
-    @info "bytes.compressed: $(bytes.compressed)"
-    @info "bytes.uncompressed: $(bytes.uncompressed)"
+    @info "bytes.compressed: |$(bytes.compressed)|"
+    @info "bytes.uncompressed: |$(bytes.uncompressed)|"
     @info "creating rollout groups"
     groups = group_fn(rollout_pops...,
                       rollout_group_size=args["rollout-group-size"],
