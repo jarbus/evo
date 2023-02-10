@@ -72,6 +72,11 @@ function reconstruct!(param_cache::SeedCache, nt::NoiseTable, mi::ModelInfo, see
   reconstructs all future generations. Creates a new parameter vector if
   no ancestor is found.
   """
+  # if we already have node in tree, just perform an access
+  if length(elite_idxs) == 0 && seeds_and_muts in keys(param_cache)
+    param_cache[seeds_and_muts][:params]
+    return
+  end
   cached_ancestor_n = 1
   ancestor::Vector{Float32} = []
   for n in length(seeds_and_muts):-2:3
@@ -89,20 +94,22 @@ function reconstruct!(param_cache::SeedCache, nt::NoiseTable, mi::ModelInfo, see
   end
   for n in cached_ancestor_n+2:2:length(seeds_and_muts)
     add_noise!(nt, ancestor, Int(seeds_and_muts[n]))
-    if n ∈ elite_idxs
-      param_cache[seeds_and_muts] = Dict(:params => deepcopy(ancestor))
-    end
   end
-  if length(elite_idxs) > 0
-    oldest_n = minimum(elite_idxs)
-    if seeds_and_muts[1:oldest_n] ∈ keys(param_cache)
-      _ = param_cache[seeds_and_muts[1:oldest_n]]
-    elseif oldest_n > 3
-      param_cache[seeds_and_muts[1:oldest_n]] = Dict(:params =>
-        reconstruct!(param_cache, nt, mi,
-                     seeds_and_muts[1:oldest_n],
-                     elite_idxs, rdc))
-    end
+  # if we just reconstructed a node, add it to cache
+  if length(elite_idxs) == 0
+    param_cache[seeds_and_muts] = Dict(:params => deepcopy(ancestor))
+    return param_cache[seeds_and_muts][:params]
+  end
+  # otherwise, we are reconstructing leaf. ensure all ancestors
+  # nodes are still in cache, then return ancestor. Let's do this
+  # in sorted order, so each child node will have a cache of a parent.
+  # The downside is that the parent might boot out a child from the
+  # cache, forcing us to reconstruct the child again. Assuming that 
+  # the lower parts of the tree change more than the top, this should
+  # not happen to might.
+  for eidx in sort(collect(elite_idxs))
+    reconstruct!(param_cache, nt, mi,
+                 seeds_and_muts[1:eidx], Set{Int}(), rdc)
   end
   return ancestor
 end

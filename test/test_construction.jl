@@ -24,14 +24,22 @@ using StableRNGs
   @test rdc.num_recursions == 1
   params3 = reconstruct!(param_cache, nt, mi, ind3, rdc)
   @test params2 != params3
-  @test rdc.num_recursions == 4
+  @test rdc.num_recursions == 3
 
-  bigind.elite_idxs = Set([length(bigind.geno)])
+  bigind.elite_idxs = Set([length(bigind.geno)-2])
+  cached_bigparams = reconstruct!(param_cache, nt, mi, bigind, rdc)
+  # @test rdc.num_recursions == 504
+  old_recursions = rdc.num_recursions
   bigparams = reconstruct!(param_cache, nt, mi, bigind, rdc)
-  @test rdc.num_recursions == 504
-  bigparams = reconstruct!(param_cache, nt, mi, bigind, rdc)
-  @test rdc.num_recursions == 504
+  @test rdc.num_recursions - old_recursions == 1
+  @test cached_bigparams == bigparams
+  @test bigind.geno[1:201] ∉ keys(param_cache)
 
+  bigind.elite_idxs = Set([length(bigind.geno)-2, 101, 201])
+  bigparams = reconstruct!(param_cache, nt, mi, bigind, rdc)
+  @test bigind.geno[1:101] ∈ keys(param_cache)
+  @test bigind.geno[1:201] ∈ keys(param_cache)
+  @test bigind.geno[1:length(bigind.geno)-2] ∈ keys(param_cache)
 
 end
 
