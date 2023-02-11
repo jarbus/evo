@@ -67,7 +67,7 @@ function reconstruct!(param_cache::SeedCache, mi::ModelInfo, seeds_and_muts::Vec
   return elite
 end
 
-function reconstruct!(param_cache::SeedCache, nt::NoiseTable, mi::ModelInfo, seeds_and_muts::Vector, elite_idxs::Set{Int}, rdc::ReconDataCollector)
+function reconstruct!(param_cache::SeedCache, nt::NoiseTable, mi::ModelInfo, seeds_and_muts::Vector{Float32}, elite_idxs::Set{Int}, rdc::ReconDataCollector)
   """Reconstruction function that finds the nearest cached ancestor and
   reconstructs all future generations. Creates a new parameter vector if
   no ancestor is found.
@@ -89,7 +89,7 @@ function reconstruct!(param_cache::SeedCache, nt::NoiseTable, mi::ModelInfo, see
     ancestor = gen_params(StableRNG(Int(seeds_and_muts[1])), mi, 1)
   end
   for n in cached_ancestor_n+2:2:length(seeds_and_muts)
-    add_noise!(nt, ancestor, Int(seeds_and_muts[n]))
+    add_noise!(nt, ancestor, UInt32(seeds_and_muts[n]))
     if n ∈ elite_idxs
       param_cache[seeds_and_muts[1:n]]= Dict(:params=>deepcopy(ancestor))
     end
