@@ -137,7 +137,7 @@ function compress_pops(pops::Vector{Pop}, prefixes)
   end
   comp_pops
 end
-function compress_pop(pop::Pop, prefixes::Prefixes)
+function compress_pop(pop::Pop, prefixes)
   pop_idxs = get_elite_idxs(pop)
   @assert length(pop_idxs) == length(pop.inds) == pop.size
   # we check prefixes in order of decreasing length in order
@@ -148,7 +148,7 @@ function compress_pop(pop::Pop, prefixes::Prefixes)
   for (i,ind) in enumerate(pop.inds)
     found_prefix = false
     for (len, id, prefix) in prefixes_by_len
-      if ind.geno[len] == prefix[end] && length(ind.geno) >= len && ind.geno[1:len] == prefix
+      if length(ind.geno) >= len && ind.geno[len] == prefix[end] && ind.geno[1:len] == prefix
         geno = vcat(id, ind.geno[len+1:end])
         found_prefix = true
         break
