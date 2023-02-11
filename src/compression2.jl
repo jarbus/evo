@@ -53,19 +53,27 @@ function compute_elite_idxs!(elites::Vector{Ind})
   elite_idxs
 end
 
+function fast_haskey(eidxs_dict::Dict{Geno, EliteIdxs}, geno::Geno)
+  for eidx_geno in keys(eidxs_dict)
+    if geno[end] == eidx_geno[end]
+      return haskey(eidxs_dict, geno)
+    end
+  end
+  false
+end
 
 function get_elite_idxs(pop::Pop)
     """Apply indicies of parent to each individual 
     """
-    eidxs = compute_elite_idxs!(pop.elites)
-    pop_idxs::Vector{EliteIdxs} = []
-    for ind in pop.inds
-      if haskey(eidxs, ind.geno)
-        push!(pop_idxs, eidxs[ind.geno])
-      elseif haskey(eidxs, elite(ind.geno))
-        push!(pop_idxs, eidxs[elite(ind.geno)])
+    eidxs::Dict{Geno, EliteIdxs} = compute_elite_idxs!(pop.elites)
+    pop_idxs = Vector{EliteIdxs}(undef, length(pop.inds))
+    for (i, ind) in enumerate(pop.inds)
+      if fast_haskey(eidxs, ind.geno)
+        @inbounds pop_idxs[i] = eidxs[ind.geno]
+      elseif fast_haskey(eidxs, elite(ind.geno))
+        @inbounds pop_idxs[i] = eidxs[elite(ind.geno)]
       else
-        push!(pop_idxs, EliteIdxs())
+        @inbounds pop_idxs[i] = EliteIdxs()
       end
     end
     pop_idxs
@@ -129,20 +137,25 @@ function compress_pops(pops::Vector{Pop}, prefixes)
   end
   comp_pops
 end
-function compress_pop(pop::Pop, prefixes)
+function compress_pop(pop::Pop, prefixes::Prefixes)
   pop_idxs = get_elite_idxs(pop)
   @assert length(pop_idxs) == length(pop.inds) == pop.size
   # we check prefixes in order of decreasing length in order
   # to maximize the number of characters we can replace
   prefixes_by_len = copy(sort([(length(v), k, v) for (k, v) in prefixes], rev=true))
   comp_pop::Vector{RolloutInd} = []
+  geno = Geno()
   for (i,ind) in enumerate(pop.inds)
-    geno::CompGeno = deepcopy(ind.geno)
+    found_prefix = false
     for (len, id, prefix) in prefixes_by_len
-      if length(geno) >= len && geno[1:len] == prefix
-        geno = vcat(id, ind.geno[len+1:end])|>deepcopy
+      if ind.geno[len] == prefix[end] && length(ind.geno) >= len && ind.geno[1:len] == prefix
+        geno = vcat(id, ind.geno[len+1:end])
+        found_prefix = true
         break
       end
+    end
+    if !found_prefix
+      geno = deepcopy(ind.geno)
     end
     push!(comp_pop, RolloutInd(ind.id, geno, pop_idxs[i]))
   end

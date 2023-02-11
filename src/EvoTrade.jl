@@ -64,7 +64,7 @@ using .Trade
 include("maze.jl")
 using .Maze
 include("ga.jl")
-include("compression.jl")
+# include("compression.jl")
 include("compression2.jl")
 include("rollout.jl")
 include("visual.jl")
