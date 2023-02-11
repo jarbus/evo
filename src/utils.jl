@@ -167,7 +167,6 @@ function compute_compression_data(compop::Vector{RolloutInd}, prefixes)
   for ro_ind in compop
     if typeof(ro_ind.geno[1]) == String
       prefix_seed = prefixes[ro_ind.geno[1]]
-      geno = [prefix_seed; ro_ind.geno[2:end]] |> v32
       bytes_compressed += sizeof(prefix_seed) - sizeof(ro_ind.geno[1])
       bytes_uncompressed += sizeof(ro_ind.geno[2:end])
     else
