@@ -81,7 +81,7 @@ function main()
   for g in start_gen:args["num-gens"]
     global prefixes
     @info "starting generation $g"
-    eval_gen = true#g % 2 == 1
+    eval_gen = g % 20 == 1
     @info "compressing pop"
     # save start time to variable start
     gen_start = time()
@@ -108,6 +108,7 @@ function main()
     if eval_gen # collect data only on evaluation generations
       @info "log start"
       metrics_csv = Dict()
+      metrics_csv["Time_Per_Generation"] = round(gen_end - gen_start, digits=2)
       outdir="outs/$clsname/$expname/"*string(g,pad=3,base=10)
       run(`mkdir -p $outdir`)
 
