@@ -98,11 +98,12 @@ function main()
     id_batches = pmap(wp, groups) do g
         fitness(g, eval_gen)
     end
-    gen_end = time()
     @info "updating population"
     update_pops!(pops, id_batches, args["archive-prob"])
     @info "Creating next pop"
     next_pops = create_next_pop(pops, γ, args["num-elites"])
+    gen_end = time()
+    @info "Time_Per_Generation: |$(round(gen_end - gen_start, digits=2))|"
 
     if eval_gen # collect data only on evaluation generations
       @info "log start"
@@ -132,7 +133,6 @@ function main()
       for (met_name, met_vec) in eval_metrics
           log_mmm!(metrics_csv, "eval_"*met_name, met_vec)
       end
-      metrics_csv["Time_Per_Generation"] = round(gen_end - gen_start, digits=2)
       for pop in pops
         log_mmm!(metrics_csv, "fitness-$(pop.id)", fitnesses(pop))
         log_mmm!(metrics_csv, "novelty-$(pop.id)", novelties(pop))
