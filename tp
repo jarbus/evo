@@ -340,6 +340,11 @@ class RegexCompleter(Completer):
     def get_completions(self, document, complete_event):
         matches = get_matches(document.text)
         for match in matches:
+            if any(match.endswith(s) for s in "_min _max _std".split()):
+                continue
+            if match.endswith("_mean"):
+                yield Completion(match[:-5], start_position=-len(document.text))
+                continue
             yield Completion(match, start_position=-len(document.text))
 
 
