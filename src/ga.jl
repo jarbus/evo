@@ -272,6 +272,9 @@ function average_walks!(pop::Pop)
   """Compute the average walk for each ind in pop"""
   for ind in pop.inds
     avg_walk::Vector{Tuple{Float32, Float32}} = []
+    if length(ind.walks) > 50
+        ind.walks = ind.walks[rand(1:length(ind.walks), 50)]
+    end
     for step in zip(ind.walks...)
         avg_step = mean.(zip(step...)) .|> Float32
         push!(avg_walk, tuple(avg_step...))
