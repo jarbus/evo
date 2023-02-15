@@ -150,11 +150,14 @@ function all_v_best(pop1::Vector{RolloutInd},
   # Do all v best where all is from pop1, then all_v_best 
   # where all is from pop2
   for (all_pop, best_pop) in [(pop1, pop2), (pop2, pop1)]
+    # rename all best inds so they don't gather tons more
+    # evaluation data than the other inds for all_v_best
+    best_inds = [RolloutInd(ind.id*"_best", ind.geno, ind.elite_idxs) for ind in best_pop[1:n_elites]]
+
     for ind_all in all_pop
       # The first agents in each group are the elites
-      for i in 1:n_elites
+      for ind_best in best_inds 
         group_idx += 1
-        ind_best = best_pop[i]
         groups[group_idx] = [ind_all, ind_best]
       end
     end
