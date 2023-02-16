@@ -103,6 +103,7 @@ function main()
     @info "Creating next pop"
     next_pops = create_next_pop(pops, γ, args["num-elites"])
     gen_end = time()
+    @info "Genome_Lengths: $(mmms([ceil(Int, length(ind.geno)/2) for pop in pops for ind in pop.inds]))"
     @info "Time_Per_Generation: |$(round(gen_end - gen_start, digits=2))|"
 
     if eval_gen # collect data only on evaluation generations

@@ -5,7 +5,8 @@ export get_arg_table, parse_args, make_procs, make_model
 # Utils
 export mk_env_config, ts, log_mmm!, aggregate_metrics, 
 aggregate_rollouts!, update_df_and_write_metrics,
-average_bc, average_walk, max_bc, v32, mk_id_player_map
+average_bc, average_walk, max_bc, v32, mk_id_player_map,
+mmms
 # maze
 export maze_from_file, step!, reset!, sample_batch, 
 get_obs, MazeEnv, print_maze
