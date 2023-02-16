@@ -25,46 +25,12 @@ end
 
 SeedCache = LRU{Vector{Float32},Dict}
 
-function cache_elites!(param_cache::SeedCache, mi::ModelInfo, elites::Vector{<:AbstractDict})
-  #for elite in elites
-  #  elite[:params] = reconstruct(param_cache, mi, elite[:seeds])
-  #end
-  for elite in elites
-    try
-      param_cache[elite[:seeds]] = elite
-    catch
-      @assert elite[:seeds] in keys(param_cache)
-      @assert length(param_cache) <= param_cache.maxsize
-    end
+function base_reconstruct(param_cache::SeedCache, nt::NoiseTable, mi::ModelInfo, seeds_and_muts::Vector{Float32}, elite_idxs::Set{Int}, rdc::ReconDataCollector)
+  ancestor = gen_params(StableRNG(Int(seeds_and_muts[1])), mi, 1)
+  for n in 3:2:length(seeds_and_muts)
+    add_noise!(nt, ancestor, UInt32(seeds_and_muts[n]))
   end
-end
-
-function reconstruct!(param_cache::SeedCache, mi::ModelInfo, seeds_and_muts::Vector, elite_idxs::Set{Int}, rdc::ReconDataCollector)
-  """Reconstruction function that finds the nearest cached ancestor and
-  reconstructs all future generations. Creates a new parameter vector if
-  no ancestor is found.
-  """
-  @assert isodd(length(seeds_and_muts))
-  if length(seeds_and_muts) == 1
-    elite = gen_params(StableRNG(Int(seeds_and_muts[1])), mi, 1)
-    return elite
-  # elite that was directly copied over 
-  elseif seeds_and_muts in keys(param_cache) && haskey(param_cache[seeds_and_muts], :params)
-    return deepcopy(param_cache[seeds_and_muts][:params])
-  # Get cached parent
-  elseif seeds_and_muts[1:end-2] in keys(param_cache) && haskey(param_cache[seeds_and_muts[1:end-2]], :params)
-    @inline @inbounds elite = param_cache[seeds_and_muts[1:end-2]][:params] |> deepcopy
-  # Recurse if not cached to get parent
-  else
-    rdc.num_recursions += 1
-    @inline @inbounds elite = reconstruct!(param_cache, mi, seeds_and_muts[1:end-2], elite_idxs, rdc)
-  end
-  # apply mutation to parent
-  @inline @inbounds elite .+= gen_params(StableRNG(Int(seeds_and_muts[end])), mi, 2) * seeds_and_muts[end-1]
-  if length(seeds_and_muts) ∈ elite_idxs
-    param_cache[seeds_and_muts] = Dict(:params => deepcopy(elite))
-  end
-  return elite
+  ancestor
 end
 
 function reconstruct!(param_cache::SeedCache, nt::NoiseTable, mi::ModelInfo, seeds_and_muts::Vector{Float32}, elite_idxs::Set{Int}, rdc::ReconDataCollector)
@@ -105,8 +71,9 @@ function reconstruct!(param_cache::SeedCache, nt::NoiseTable, mi::ModelInfo, see
     if seeds_and_muts[1:eidx] in keys(param_cache)
       param_cache[seeds_and_muts[1:eidx]][:params]
     else
-      param_cache[seeds_and_muts[1:eidx]]= Dict(:params=>reconstruct!(param_cache, nt, mi,
-                                seeds_and_muts[1:eidx], Set{Int}(), rdc))
+      param_cache[seeds_and_muts[1:eidx]]= Dict(
+           :params=>reconstruct!(param_cache, nt, mi,
+              seeds_and_muts[1:eidx], Set{Int}(), rdc))
     end
   end
   return ancestor
@@ -114,9 +81,8 @@ end
 
 
 
-reconstruct!(sc::SeedCache, mi::ModelInfo, ind::Ind, rdc::ReconDataCollector) =
-  reconstruct!(sc, mi, ind.geno, ind.elite_idxs, rdc)
-
+base_reconstruct(sc::SeedCache, nt::NoiseTable, mi::ModelInfo, ind::Ind, rdc::ReconDataCollector) =
+  base_reconstruct(sc, nt, mi, ind.geno, ind.elite_idxs, rdc)
 reconstruct!(sc::SeedCache, nt::NoiseTable, mi::ModelInfo, ind::Ind, rdc::ReconDataCollector) =
   reconstruct!(sc, nt, mi, ind.geno, ind.elite_idxs, rdc)
 
@@ -126,6 +92,7 @@ non_init_params(rng, sizes::Vector{Tuple}, biases::Vector{Bool}) =
   vcat(map(x->randn(rng, x...)[:], sizes)...)
 function gen_params(rng, lens, biases, gen)
     gen == 1 && return init_params(rng, lens, biases) 
+    @assert false
     non_init_params(rng, lens, biases)
 end
 gen_params(rng, mi::ModelInfo, gen::Int) = gen_params(rng, mi.sizes, mi.biases, gen)

@@ -95,15 +95,16 @@ end
 function mk_mods(sc::SeedCache, 
                  mi::ModelInfo,
                  nt::NoiseTable,
-                 group::Vector{Ind})
+                 group::Vector{Ind};no_cache::Bool=false)
   id_map, counts = mk_id_player_map(group)
   rdc = ReconDataCollector()
   # assign a player name like p[idx]_[count]
   models = Dict{String, Chain}()
+  recon_fn = no_cache ? base_reconstruct : reconstruct!
   for ind in group, c in 1:counts[ind.id]
     rdc.num_reconstructions += 1
     start = time()
-    models[aid(ind.id, c)] = mi.re(reconstruct!(sc, nt, mi, ind, rdc))
+    models[aid(ind.id, c)] = mi.re(recon_fn(sc, nt, mi, ind, rdc))
     push!(rdc.time_deltas, time() - start)
   end
   models, id_map, Dict(rdc)
