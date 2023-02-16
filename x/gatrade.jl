@@ -151,10 +151,12 @@ function main()
       # plot_bcs("$outdir/bcs", pops, args["num-elites"])
 
 
-      global prefixes
-      @info "computing prefixes"
-      prefixes = compute_prefixes(pops)
-      @everywhere prefixes = $prefixes
+      if !args["no-compression"]
+        global prefixes
+        @info "computing prefixes"
+        prefixes = compute_prefixes(pops)
+        @everywhere prefixes = $prefixes
+      end
 
       @info "Saving checkpoint and seed cache"
       isfile(check_name) && run(`mv $check_name $check_name.backup`)
