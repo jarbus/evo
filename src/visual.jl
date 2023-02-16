@@ -3,9 +3,10 @@ function prep_grid(::MazeEnv, grid::AbstractArray{<:Real})
 end
 
 function prep_grid(::Dict, grid::AbstractArray{<:Real})
-    food_1 = grid[:,:,1,end]
-    food_2 = grid[:,:,2,end] * 4
-    food_mat = food_1 .+ food_2
+    food_mat = deepcopy(grid[:,:,1,end])
+    for i in 2:size(grid, 3)
+      food_mat .+= (grid[:,:,i, end] .* 4 .* i)
+    end
     food_mat *= 100
     food_mat'
 end
