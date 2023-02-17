@@ -13,7 +13,7 @@ parser = argparse.ArgumentParser(description="Convert serve file to gif")
 parser.add_argument("file", type=str)
 args = parser.parse_args()
 
-player_expr = r"(.*): \((\d*), (\d*)\) \[(.*), (.*)\] (.*)$"
+player_expr = r"(.*): \((\d*), (\d*)\) \[[(\s*),\s]*(.*)\] (.*)$"
 exchange_expr = r"Exchange: (.*) gave (\S*) of food (\d) to (.*)"
 total_exchange_expr = r"Total exchanged.*: \[(.*), (.*)\]"
 food_expr = r"food(\d):"
@@ -148,7 +148,8 @@ for i in range(num_steps):
     grid = step.food_grid
     for line in lines[step_slices[i]]:
         if m := re.match(player_expr, line):
-            player, x, y, *ft, done = m.groups()
+            player, x, y, ft, done = m.groups()
+            ft = ft.split(", ")
             p = Player(player, (int(x), int(y)), tuple(float(f) for f in ft), done == "True")
             step.players.append(p)
 
