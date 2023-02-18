@@ -10,31 +10,18 @@ function find_last_matching_idx(e1::Ind, e2::Ind)
     return min(length(e1.geno), length(e2.geno))
 end
 
-function compute_idx_metrics(elite_idxs::Dict{Geno, EliteIdxs})
-  """Compute range, mean, std, and # of unique elite idxs
-  """
-  # get set of all nodes in genealogical tree
-  ancestor_set = Set()
-  for (geno, idxs) in elite_idxs
-    for idx in idxs
-      push!(ancestor_set, geno[1:idx])
-    end
-  end
-  num_nodes = length(ancestor_set)
-  # compute metrics
-  ranges = [maximum(idxs) - minimum(idxs) for (_, idxs) in elite_idxs]
-  # num indexes per agent
-  num_idxs = [length(idxs) for (_, idxs) in elite_idxs]
-  (num_nodes=num_nodes, ranges=ranges, num_idxs=num_idxs)
-end
+
+suffix(geno::Geno) = length(geno) > 100 ? @view(geno[end-100:end]) : geno
 
 function compute_elite_idxs!(elites::Vector{Ind})
   """
   For each elite seed, compute all indexes i where elite_seed[1:i]
   is another elite. This can be used for caching results of 
-  reconstructions for other elites
+  reconstructions for other elites.
+  We also compute and log statistics of the branch ancestors
   """
   elite_idxs = Dict{Geno, EliteIdxs}()
+  ancestor_set = Set()
   for e1 in elites
       idxs = Set{Int}()
       for e2 in elites
@@ -43,23 +30,23 @@ function compute_elite_idxs!(elites::Vector{Ind})
               push!(idxs, last_idx)
           end
       end
-      elite_idxs[e1.geno] = idxs
+      elite_idxs[suffix(e1.geno)] = idxs
       e1.elite_idxs = idxs
+      # for computing idx statistics
+      for idx in idxs
+        push!(ancestor_set, e1.geno[1:idx])
+      end
   end
-  mets = compute_idx_metrics(elite_idxs)
-  @info "idx_num_unique: |$(mets.num_nodes)|"
-  @info "idx_ranges: $(mmms(mets.ranges))"
-  @info "idx_num_idxs: $(mmms(mets.num_idxs))"
-  elite_idxs
-end
 
-function fast_haskey(eidxs_dict::Dict{Geno, EliteIdxs}, geno::Geno)
-  for eidx_geno in keys(eidxs_dict)
-    if geno[end] == eidx_geno[end]
-      return haskey(eidxs_dict, geno)
-    end
-  end
-  false
+  num_nodes = length(ancestor_set)
+  # compute metrics
+  ranges = [maximum(idxs) - minimum(idxs) for (_, idxs) in elite_idxs]
+  # num indexes per agent
+  num_idxs = [length(idxs) for (_, idxs) in elite_idxs]
+  @info "idx_num_unique: |$(num_nodes)|"
+  @info "idx_ranges: $(mmms(ranges))"
+  @info "idx_num_idxs: $(mmms(num_idxs))"
+  elite_idxs
 end
 
 function get_elite_idxs(pop::Pop)
@@ -68,10 +55,10 @@ function get_elite_idxs(pop::Pop)
     eidxs::Dict{Geno, EliteIdxs} = compute_elite_idxs!(pop.elites)
     pop_idxs = Vector{EliteIdxs}(undef, length(pop.inds))
     for (i, ind) in enumerate(pop.inds)
-      if fast_haskey(eidxs, ind.geno)
-        @inbounds pop_idxs[i] = eidxs[ind.geno]
-      elseif fast_haskey(eidxs, elite(ind.geno))
-        @inbounds pop_idxs[i] = eidxs[elite(ind.geno)]
+      if haskey(eidxs, suffix(ind.geno))
+        @inbounds pop_idxs[i] = eidxs[suffix(ind.geno)]
+      elseif haskey(eidxs, suffix(elite(ind.geno)))
+        @inbounds pop_idxs[i] = eidxs[suffix(elite(ind.geno))]
       else
         @inbounds pop_idxs[i] = EliteIdxs()
       end
@@ -149,7 +136,7 @@ function compress_pop(pop::Pop, prefixes)
     found_prefix = false
     for (len, id, prefix) in prefixes_by_len
       if length(ind.geno) >= len && ind.geno[len] == prefix[end] && ind.geno[1:len] == prefix
-        geno = vcat(id, ind.geno[len+1:end])
+        geno = vcat(id, @view(ind.geno[len+1:end]))
         found_prefix = true
         break
       end
