@@ -12,6 +12,15 @@ end
 
 
 suffix(geno::Geno) = length(geno) > 100 ? @view(geno[end-100:end]) : geno
+function suffix_elite(geno::Geno) 
+  if length(geno) > 102 
+    @view(geno[end-102:end-2])
+  elseif length(geno) > 2
+    @view(geno[1:end-2])
+  else
+    geno
+  end
+end
 
 function compute_elite_idxs!(elites::Vector{Ind})
   """
@@ -54,11 +63,16 @@ function get_elite_idxs(pop::Pop)
     """
     eidxs::Dict{Geno, EliteIdxs} = compute_elite_idxs!(pop.elites)
     pop_idxs = Vector{EliteIdxs}(undef, length(pop.inds))
+
     for (i, ind) in enumerate(pop.inds)
-      if haskey(eidxs, suffix(ind.geno))
-        @inbounds pop_idxs[i] = eidxs[suffix(ind.geno)]
-      elseif haskey(eidxs, suffix(elite(ind.geno)))
-        @inbounds pop_idxs[i] = eidxs[suffix(elite(ind.geno))]
+      suf = suffix_elite(ind.geno)
+      if haskey(eidxs, suf)
+        @inbounds pop_idxs[i] = eidxs[suf]
+        continue
+      end
+      suf = suffix(ind.geno)
+      if haskey(eidxs, suf)
+        @inbounds pop_idxs[i] = eidxs[suf]
       else
         @inbounds pop_idxs[i] = EliteIdxs()
       end
@@ -135,7 +149,7 @@ function compress_pop(pop::Pop, prefixes)
   for (i,ind) in enumerate(pop.inds)
     found_prefix = false
     for (len, id, prefix) in prefixes_by_len
-      if length(ind.geno) >= len && ind.geno[len] == prefix[end] && ind.geno[1:len] == prefix
+      if length(ind.geno) >= len && ind.geno[len] == prefix[end] && @view(ind.geno[1:len]) == prefix
         geno = vcat(id, @view(ind.geno[len+1:end]))
         found_prefix = true
         break
