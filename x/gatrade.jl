@@ -89,6 +89,7 @@ function main()
     gen_start = time()
     rollout_pops = compress_pops(pops, prefixes)
 
+    @info "computing compression data"
     bytes = compute_compression_data(rollout_pops, prefixes)
     @info "bytes.compressed: |$(bytes.compressed)|"
     @info "bytes.uncompressed: |$(bytes.uncompressed)|"
@@ -100,13 +101,13 @@ function main()
     id_batches = pmap(wp, groups) do g
         fitness(g, eval_gen)
     end
+    gen_end = time()
     @info "updating population"
     update_pops!(pops, id_batches, args["archive-prob"])
     @info "Creating next pop"
     next_pops = create_next_pop(pops, γ, args["num-elites"])
-    gen_end = time()
     @info "Genome_Lengths: $(mmms([ceil(Int, length(ind.geno)/2) for pop in pops for ind in pop.inds]))"
-    @info "Time_Per_Generation: |$(round(gen_end - gen_start, digits=2))|"
+    @info "Time_For_Compression_And_Rollout: |$(round(gen_end - gen_start, digits=2))|"
 
     if eval_gen # collect data only on evaluation generations
       @info "log start"
