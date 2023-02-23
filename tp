@@ -194,13 +194,13 @@ def apply_settings_to_ax(ax):
     with open(mpl_settings) as f:
         for line in f:
             line = line.strip().split()
-            if len(line) not in (1, 2, 3):
-                continue
             
             if line[0] == "ylog":
                 ax.set_yscale('log')
-            if line[0] == "xmin":
+            elif line[0] == "xmin":
                 ax.set_xlim(max(ax.get_xlim()[0],float(line[1])))
+            elif line[0] == "title":
+                ax.set_title(" ".join(line[1:]))
             elif line[0] == "ymin":
                 ax.set_ylim(max(ax.get_ylim()[0],float(line[1])))
             elif line[0] == "xmax":
