@@ -7,6 +7,9 @@ using StableRNGs
 using Test
 using Flux
 
+ENV["JULIA_STACKTRACE_ABBREVIATED"] = true
+ENV["JULIA_STACKTRACE_MINIMAL"] = true
+using AbbreviatedStackTraces
 
 # file = "test/test_noisetable.jl"
 # file = "test/test_net.jl"
