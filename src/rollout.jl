@@ -100,7 +100,7 @@ function mk_mods(sc::SeedCache,
   rdc = ReconDataCollector()
   # assign a player name like p[idx]_[count]
   models = Dict{String, Chain}()
-  recon_fn = no_cache ? base_reconstruct : reconstruct!
+  recon_fn = no_cache ? base_reconstruct : construct!
   for ind in group, c in 1:counts[ind.id]
     rdc.num_reconstructions += 1
     start = time()

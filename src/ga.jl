@@ -90,29 +90,52 @@ function create_next_pop(pop::Pop, γ::Float64, num_elites::Int)
     function make_elites(order_metric, num)
         Ind.(pop.inds[sortperm(order_metric, rev=true)[1:num]])
     end
-    # NOTE: WE USE THE HARD-CODED MUT IN NT INSTEAD
-    Fσs = [0.002f0] # fitness mutation rate
-    Nσs = [0.002f0] # novelty mutation rate
     exploiter_elites = make_elites(fitnesses(pop), nums[:n_e_exploit])
     explorer_elites  = make_elites(novelties(pop), nums[:n_e_explore])
 
-    # TODO CHANGE THIS BACK
-    # WE ARE RUNNING EXPERIMENTS ASSUMING γ ∈ [0, 1]
-    # THIS BREAKS THE VISUALIZATIONS
     @assert length(explorer_elites) == 0 || length(exploiter_elites) == 0
     elites = [exploiter_elites; explorer_elites]
     next_inds = [deepcopy(elites[1])]
     for _ in 1:(nums[:n_n_exploit]+nums[:n_e_exploit]) # add exploiters
-        push!(next_inds, mutate(rand(exploiter_elites), Fσs[1]))
+      push!(next_inds, mutate(rand(exploiter_elites), Fσs[1]))
     end
     for _ in 1:(nums[:n_n_explore]+nums[:n_e_explore]) # add explorers
-        push!(next_inds, mutate(rand(explorer_elites), Nσs[1]))
+      push!(next_inds, mutate(rand(explorer_elites), Nσs[1]))
     end
     next_inds = next_inds[1:pop.size]
     @assert length(next_inds) == pop.size
     # set ids of next gen
     for (i, ind) in enumerate(next_inds)
         ind.id = pop.id*"_"*string(i)
+    end
+    next_pop = Pop(pop.id, pop.size, next_inds)
+    next_pop.elites = elites
+    next_pop.archive = pop.archive
+    next_pop
+end
+
+function create_next_pop(mi::ModelInfo, pops::Vector{Pop}, γ::Float32, num_elites::Int)
+    @inline [create_next_pop(mi, pop, γ, num_elites) for pop in pops]
+end
+function create_next_pop(mi::ModelInfo, pop::Pop, γ::Float32, num_elites::Int)
+    γ ∉ (0.0f0, 1.0f0) && error("γ must be in (0, 1)")
+    function make_elites(order_metric, num)
+      Ind.(pop.inds[sortperm(order_metric, rev=true)[1:num]])
+    end
+    elites = if γ == 0.0f0
+      make_elites(fitnesses(pop), num_elites)
+    elseif γ == 1.0f0
+      make_elites(novelties(pop), num_elites)
+    end
+    i_genos = [ind.geno for ind in pop.inds]
+    gp = make_genepool(mi, i_genos, pop.size)
+
+    e_genos = [ind.geno for ind in elites]
+    new_genos = add_mutations(gp, e_genos, pop.size-1)
+    next_genos = [e_genos[1], new_genos...]
+    next_inds = Ind.(next_genos)
+    for (i, ind) in enumerate(next_inds)
+      ind.id = pop.id*"_"*string(i)
     end
     next_pop = Pop(pop.id, pop.size, next_inds)
     next_pop.elites = elites
@@ -294,6 +317,27 @@ function compute_fitnesses!(pop::Pop)
   end
 end
 
+function compute_scores!(pops::Vector{Pop}, γ::Float32)
+  for pop in pops
+    compute_scores!(pop, γ)
+  end
+end
+function compute_scores!(pop::Pop, γ::Float32)
+    """Compute the score for each ind in pop"""
+    if γ == 0f0
+      for ind in pop.inds
+        update_score!(ind.geno, ind.fitness)
+      end
+      return
+    elseif γ == 1f0
+      for ind in pop.inds
+        update_score!(ind.geno, ind.novelty)
+      end
+    else
+      throw(ArgumentError("γ must be 0 or 1"))
+    end
+end
+
 function update_pop!(pop::Pop, batch::Batch)
   """Update the info of each ind with info from batch"""
   for k in keys(batch.rews)
@@ -305,7 +349,7 @@ function update_pop!(pop::Pop, batch::Batch)
   end
 end
 
-function update_pops!(pops::Vector{Pop}, batches::Vector{Batch}, arxiv_prob::Float32=0.01f0)
+function update_pops!(pops::Vector{Pop}, batches::Vector{Batch}, γ::Float32, arxiv_prob::Float32=0.01f0)
   """Update the info of each ind with info from batch"""
   for batch in batches
     for pop in pops
@@ -317,6 +361,7 @@ function update_pops!(pops::Vector{Pop}, batches::Vector{Batch}, arxiv_prob::Flo
   end
   compute_novelties!(pops)
   compute_fitnesses!(pops)
+  compute_scores!(pops, γ)
   add_to_archive!(pops, arxiv_prob)
   average_walks!(pops)
   for pop in pops, ind in pop.inds

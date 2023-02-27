@@ -36,7 +36,6 @@ function main()
   df = nothing
   wp = WorkerPool(workers())
   n_pops = isnothing(args["maze"]) ? 2 : 1
-  pops = [Pop(string(i), args["pop-size"]) for i in 1:n_pops]
   γ = args["exploration-rate"]
   @info "cls: $clsname"
   @info "exp: $expname"
@@ -55,7 +54,7 @@ function main()
     end
     m = make_model(env, args)
     θ, re = Flux.destructure(m)
-    mi = ModelInfo(m, re)
+    mi = ModelInfo(m)
     model_size = length(θ)
     nt = NoiseTable(StableRNG(1), length(mi), args["mutation-rate"])
     # pass mazeenv struct or trade config dict
@@ -63,6 +62,7 @@ function main()
     global sc = SeedCache(maxsize=args["num-elites"]*3)
     prefixes = Dict{String, V32}()
   end
+  pops = [Pop(string(i), args["pop-size"], mi) for i in 1:n_pops]
   @info "model has $model_size params"
 
   if isfile(check_name)
@@ -100,9 +100,9 @@ function main()
         fitness(g, eval_gen)
     end
     @info "updating population"
-    update_pops!(pops, id_batches, args["archive-prob"])
+    update_pops!(pops, id_batches, Float32(γ), args["archive-prob"])
     @info "Creating next pop"
-    next_pops = create_next_pop(pops, γ, args["num-elites"])
+    next_pops = create_next_pop(mi, pops, Float32(γ), args["num-elites"])
     gen_end = time()
     @info "Genome_Lengths: $(mmms([ceil(Int, length(ind.geno)/2) for pop in pops for ind in pop.inds]))"
     @info "Time_Per_Generation: |$(round(gen_end - gen_start, digits=2))|"

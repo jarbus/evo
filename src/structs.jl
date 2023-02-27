@@ -1,14 +1,89 @@
-import Base: Dict
+import Base: Dict, rand, ==, show, hash
+
 BC = Vector{Float32}
 F = Float32
 Novelty = Float32
 Seed = UInt32
-Geno = Vector{Float32}
-CompGeno = Vector{Union{String, Float32}}
-EliteIdxs = Set{Int}
+MR = Float32
+new_mr()::MR = rand(Float32) * 0.0095f0 + 0.0005f0
+EliteIdxs = Set{UInt32}
 V32 = Vector{Float32}
 Walk = Vector{Tuple{Float32, Float32}}
+
+
+struct ModelInfo
+  sizes::Vector{Tuple}
+  biases::Vector{Bool}
+  starts_and_ends::Vector{Tuple{UInt32,UInt32}}
+  re::Flux.Optimisers.Restructure
+end
+
+struct MutCore
+  seed::Seed
+  mr::MR
+  layers::Set{UInt32}
+end
+struct MutBinding
+  start::Optional{UInt32}
+  geno::Vector{MutCore}
+end
+MutBinding() = MutBinding(missing, [])
+struct Mut
+  core::MutCore
+  score::Optional{Float32}
+  binding::MutBinding
+end
+function Base.:(==)(a::MutCore, b::MutCore)
+  a.seed == b.seed &&
+  a.mr == b.mr &&
+  a.layers == b.layers
+end
+function Base.:(==)(a::MutBinding, b::MutBinding)
+  a.geno == b.geno &&
+  a.start === b.start
+end
+function Base.:(==)(a::Mut, b::Mut)
+  # use === for values that might be missing
+  a.core == b.core &&
+  a.binding == b.binding &&
+  a.score === b.score
+end
+Base.show(io::IO, m::UInt32) = print(io, "$(Int(m))")
+Base.show(io::IO, m::Mut) = print(io, "Mut($(m.core))")
+function Base.show(io::IO, mc::MutCore)
+  print(io, "MutCore($(Int(mc.seed)), $(round(Float64(mc.mr), digits=2)), $(collect(mc.layers))")
+end
+function Base.hash(mc::MutCore, h::UInt)
+  hash(mc.seed) + hash(mc.mr) + h
+end
+function Base.hash(m::Mut, h::UInt)
+  hash(m.core)
+end
+
+
+
+
+Mut(seed::Seed, mr::MR) = Mut(MutCore(seed, mr, Set{UInt32}()))
+Mut(mi::ModelInfo) = Mut(MutCore(rand(Seed), new_mr(),
+                      Set{UInt32}(rand(1:length(mi.sizes), 1))))
+Mut(c::MutCore) = Mut(c, missing, MutBinding(missing, []))
+Mut(m::Mut, mr::MR) = Mut(MutCore(m.core.seed, mr, m.core.layers),
+                          m.score,
+                          m.binding)
+rand(::Type{Mut}) = Mut(rand(Seed), rand(MR))
+rand(::Type{Mut}, n::Int) = [rand(Mut) for _ in 1:n]
+
+
+GenePool = Set{Mut}
+struct GenePoolStatistics
+  num_copied_muts::UInt32
+  copied_layers_ratios::Vector{Float32}
+  copied_layers_mrs::Vector{Vector{Float32}}
+end
+Geno = Vector{Mut}
+CompGeno = Vector{Union{String, Mut}}
 Prefixes = Dict{String, Geno}
+SeedCache = LRU{Geno,V32}
 
 mutable struct Ind4
   id::String
@@ -21,14 +96,17 @@ mutable struct Ind4
   elite_idxs::Optional{EliteIdxs}
   walks::Vector{Walk}
 end
+
+function Ind4(id::String, mi::ModelInfo)
+  core = MutCore(rand(Seed), 1f0, Set{UInt32}(1:length(mi.sizes)))
+  Ind4(id, [Mut(core)])
+end
 Ind4(id::String, geno::Geno, eidx::EliteIdxs) =
 Ind4(id, geno, [], missing, missing, [], missing, eidx, Vector{Walk}())
 Ind4(id::String, geno::Geno) =
   Ind4(id, geno, EliteIdxs())
-Ind4(id::String) = Ind4(id, rand(Seed,1) |> v32)
 # for making tests less painful
 Ind4(geno::Geno) = Ind4(randstring(8), geno)
-Ind4() = Ind4(randstring(8))
 Ind4(ind::Ind4) = Ind4(ind.id, deepcopy(ind.geno), deepcopy(ind.elite_idxs))
 Ind = Ind4
 
@@ -56,8 +134,8 @@ function Pop6(id::String, size::Int, inds::Vector{Ind})
   Pop6(id, size, inds, mk_id_map(inds), Set{BC}(), [], [],
         Dict{String, Vector{Float64}}(), Dict{Any, Any}())
 end
-Pop6(id::String, size::Int) = 
-  Pop6(id, size, [Ind("$id-$i") for i in 1:size])
+Pop6(id::String, size::Int, mi::ModelInfo) = 
+  Pop6(id, size, [Ind("$id-$i", mi) for i in 1:size])
 Pop = Pop6
 
 struct RolloutInd1

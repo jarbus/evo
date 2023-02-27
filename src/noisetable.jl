@@ -20,6 +20,25 @@ function getindex(nt::NoiseTable, idx::UInt32)
   end_idx   = start_idx + nt.nparams
   @view nt.noise[start_idx:end_idx]
 end
+
+add_noise!(nt::NoiseTable, mi::ModelInfo, params::Vector{Float32}, mut::Mut) =
+  add_noise!(nt, mi, params, mut.core)
+add_noise!(nt::NoiseTable, mi::ModelInfo, params::Vector{Float32}, mut::MutCore) =
+  add_noise!(nt, mi, params, mut.seed, mut.mr, mut.layers)
+function add_noise!(nt::NoiseTable,
+                    mi::ModelInfo,
+                    params::Vector{Float32},
+                    seed::UInt32,
+                    mr::Float32,
+                    layers::Set{UInt32})
+  noise = nt[seed]
+  for layer in layers
+    start, stop = mi.starts_and_ends[layer]
+    @inbounds @simd for i in start:stop-1
+      params[i] += mr * noise[i]
+    end
+  end
+end
 function add_noise!(nt::NoiseTable, params::Vector{Float32}, idx::UInt32) 
   noise = nt[idx]
   @inbounds @simd for i in 1:length(params)

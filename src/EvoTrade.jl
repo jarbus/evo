@@ -17,7 +17,7 @@ render, get_metrics, batch_pos!
 export plot_grid_and_walks, vis_outs, plot_bcs
 # construction
 export reconstruct!, SeedCache, cache_elites!, rm_params,
-ModelInfo, gen_params
+ModelInfo, gen_params, construct!
 # ga
 export compute_novelties!, compute_fitnesses!, walks,
 create_next_pop, add_to_archive!, M, elite, fitnesses,
@@ -36,7 +36,8 @@ export NoiseTable
 
 # structs
 export Ind, Pop, BC, F, Geno, CompGeno, RolloutInd,
-Prefixes, V32, Batch, compute_compression_data
+Prefixes, V32, Batch, compute_compression_data, Mut,
+Seed, MR, MutCore, MutBinding, EliteIdxs
 
 
 using ArgParse
@@ -52,8 +53,10 @@ using Plots
 using LoggingExtras
 using Random
 using Optionals
+using LRUCache
 include("structs.jl")
 include("utils.jl")
+include("genepool.jl")
 include("noisetable.jl")
 include("args.jl")
 include("multiproc.jl")
@@ -66,7 +69,7 @@ include("maze.jl")
 using .Maze
 include("ga.jl")
 # include("compression.jl")
-include("compression2.jl")
+include("compression3.jl")
 include("rollout.jl")
 include("visual.jl")
 end
