@@ -132,19 +132,17 @@ function add_mutations(gp::GenePool,
                         n::Int)
   new_genos = Vector{Geno}(undef, n)
   muts = collect(gp)
-  shuffle!(muts)
   for i in 1:n
     geno = rand(genos)
     added = false
-    for mut in muts
-      if match(mut, geno)
-        new_genos[i] = add_mutation(geno, mut)
+    for m in randperm(length(muts))
+      if match(muts[m], geno)
+        new_genos[i] = add_mutation(geno, muts[m])
         added = true
         break
       end
     end
     @assert added
-    shuffle!(muts)
   end
   new_genos
 end
