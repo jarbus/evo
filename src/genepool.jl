@@ -112,7 +112,7 @@ function match(bind::MutBinding, geno::Geno)::Bool
 end
 
 function log_genepool_stats(mi::ModelInfo, stats::GenePoolStatistics)
-  @info "stats.num_copied_muts: $(stats.num_copied_muts)"
+  @info "stats.num_copied_muts: |$(stats.num_copied_muts)|"
   @info "stats.copied_ratios: $(stats.copied_layers_ratios)"
   mean_mrs = filter(!isnan, mean.(stats.copied_layers_mrs))
   @info "stats.copied_mrs: $(mmms(mean_mrs))"
