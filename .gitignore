@@ -2,7 +2,7 @@ __pycache__
 afiles
 runs
 playground
-outs
+outs*
 evolution-strategies-starter
 *.mem
 ScalableES.jl

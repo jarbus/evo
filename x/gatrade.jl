@@ -59,7 +59,7 @@ function main()
     nt = NoiseTable(StableRNG(1), length(mi), args["mutation-rate"])
     # pass mazeenv struct or trade config dict
     env = env isa MazeEnv ? env : env_config
-    global sc = SeedCache(maxsize=args["num-elites"]*3)
+    global sc = SeedCache(maxsize=args["num-elites"]*2)
     prefixes = Dict{String, V32}()
   end
   pops = [Pop(string(i), args["pop-size"], mi) for i in 1:n_pops]
@@ -99,13 +99,17 @@ function main()
     id_batches = pmap(wp, groups) do g
         fitness(g, eval_gen)
     end
+    gen_end = time()
+    @info "Time_For_Compression_And_Rollout: |$(round(gen_end - gen_start, digits=2))|"
     @info "updating population"
     update_pops!(pops, id_batches, Float32(γ), args["archive-prob"])
     @info "Creating next pop"
     next_pops = create_next_pop(mi, pops, Float32(γ), args["num-elites"])
     gen_end = time()
-    @info "Genome_Lengths: $(mmms([ceil(Int, length(ind.geno)/2) for pop in pops for ind in pop.inds]))"
-    @info "Time_Per_Generation: |$(round(gen_end - gen_start, digits=2))|"
+    @info "Computing genome lengths"
+    lengths = [length(ind.geno) for pop in pops for ind in pop.inds]
+    @info "Genome_Lengths: $(mmms(lengths))"
+    @info "Time_For_Compression_And_Rollout: |$(round(gen_end - gen_start, digits=2))|"
 
     if eval_gen # collect data only on evaluation generations
       @info "log start"
