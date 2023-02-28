@@ -65,7 +65,8 @@ end
 
 # override this for specifying all layers
 # we can probably do this with an environment variable
-layers(mi::ModelInfo) = Layers(rand(1:length(mi.sizes), 1))
+# layers(mi::ModelInfo) = Layers(rand(1:length(mi.sizes), 1))
+layers(mi::ModelInfo) = Layers(collect(1:length(mi.sizes)))
 MutCore(mi::ModelInfo) = MutCore(rand(Seed), new_mr(), layers(mi))
 
 Mut(core::MutCore, score::Optional{Real}, binding::MutBinding) =

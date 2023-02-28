@@ -65,7 +65,7 @@ root_dir = dirname(@__FILE__)  |> dirname |> String
     for pop in next_pops, ind in pop.inds
       length(ind.geno) <= 1 && continue
       @test ind.geno[end].binding.start >= 1
-      @test length(ind.geno[end].core.layers) > 0
+      @test length(ind.geno[end].core.layers) == length(mi.sizes)
     end
     @test next_pops[1].elites[1].geno == next_pops[1].inds[1].geno
     pops = next_pops

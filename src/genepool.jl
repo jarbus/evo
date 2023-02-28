@@ -66,17 +66,23 @@ function compute_stats(mi::ModelInfo, gp::GenePool)::GenePoolStatistics
   GenePoolStatistics(num_copied_muts, copied_ratios, copied_layers_mrs)
 end
 
+# function make_new_mutation(mi::ModelInfo,
+#                           stats::GenePoolStatistics)::Mut
+#   """Create a new mutation, informed by gpool statistics"""
+#     layer = rand(1:length(mi.sizes))
+#     if 0 == length(stats.copied_layers_mrs[layer])
+#       mr = new_mr()
+#     else
+#       mr = rand(stats.copied_layers_mrs[layer])
+#     end
+#     new_core = MutCore(rand(UInt32), mr, Set([layer]))
+#     Mut(new_core, missing, MutBinding(missing, []))
+# end
+
 function make_new_mutation(mi::ModelInfo,
                           stats::GenePoolStatistics)::Mut
-  """Create a new mutation"""
-    layer = rand(1:length(mi.sizes))
-    if 0 == length(stats.copied_layers_mrs[layer])
-      mr = new_mr()
-    else
-      mr = rand(stats.copied_layers_mrs[layer])
-    end
-    new_core = MutCore(rand(UInt32), mr, Set([layer]))
-    Mut(new_core, missing, MutBinding(missing, []))
+  """Create a new mutation, UNinformed by gpool statistics"""
+  Mut(mi)
 end
 
 function pad_genepool!(mi::ModelInfo, 
