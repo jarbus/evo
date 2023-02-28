@@ -78,7 +78,7 @@ end
 end
 
 @testset "create_next_pop" begin
-  pop = Pop("1", 10)
+  pop = Pop("1", 10, mi)
   for ind in pop.inds
     ind.fitness = 100f0
   end

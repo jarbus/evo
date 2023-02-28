@@ -2,6 +2,11 @@ dummy_geno = rand(Mut, 4)
 dummy_bc = rand(Mut, 3)
 root_dir = dirname(@__FILE__)  |> dirname |> String
 
+sc = SeedCache(maxsize=10)
+model = Chain(Dense(1, 1), Dense(1,2))
+mi = ModelInfo(model)
+nt = NoiseTable(StableRNG(1), length(mi), 1f0)
+
 @testset "mut==" begin
   mc1 = MutCore(1, 1f0, Set([1]))
   mc2 = MutCore(1, 1f0, Set([1]))
@@ -27,14 +32,11 @@ end
     ind = Ind("1", dummy_geno)
     @test ind.id == "1"
     @test ind.geno == dummy_geno
-    ind = Ind("1")
-    @test length(ind.geno) == 1
-    ind = Ind()
-    @test ind.id != ""
+    ind = Ind("1", mi)
     @test length(ind.geno) == 1
   end
   @testset "Pop" begin
-    pop = Pop("1", 10)
+    pop = Pop("1", 10, mi)
     @test pop.id == "1"
     @test pop.size == 10
     @test 10 == length(pop.inds)
@@ -52,7 +54,7 @@ end
 end
 
 @testset "add_to_archive!" begin
-  pop = Pop("1", 4)
+  pop = Pop("1", 4, mi)
   γ=0.5
   n_elites = 2
   fits = [4, 3, 2, 1]
@@ -68,7 +70,7 @@ end
 end
 
 @testset "novelties" begin
-  pop = Pop("1", 4)
+  pop = Pop("1", 4, mi)
   for i in 1:4
     pop.inds[i].bcs = [rand(Float32, 7), rand(Float32, 7)]
   end
