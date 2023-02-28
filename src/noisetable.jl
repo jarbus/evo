@@ -31,6 +31,7 @@ function add_noise!(nt::NoiseTable,
                     seed::UInt32,
                     mr::Float32,
                     layers::Set{UInt32})
+  @assert length(layers) >= 1
   noise = nt[seed]
   for layer in layers
     start, stop = mi.starts_and_ends[layer]

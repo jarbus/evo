@@ -9,6 +9,7 @@ new_mr()::MR = 0.002#rand(Float32) * 0.0095f0 + 0.0005f0
 EliteIdxs = Set{UInt32}
 V32 = Vector{Float32}
 Walk = Vector{Tuple{Float32, Float32}}
+Layers = Set{UInt32}
 
 
 struct ModelInfo
@@ -22,7 +23,7 @@ end
 struct MutCore
   seed::Seed
   mr::MR
-  layers::Set{UInt32}
+  layers::Layers
 end
 struct MutBinding
   start::Optional{UInt32}
@@ -62,17 +63,23 @@ function Base.hash(m::Mut, h::UInt)
   hash(m.core)
 end
 
+# override this for specifying all layers
+# we can probably do this with an environment variable
+layers(mi::ModelInfo) = Layers(rand(1:length(mi.sizes), 1))
+MutCore(mi::ModelInfo) = MutCore(rand(Seed), new_mr(), layers(mi))
+
 Mut(core::MutCore, score::Optional{Real}, binding::MutBinding) =
   Mut(core, score, false, binding)
 Mut(seed::Seed, mr::MR) = Mut(MutCore(seed, mr, Set{UInt32}()))
-Mut(mi::ModelInfo) = Mut(MutCore(rand(Seed), new_mr(),
-                      Set{UInt32}(rand(1:length(mi.sizes), 1))))
+Mut(mi::ModelInfo) = Mut(MutCore(mi))
 Mut(c::MutCore) = Mut(c, missing, MutBinding(missing, []))
 Mut(m::Mut, mr::MR) = Mut(MutCore(m.core.seed, mr, m.core.layers),
                           m.score,
                           m.binding)
+
 mark_crossover(m::Mut) = Mut(m.core, m.score, true, m.binding)
 mark_score(m::Mut, score::Float32) = Mut(m.core, score, m.crossed_over, m.binding)
+# for testing only
 rand(::Type{Mut}) = Mut(rand(Seed), rand(MR))
 rand(::Type{Mut}, n::Int) = [rand(Mut) for _ in 1:n]
 
@@ -101,7 +108,7 @@ mutable struct Ind4
 end
 
 function Ind4(id::String, mi::ModelInfo)
-  core = MutCore(rand(Seed), 1f0, Set{UInt32}(1:length(mi.sizes)))
+  core = MutCore(rand(Seed), 1f0, Layers(1:length(mi.sizes)))
   Ind4(id, [Mut(core)])
 end
 Ind4(id::String, geno::Geno, eidx::EliteIdxs) =
