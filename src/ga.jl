@@ -118,29 +118,28 @@ function create_next_pop(mi::ModelInfo, pops::Vector{Pop}, γ::Float32, num_elit
     @inline [create_next_pop(mi, pop, γ, num_elites) for pop in pops]
 end
 function create_next_pop(mi::ModelInfo, pop::Pop, γ::Float32, num_elites::Int)
-    γ ∉ (0.0f0, 1.0f0) && error("γ must be in (0, 1)")
-    function make_elites(order_metric, num)
-      Ind.(pop.inds[sortperm(order_metric, rev=true)[1:num]])
-    end
-    elites = if γ == 0.0f0
-      make_elites(fitnesses(pop), num_elites)
-    elseif γ == 1.0f0
-      make_elites(novelties(pop), num_elites)
-    end
-    i_genos = [ind.geno for ind in pop.inds]
-    gp = make_genepool(mi, i_genos, pop.size)
+  γ ∉ (0.0f0, 1.0f0) && error("γ must be in (0, 1)")
+  function make_elites(order_metric, num)
+    Ind.(pop.inds[sortperm(order_metric, rev=true)[1:num]])
+  end
+  elites = if γ == 0.0f0
+    make_elites(fitnesses(pop), num_elites)
+  elseif γ == 1.0f0
+    make_elites(novelties(pop), num_elites)
+  end
+  gp = make_genepool(mi, pop)
 
-    e_genos = [ind.geno for ind in elites]
-    new_genos = add_mutations(gp, e_genos, pop.size-1)
-    next_genos = [e_genos[1], new_genos...]
-    next_inds = Ind.(next_genos)
-    for (i, ind) in enumerate(next_inds)
-      ind.id = pop.id*"_"*string(i)
-    end
-    next_pop = Pop(pop.id, pop.size, next_inds)
-    next_pop.elites = elites
-    next_pop.archive = pop.archive
-    next_pop
+  e_genos = [ind.geno for ind in elites]
+  new_genos = add_mutations(gp, e_genos, pop.size-1)
+  next_genos = [e_genos[1], new_genos...]
+  next_inds = Ind.(next_genos)
+  for (i, ind) in enumerate(next_inds)
+    ind.id = pop.id*"_"*string(i)
+  end
+  next_pop = Pop(pop.id, pop.size, next_inds)
+  next_pop.elites = elites
+  next_pop.archive = pop.archive
+  next_pop
 end
 
 function popn!(x, n::Int)

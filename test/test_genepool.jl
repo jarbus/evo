@@ -31,7 +31,7 @@ end
   r_mt = Mut(mi)
   genos = [[Mut(r_mt.core, i+j, r_mt.binding)
            for j in 1:2] for i in 1:10]
-  gp =  genos |> accumulate_muts
+  gp = accumulate_muts(genos, 10)
   @test length(gp) == 10
   stats = compute_stats(mi, gp)
   @test stats.num_copied_muts == 10
@@ -39,27 +39,64 @@ end
   @test length(stats.copied_layers_mrs) == 4
   for g in genos
     @test in(g[end], gp)
+    @test g[end].crossed_over == false
+  end
+  for m in gp
+    @test m.crossed_over == true
   end
   # mutations that hurt score are not added
   genos = [[Mut(r_mt.core, i-j, r_mt.binding)
            for j in 1:2] for i in 1:10]
-  gp = genos |> accumulate_muts
+  gp = accumulate_muts(genos, 10)
   @test length(gp) == 0
   stats = compute_stats(mi, gp)
   @test stats.num_copied_muts == 0
   @test all(length.(stats.copied_layers_mrs) .== 0)
   pad_genepool!(mi, gp, stats, 10)
   @test length(gp) == 10
-
   for g in genos
     @test !in(g[end], gp)
   end
+
+  # test that only some mutations are added
+  genos = [[Mut(r_mt.core, 0, r_mt.binding),
+            Mut(r_mt.core, Int(i%2==0), r_mt.binding)]
+           for i in 1:10]
+  println([genos[i][end].score for i in 1:10])
+  gp = accumulate_muts(genos, 5)
+  @test length(gp) == 5
+  @test genos[1][end] ∉ gp
+  @test genos[2][end] ∈ gp
+
+  # test that highest scores are kept
+  genos = [[Mut(r_mt.core, 0, r_mt.binding),
+            Mut(r_mt.core, i*Int(i%2==0), r_mt.binding)]
+           for i in 1:10]
+  gp = accumulate_muts(genos, 2)
+  @test length(gp) == 2
+  @test genos[2][end].score > genos[2][end-1].score
+  @test genos[10][end].score > genos[10][end-1].score
+  @test genos[2][end] ∉ gp
+  @test genos[10][end] ∈ gp
+
+  # test that muts from two genos back are used
+  genos = [[Mut(r_mt.core, 0, r_mt.binding),
+            Mut(r_mt.core, i*Int(i%2==0), r_mt.binding),
+            Mut(r_mt.core, 0, r_mt.binding)]
+           for i in 1:10]
+  gp = accumulate_muts(genos, 2)
+  @test length(gp) == 2
+  @test genos[2][2] ∉ gp
+  @test genos[10][2] ∈ gp
 end
 
 @testset "make_genepool" begin
   genos = [[Mut(Mut(mi).core, i-j, MutBinding(0, []))
            for j in 1:2] for i in 1:10]
-  gp = EvoTrade.make_genepool(mi, genos, 10)
+  gp = EvoTrade.make_genepool(mi, genos, 20)
+  for m in gp
+    @test m.crossed_over == false
+  end
   genos = add_mutations(gp, genos, 10)
   for g in genos
     @test !in(g[end], gp) # test bad muts not in pool
@@ -69,12 +106,18 @@ end
     @test !in(g[end], gp)
     EvoTrade.update_score!(g, 100f0)
   end
-  gp = EvoTrade.make_genepool(mi, genos, 10)
+  gp = EvoTrade.make_genepool(mi, genos, 20)
   g_ends = [g[end] for g in genos]
-  for g in g_ends
-    @test g ∈ gp # test good muts added to gene pool
-    break
+  for m in g_ends
+    @test m ∈ gp # test good muts added to gene pool
   end
+  for m in gp[1:10]
+    @test m.crossed_over == true
+  end
+  for m in gp[11:end]
+    @test m.crossed_over == false
+  end
+
 end
 
 @testset "create_next_pop" begin

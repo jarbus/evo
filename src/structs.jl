@@ -5,7 +5,7 @@ F = Float32
 Novelty = Float32
 Seed = UInt32
 MR = Float32
-new_mr()::MR = rand(Float32) * 0.0095f0 + 0.0005f0
+new_mr()::MR = 0.002#rand(Float32) * 0.0095f0 + 0.0005f0
 EliteIdxs = Set{UInt32}
 V32 = Vector{Float32}
 Walk = Vector{Tuple{Float32, Float32}}
@@ -15,6 +15,7 @@ struct ModelInfo
   sizes::Vector{Tuple}
   biases::Vector{Bool}
   starts_and_ends::Vector{Tuple{UInt32,UInt32}}
+  names::Vector{String}
   re::Flux.Optimisers.Restructure
 end
 
@@ -31,6 +32,7 @@ MutBinding() = MutBinding(missing, [])
 struct Mut
   core::MutCore
   score::Optional{Float32}
+  crossed_over::Bool
   binding::MutBinding
 end
 function Base.:(==)(a::MutCore, b::MutCore)
@@ -49,9 +51,9 @@ function Base.:(==)(a::Mut, b::Mut)
   a.score === b.score
 end
 Base.show(io::IO, m::UInt32) = print(io, "$(Int(m))")
-Base.show(io::IO, m::Mut) = print(io, "Mut($(m.core))")
+Base.show(io::IO, m::Mut) = print(io, "Mut($(m.core), $(m.crossed_over))")
 function Base.show(io::IO, mc::MutCore)
-  print(io, "MutCore($(Int(mc.seed)), $(round(Float64(mc.mr), digits=2)), $(collect(mc.layers))")
+  print(io, "Core($(Int(mc.seed)), $(round(Float64(mc.mr), digits=2)) $(collect(mc.layers)))")
 end
 function Base.hash(mc::MutCore, h::UInt)
   hash(mc.seed) + hash(mc.mr) + h
@@ -60,9 +62,8 @@ function Base.hash(m::Mut, h::UInt)
   hash(m.core)
 end
 
-
-
-
+Mut(core::MutCore, score::Optional{Real}, binding::MutBinding) =
+  Mut(core, score, false, binding)
 Mut(seed::Seed, mr::MR) = Mut(MutCore(seed, mr, Set{UInt32}()))
 Mut(mi::ModelInfo) = Mut(MutCore(rand(Seed), new_mr(),
                       Set{UInt32}(rand(1:length(mi.sizes), 1))))
@@ -70,11 +71,13 @@ Mut(c::MutCore) = Mut(c, missing, MutBinding(missing, []))
 Mut(m::Mut, mr::MR) = Mut(MutCore(m.core.seed, mr, m.core.layers),
                           m.score,
                           m.binding)
+mark_crossover(m::Mut) = Mut(m.core, m.score, true, m.binding)
+mark_score(m::Mut, score::Float32) = Mut(m.core, score, m.crossed_over, m.binding)
 rand(::Type{Mut}) = Mut(rand(Seed), rand(MR))
 rand(::Type{Mut}, n::Int) = [rand(Mut) for _ in 1:n]
 
 
-GenePool = Set{Mut}
+GenePool = Vector{Mut}
 struct GenePoolStatistics
   num_copied_muts::UInt32
   copied_layers_ratios::Vector{Float32}
@@ -137,6 +140,7 @@ end
 Pop6(id::String, size::Int, mi::ModelInfo) = 
   Pop6(id, size, [Ind("$id-$i", mi) for i in 1:size])
 Pop = Pop6
+genos(pop::Pop) = [ind.geno for ind in pop.inds]
 
 struct RolloutInd1
   id::String

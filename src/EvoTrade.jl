@@ -33,6 +33,8 @@ export run_batch, mk_mods, process_batch
 export EvoTradeLogger
 # noisetable
 export NoiseTable
+# genepool
+export log_improvements
 
 # structs
 export Ind, Pop, BC, F, Geno, CompGeno, RolloutInd,

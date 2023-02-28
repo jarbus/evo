@@ -51,6 +51,9 @@ end
   model = Chain(Dense(1, 1), Dense(1,2))
   mi = ModelInfo(model)
   @test mi.starts_and_ends == [(1,2),(2,3),(3,5),(5,7)]
+  model = Chain(Chain(Dense(1, 1)), Chain(LSTM(1=>2)))
+  mi = ModelInfo(model)
+  @test length(mi.starts_and_ends) == length(mi.names)
 end
 
 @testset "add_to_archive!" begin

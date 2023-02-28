@@ -11,19 +11,40 @@ function mutate(mr::MR)
   end
 end
 
-function accumulate_muts(genos::Vector{Geno})::GenePool
-  """Return a set of all recent mutations on the genomes
-  that have produced a greater score when applied
+function accumulate_muts(genos::Vector{Geno}, size::Int)::GenePool
+  """Return a vector of all recent mutations on the genomes
+  that have produced a greater score when applied. Make
+  copies until size is reached, or cut off worst muts if 
+  there are more muts than size.
   """
-  muts = GenePool()
+  muts_and_deltas = []
   num_back = 3 # check end-num_back
+  # populate the inital set of mutations
   for g::Geno in genos
     for i in max(length(g)-num_back, 1):length(g)
       if i > 1 && g[i].score > g[i-1].score
-        push!(muts, g[i])
+        Δscore = g[i].score - g[i-1].score
+        push!(muts_and_deltas, (Δscore, mark_crossover(g[i])))
       end
     end
   end
+  # sort the mutations by score
+  sort!(muts_and_deltas, by=x->x[1], rev=true)
+
+  # cut of worst mutations if there are too many
+  if length(muts_and_deltas) >= size
+    muts_and_deltas = muts_and_deltas[1:size]
+  # make copies of random mutations if not enough
+  elseif 1 < length(muts_and_deltas) < size
+    while length(muts_and_deltas) < size
+      push!(muts_and_deltas, rand(muts_and_deltas))
+    end
+  # Otherwise, return an empty gene pool
+  else
+    return Vector{Mut}()
+  end
+  muts = [m[2] for m in muts_and_deltas]
+  @assert length(muts) == size
   muts
 end
 
@@ -61,9 +82,10 @@ end
 function pad_genepool!(mi::ModelInfo, 
                        gp::GenePool,
                        stats::GenePoolStatistics,
-                       size::Int)
+                       num::Int)
   """Pad the gene pool with random mutations"""
-  while length(gp) < size
+
+  for _ in 1:num
     push!(gp, make_new_mutation(mi, stats))
   end
 end
@@ -83,20 +105,31 @@ function match(bind::MutBinding, geno::Geno)::Bool
   true
 end
 
-make_genepool(model_info::ModelInfo, pop::Pop) =
-  make_genepool(model_info,
-                [ind.geno for ind in pop.inds],
-                pop.size)
-function make_genepool(mi::ModelInfo, genos::Vector{Geno}, size::Int)::GenePool
-  gp = accumulate_muts(genos)
-  stats = compute_stats(mi, gp)
+function log_genepool_stats(mi::ModelInfo, stats::GenePoolStatistics)
   @info "stats.num_copied_muts: $(stats.num_copied_muts)"
   @info "stats.copied_ratios: $(stats.copied_layers_ratios)"
   mean_mrs = filter(!isnan, mean.(stats.copied_layers_mrs))
   @info "stats.copied_mrs: $(mmms(mean_mrs))"
-  # we want to pad to have at least 50% new mutations
-  final_size = max(size, 2*length(gp))
-  pad_genepool!(mi, gp, stats, final_size)
+  ratios = Dict{String, Float32}()
+  for i in eachindex(stats.copied_layers_ratios)
+    ratios[mi.names[i]] = get(ratios, mi.names[i], 0f0) + stats.copied_layers_ratios[i]
+  end
+  for (name, ratio) in ratios
+    @info "stats.copied_ratios.$name: $ratio"
+  end
+  if stats.num_copied_muts > 0
+    @assert sum(values(ratios)) ≈ 1f0
+  end
+end
+
+make_genepool(model_info::ModelInfo, pop::Pop) =
+  make_genepool(model_info, genos(pop), pop.size)
+function make_genepool(mi::ModelInfo, genos::Vector{Geno}, size::Int)::GenePool
+  gp = accumulate_muts(genos, Int(size/2))
+  stats = compute_stats(mi, gp)
+  log_genepool_stats(mi, stats)
+  pad_genepool!(mi, gp, stats, size - length(gp))
+  @assert length(gp) == size
   gp
 end
 
@@ -108,7 +141,7 @@ end
 
 function update_score!(geno::Geno, score::Float32)
   """Update the score of the last mutation in the genome"""
-  geno[end] = Mut(geno[end].core, score, geno[end].binding)
+  geno[end] = mark_score(geno[end], score)
 end
 
 function add_mutation(geno::Geno, mut::Mut)
@@ -130,19 +163,41 @@ end
 function add_mutations(gp::GenePool,
                         genos::Vector{Geno},
                         n::Int)
+  """Add a mutation to each genome. Also return a
+  vec of bools indicating if the mutation was a crossover"""
   new_genos = Vector{Geno}(undef, n)
+  is_crossover = fill(false, n)
   muts = collect(gp)
   for i in 1:n
     geno = rand(genos)
     added = false
     for m in randperm(length(muts))
       if match(muts[m], geno)
+        is_crossover[i] = !ismissing(muts[m].binding.start)
         new_genos[i] = add_mutation(geno, muts[m])
         added = true
         break
       end
     end
-    @assert added
+    @assert added == true
   end
   new_genos
+end
+
+log_improvements(p::Pop) = log_improvements(genos(p))
+function log_improvements(genos::Vector{Geno})
+  """To be applied once new mutations have an associated score"""
+  num_crossovers = sum(g[end].crossed_over for g in genos)
+  crossover_deltas = Float32[]
+  non_crossover_deltas = Float32[]
+  for geno in genos
+    if geno[end].crossed_over && length(geno) > 1
+      crossover_deltas = [crossover_deltas; geno[end].score - geno[end-1].score]
+    elseif length(geno) > 1
+      non_crossover_deltas = [non_crossover_deltas; geno[end].score - geno[end-1].score]
+    end
+  end
+  @info "num_crossovers: |$num_crossovers|"
+  @info "crossover_deltas: $(mmms(crossover_deltas))"
+  @info "non_crossover_deltas: $(mmms(non_crossover_deltas))"
 end

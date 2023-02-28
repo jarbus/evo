@@ -57,6 +57,7 @@ root_dir = dirname(@__FILE__)  |> dirname |> String
       @test length(ind.bcs) > 0
     end
     @test pops[1].inds[1].novelty > 0
+    log_improvements(pops[1])
     EvoTrade.plot_bcs("bcs", pops, 3)
     next_pops = create_next_pop(mi, pops, γ, n_elites)
 

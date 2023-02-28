@@ -2,6 +2,12 @@ using StableRNGs
 using JLD2
 import Base: length
 
+param_names(::Conv) = ["conv_w", "conv_b"]
+param_names(::Dense) = ["dense_w", "dense_b"]
+# asssume all recurrent layers are lstms
+param_names(::Flux.Recur) = ["lstm_wi", "lstm_wh", "lstm_b", "lstm_s0", "lstm_s0"]
+param_names(c::Chain) = vcat([param_names(l) for l in c.layers]...)
+param_names(::Any) = Vector{String}()
 
 function ModelInfo(m::Chain)
     lengths = [size(mo) for mo in Flux.params(m)]
@@ -11,7 +17,12 @@ function ModelInfo(m::Chain)
     # compute start and end idxs of each layer in param vec
     idxs = cumsum([1; map(prod, lengths)])
     starts_and_ends = [Tuple(idxs[i:i+1]) for i in 1:length(idxs)-1]
-    ModelInfo(lengths, is_bias, starts_and_ends, re)
+    # NOTE: If you are getting an error, it's probably here. 
+    # I'm assuming that each unique layer is contained 
+    # within a sub-chain, and `m` is a Chain of subchains
+    names = param_names(m)
+    @assert length(names) == length(lengths)
+    ModelInfo(lengths, is_bias, starts_and_ends, names, re)
 end
 
 function length(mi::ModelInfo)
