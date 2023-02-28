@@ -4,7 +4,7 @@ function make_procs(args)
       function get_procs(str)
         full_cpus_per_node = Vector{Int}()
         for c in str
-          m = match(r"(\d+)\(x(\d+)\)", c)
+          m = Base.match(r"(\d+)\(x(\d+)\)", c)
           if !isnothing(m)
             for i in 1:parse(Int, m[2])
               push!(full_cpus_per_node, parse(Int, m[1]))
