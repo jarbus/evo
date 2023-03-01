@@ -49,6 +49,7 @@ function Base.:(==)(a::Mut, b::Mut)
   # use === for values that might be missing
   a.core == b.core &&
   a.binding == b.binding &&
+  a.crossed_over == b.crossed_over &&
   a.score === b.score
 end
 Base.show(io::IO, m::UInt32) = print(io, "$(Int(m))")
