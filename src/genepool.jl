@@ -164,6 +164,7 @@ function add_mutation(geno::Geno, mut::Mut)
     mutated_mut = mutate(bound_mut)
   else
     mutated_mut = mutate(mut)
+    @assert mutated_mut.crossed_over
   end
   push!(new_geno, mutated_mut)
   new_geno
@@ -175,14 +176,12 @@ function add_mutations(gp::GenePool,
   """Add a mutation to each genome. Also return a
   vec of bools indicating if the mutation was a crossover"""
   new_genos = Vector{Geno}(undef, n)
-  is_crossover = fill(false, n)
   muts = collect(gp)
   for i in 1:n
     geno = rand(genos)
     added = false
     for m in randperm(length(muts))
       if match(muts[m], geno)
-        is_crossover[i] = !ismissing(muts[m].binding.start)
         new_genos[i] = add_mutation(geno, muts[m])
         added = true
         break
@@ -194,20 +193,20 @@ function add_mutations(gp::GenePool,
 end
 
 log_improvements(pops::Vector{Pop}) = [log_improvements(p) for p in pops]
-function log_improvements(p::Pop)
+log_improvements(p::Pop) = log_improvements(p.id, genos(p))
+function log_improvements(id::String, genos::Vector{Geno})
   """To be applied once new mutations have an associated score"""
-  pop_genos = genos(p)
-  num_crossovers = sum(g[end].crossed_over for g in pop_genos)
+  num_crossovers = sum(g[end].crossed_over for g in genos)
   crossover_deltas = Float32[]
   non_crossover_deltas = Float32[]
-  for geno in pop_genos
+  for geno in genos
     if geno[end].crossed_over && length(geno) > 1
       crossover_deltas = [crossover_deltas; geno[end].score - geno[end-1].score]
     elseif length(geno) > 1
       non_crossover_deltas = [non_crossover_deltas; geno[end].score - geno[end-1].score]
     end
   end
-  @info "$(p.id)_num_crossovers: |$num_crossovers|"
-  @info "$(p.id)_crossover_deltas: $(mmms(crossover_deltas))"
-  @info "$(p.id)_non_crossover_deltas: $(mmms(non_crossover_deltas))"
+  @info "$(id)_num_crossovers: |$num_crossovers|"
+  @info "$(id)_crossover_deltas: $(mmms(crossover_deltas))"
+  @info "$(id)_non_crossover_deltas: $(mmms(non_crossover_deltas))"
 end
