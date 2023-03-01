@@ -75,8 +75,10 @@ Mut(core::MutCore, score::Optional{Real}, binding::MutBinding) =
 Mut(seed::Seed, mr::MR) = Mut(MutCore(seed, mr, Set{UInt32}()))
 Mut(mi::ModelInfo) = Mut(MutCore(mi))
 Mut(c::MutCore) = Mut(c, missing, MutBinding(missing, []))
+Mut(m::Mut, binding::MutBinding) = Mut(m.core, m.score, m.crossed_over, binding)
 Mut(m::Mut, mr::MR) = Mut(MutCore(m.core.seed, mr, m.core.layers),
                           m.score,
+                          m.crossed_over,
                           m.binding)
 
 mark_crossover(m::Mut) = Mut(m.core, m.score, true, m.binding)

@@ -160,7 +160,7 @@ function add_mutation(geno::Geno, mut::Mut)
   # Bind mutation if not bound
   if ismissing(mut.binding.start)
     binding = create_binding(new_geno)
-    bound_mut = Mut(mut.core, mut.score, binding)
+    bound_mut = Mut(mut, binding)
     mutated_mut = mutate(bound_mut)
   else
     mutated_mut = mutate(mut)

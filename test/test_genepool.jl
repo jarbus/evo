@@ -91,6 +91,7 @@ end
 end
 
 @testset "make_genepool" begin
+  # test that add_mutations works when no mutations are added
   genos = [[Mut(Mut(mi).core, i-j, MutBinding(0, []))
            for j in 1:2] for i in 1:10]
   gp = EvoTrade.make_genepool(mi, "1", genos, 20)
@@ -116,6 +117,22 @@ end
   end
   for m in gp[11:end]
     @test m.crossed_over == false
+  end
+  # test that add_mutations works when mutations are added
+  genos = [[Mut(Mut(mi).core, i+j, MutBinding(missing, []))
+           for j in 1:2] for i in 1:10]
+  # filter out padded muts
+  gp = EvoTrade.make_genepool(mi, "1", genos, 20)[1:10]
+  for m in gp
+    @test m.crossed_over == true
+  end
+  genos = add_mutations(gp, genos, 10)
+  for g in genos
+    @test length(g) == 3 # test that new mut is added
+    @test g[end].binding.start == 1 # test binding is fresh
+    @test g[end].binding.geno == [g[1].core, g[2].core]
+    @test g[end].crossed_over == true
+    EvoTrade.update_score!(g, 100f0)
   end
 
 end
