@@ -54,8 +54,11 @@ function compute_stats(mi::ModelInfo, gp::GenePool)::GenePoolStatistics
   num_copied_muts = 0
   copied_layers_counts = zeros(Float32, length(mi.sizes))
   copied_layers_mrs = [Vector{Float32}() for _ in 1:length(mi.sizes)]
+  seen_muts = Set{Mut}()
   for mut in gp
     ismissing(mut.score) && continue
+    mut in seen_muts && continue
+    push!(seen_muts, mut)
     num_copied_muts += 1
     for layer in mut.core.layers
       push!(copied_layers_mrs[layer], mut.core.mr)
