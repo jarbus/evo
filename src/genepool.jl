@@ -114,17 +114,17 @@ function match(bind::MutBinding, geno::Geno)::Bool
   true
 end
 
-function log_genepool_stats(mi::ModelInfo, stats::GenePoolStatistics)
-  @info "stats.num_copied_muts: |$(stats.num_copied_muts)|"
-  @info "stats.copied_ratios: $(stats.copied_layers_ratios)"
+function log_genepool_stats(mi::ModelInfo, id::String, stats::GenePoolStatistics)
+  @info "$(id)_stats.num_copied_muts: |$(stats.num_copied_muts)|"
+  @info "$(id)_stats.copied_ratios: $(stats.copied_layers_ratios)"
   mean_mrs = filter(!isnan, mean.(stats.copied_layers_mrs))
-  @info "stats.copied_mrs: $(mmms(mean_mrs))"
+  @info "$(id)_stats.copied_mrs: $(mmms(mean_mrs))"
   ratios = Dict{String, Float32}()
   for i in eachindex(stats.copied_layers_ratios)
     ratios[mi.names[i]] = get(ratios, mi.names[i], 0f0) + stats.copied_layers_ratios[i]
   end
   for (name, ratio) in ratios
-    @info "stats.copied_ratios.$name: $ratio"
+    @info "$(id)_stats.copied_ratios.$name: $ratio"
   end
   if stats.num_copied_muts > 0
     @assert sum(values(ratios)) ≈ 1f0
@@ -132,17 +132,17 @@ function log_genepool_stats(mi::ModelInfo, stats::GenePoolStatistics)
 end
 
 make_genepool(model_info::ModelInfo, pop::Pop) =
-  make_genepool(model_info, genos(pop), pop.size)
-function make_genepool(mi::ModelInfo, genos::Vector{Geno}, size::Int)::GenePool
+  make_genepool(model_info, pop.id, genos(pop), pop.size)
+function make_genepool(mi::ModelInfo, id::String, genos::Vector{Geno}, size::Int)::GenePool
   gp = accumulate_muts(genos, Int(size/2))
   stats = compute_stats(mi, gp)
-  log_genepool_stats(mi, stats)
+  log_genepool_stats(mi, id, stats)
   pad_genepool!(mi, gp, stats, size - length(gp))
   @assert length(gp) == size
   gp
 end
 
-function create_binding(mut::Mut, geno::Geno)::MutBinding
+function create_binding(geno::Geno)::MutBinding
   """Create a binding for a mutation"""
   start = max(1,length(geno)-3)
   MutBinding(start, [m.core for m in geno[start:end]])
@@ -159,7 +159,7 @@ function add_mutation(geno::Geno, mut::Mut)
   new_geno = deepcopy(geno)
   # Bind mutation if not bound
   if ismissing(mut.binding.start)
-    binding = create_binding(mut, new_geno)
+    binding = create_binding(new_geno)
     bound_mut = Mut(mut.core, mut.score, binding)
     mutated_mut = mutate(bound_mut)
   else
@@ -193,20 +193,21 @@ function add_mutations(gp::GenePool,
   new_genos
 end
 
-log_improvements(p::Pop) = log_improvements(genos(p))
-function log_improvements(genos::Vector{Geno})
+log_improvements(pops::Vector{Pop}) = [log_improvements(p) for p in pops]
+function log_improvements(p::Pop)
   """To be applied once new mutations have an associated score"""
-  num_crossovers = sum(g[end].crossed_over for g in genos)
+  pop_genos = genos(p)
+  num_crossovers = sum(g[end].crossed_over for g in pop_genos)
   crossover_deltas = Float32[]
   non_crossover_deltas = Float32[]
-  for geno in genos
+  for geno in pop_genos
     if geno[end].crossed_over && length(geno) > 1
       crossover_deltas = [crossover_deltas; geno[end].score - geno[end-1].score]
     elseif length(geno) > 1
       non_crossover_deltas = [non_crossover_deltas; geno[end].score - geno[end-1].score]
     end
   end
-  @info "num_crossovers: |$num_crossovers|"
-  @info "crossover_deltas: $(mmms(crossover_deltas))"
-  @info "non_crossover_deltas: $(mmms(non_crossover_deltas))"
+  @info "$(p.id)_num_crossovers: |$num_crossovers|"
+  @info "$(p.id)_crossover_deltas: $(mmms(crossover_deltas))"
+  @info "$(p.id)_non_crossover_deltas: $(mmms(non_crossover_deltas))"
 end

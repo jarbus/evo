@@ -38,7 +38,7 @@ end
   @test length(stats.copied_layers_ratios) == 4
   @test length(stats.copied_layers_mrs) == 4
   for g in genos
-    @test in(g[end], gp)
+    @test in(mark_crossover(g[end]), gp)
     @test g[end].crossed_over == false
   end
   for m in gp
@@ -55,7 +55,7 @@ end
   pad_genepool!(mi, gp, stats, 10)
   @test length(gp) == 10
   for g in genos
-    @test !in(g[end], gp)
+    @test !in(mark_crossover(g[end]), gp)
   end
 
   # test that only some mutations are added
@@ -65,8 +65,8 @@ end
   println([genos[i][end].score for i in 1:10])
   gp = accumulate_muts(genos, 5)
   @test length(gp) == 5
-  @test genos[1][end] ∉ gp
-  @test genos[2][end] ∈ gp
+  @test mark_crossover(genos[1][end]) ∉ gp
+  @test mark_crossover(genos[2][end]) ∈ gp
 
   # test that highest scores are kept
   genos = [[Mut(r_mt.core, 0, r_mt.binding),
@@ -76,8 +76,8 @@ end
   @test length(gp) == 2
   @test genos[2][end].score > genos[2][end-1].score
   @test genos[10][end].score > genos[10][end-1].score
-  @test genos[2][end] ∉ gp
-  @test genos[10][end] ∈ gp
+  @test mark_crossover(genos[2][end]) ∉ gp
+  @test mark_crossover(genos[10][end]) ∈ gp
 
   # test that muts from two genos back are used
   genos = [[Mut(r_mt.core, 0, r_mt.binding),
@@ -86,30 +86,30 @@ end
            for i in 1:10]
   gp = accumulate_muts(genos, 2)
   @test length(gp) == 2
-  @test genos[2][2] ∉ gp
-  @test genos[10][2] ∈ gp
+  @test mark_crossover(genos[2][2]) ∉ gp
+  @test mark_crossover(genos[10][2]) ∈ gp
 end
 
 @testset "make_genepool" begin
   genos = [[Mut(Mut(mi).core, i-j, MutBinding(0, []))
            for j in 1:2] for i in 1:10]
-  gp = EvoTrade.make_genepool(mi, genos, 20)
+  gp = EvoTrade.make_genepool(mi, "1", genos, 20)
   for m in gp
     @test m.crossed_over == false
   end
   genos = add_mutations(gp, genos, 10)
   for g in genos
-    @test !in(g[end], gp) # test bad muts not in pool
+    @test mark_crossover(g[end]) ∉ gp # test bad muts not in pool
     @test length(g) == 3 # test that new mut is added
     @test g[end].binding.start == 1 # test binding is fresh
     @test g[end].binding.geno == [g[1].core, g[2].core]
-    @test !in(g[end], gp)
+    @test mark_crossover(g[end]) ∉ gp
     EvoTrade.update_score!(g, 100f0)
   end
-  gp = EvoTrade.make_genepool(mi, genos, 20)
+  gp = EvoTrade.make_genepool(mi, "1", genos, 20)
   g_ends = [g[end] for g in genos]
   for m in g_ends
-    @test m ∈ gp # test good muts added to gene pool
+    @test mark_crossover(m) ∈ gp # test good muts added to gene pool
   end
   for m in gp[1:10]
     @test m.crossed_over == true
@@ -168,8 +168,8 @@ end
 
   Random.seed!(1)
   gp = EvoTrade.make_genepool(mi, pop)
-  @test pop.inds[1].geno[end] ∉ gp
-  @test pop.inds[2].geno[end] ∈ gp
+  @test mark_crossover(pop.inds[1].geno[end]) ∉ gp
+  @test mark_crossover(pop.inds[2].geno[end]) ∈ gp
   Random.seed!(1)
   seeds = [g.core.seed for g in gp]
   new_pop = create_next_pop(mi, pop, γ, 1)

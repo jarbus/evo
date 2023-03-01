@@ -361,6 +361,7 @@ function update_pops!(pops::Vector{Pop}, batches::Vector{Batch}, γ::Float32, ar
   compute_novelties!(pops)
   compute_fitnesses!(pops)
   compute_scores!(pops, γ)
+  log_improvements(pops)
   add_to_archive!(pops, arxiv_prob)
   average_walks!(pops)
   for pop in pops, ind in pop.inds

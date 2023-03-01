@@ -39,7 +39,8 @@ export log_improvements
 # structs
 export Ind, Pop, BC, F, Geno, CompGeno, RolloutInd,
 Prefixes, V32, Batch, compute_compression_data, Mut,
-Seed, MR, MutCore, MutBinding, EliteIdxs
+Seed, MR, MutCore, MutBinding, EliteIdxs, mark_crossover,
+mark_score
 
 
 using ArgParse
