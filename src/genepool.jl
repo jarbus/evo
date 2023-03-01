@@ -107,7 +107,7 @@ function match(bind::MutBinding, geno::Geno)::Bool
   length(geno) < bind.start && return false
   @simd for i in 1:length(bind.geno)
     @assert 1 <= i+bind.start-1 <= length(geno)
-    if geno[bind.start+i-1] != bind.geno[i]
+    if geno[bind.start+i-1].core != bind.geno[i]
       return false
     end
   end
@@ -144,8 +144,9 @@ end
 
 function create_binding(geno::Geno)::MutBinding
   """Create a binding for a mutation"""
-  start = max(1,length(geno)-3)
-  MutBinding(start, [m.core for m in geno[start:end]])
+  b_start = max(1,length(geno)-5)
+  b_end = min(length(geno), b_start+2)
+  MutBinding(b_start, [m.core for m in geno[b_start:b_end]])
 end
 
 function update_score!(geno::Geno, score::Float32)

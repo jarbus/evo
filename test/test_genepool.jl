@@ -55,7 +55,7 @@ end
   pad_genepool!(mi, gp, stats, 10)
   @test length(gp) == 10
   for g in genos
-    @test !in(mark_crossover(g[end]), gp)
+    @test mark_crossover(g[end]) ∉ gp
   end
 
   # test that only some mutations are added
@@ -90,7 +90,7 @@ end
   @test mark_crossover(genos[10][2]) ∈ gp
 end
 
-@testset "make_genepool" begin
+@testset "make_genepool/add_mutations" begin
   # test that add_mutations works when no mutations are added
   genos = [[Mut(Mut(mi).core, i-j, MutBinding(0, []))
            for j in 1:2] for i in 1:10]
@@ -121,8 +121,11 @@ end
   # test that add_mutations works when mutations are added
   genos = [[Mut(Mut(mi).core, i+j, MutBinding(missing, []))
            for j in 1:2] for i in 1:10]
+  gp = EvoTrade.make_genepool(mi, "1", genos, 20)
+  [@test m.crossed_over for m in gp[1:10]]
+  [@test !m.crossed_over for m in gp[11:end]]
   # filter out padded muts
-  gp = EvoTrade.make_genepool(mi, "1", genos, 20)[1:10]
+  gp = gp[1:10]
   for m in gp
     @test m.crossed_over == true
   end
@@ -131,10 +134,11 @@ end
     @test length(g) == 3 # test that new mut is added
     @test g[end].binding.start == 1 # test binding is fresh
     @test g[end].binding.geno == [g[1].core, g[2].core]
+    @test g[end-1].crossed_over == false
     @test g[end].crossed_over == true
     EvoTrade.update_score!(g, 100f0)
   end
-
+  log_improvements("1", genos)
 end
 
 @testset "create_next_pop" begin
@@ -195,4 +199,29 @@ end
   @test new_pop.inds[2].geno !== pop.inds[2].geno
   @test new_pop.inds[2].geno[3].core.seed ∈ seeds
   @test length(new_pop.inds[2].geno) == 3
+end
+
+
+@testset "perform_crossover" begin
+  # test that mutations can bind to related genomes
+  sibling1 = [Mut(Mut(mi).core, j*j, MutBinding(missing, []))
+           for j in 1:10]
+  sibling2 = deepcopy(sibling1)
+  sibling2[9] = Mut(Mut(mi).core, 81, MutBinding())
+  sibling2[10] = Mut(Mut(mi).core, 100, MutBinding())
+  binding1 = EvoTrade.create_binding(sibling1)
+  sibling1[end] = Mut(sibling1[end], binding1)
+  @test sibling1[end].crossed_over == false
+  @test sibling1[end].binding.start == 5
+  @test match(sibling1[end], sibling2)
+  gp = EvoTrade.make_genepool(mi, "1", [sibling1], 2)[1:1]
+  @test gp[1].core == sibling1[end].core
+  new_sibling2 = add_mutations(gp, [sibling2], 1)[1]
+  @test new_sibling2[end].binding.start == 5
+  @test new_sibling2[end].core == sibling1[end].core
+  @test new_sibling2[end].crossed_over == true
+  @test new_sibling2[end].binding.geno == binding1.geno
+  non_sibling1 = [Mut(Mut(mi).core, j*j, MutBinding(missing, []))
+           for j in 1:10]
+  @test !match(sibling1[end], non_sibling1)
 end
