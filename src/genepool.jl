@@ -116,7 +116,6 @@ end
 
 function log_genepool_stats(mi::ModelInfo, id::String, stats::GenePoolStatistics)
   @info "$(id)_stats.num_copied_muts: |$(stats.num_copied_muts)|"
-  @info "$(id)_stats.copied_ratios: $(stats.copied_layers_ratios)"
   mean_mrs = filter(!isnan, mean.(stats.copied_layers_mrs))
   @info "$(id)_stats.copied_mrs: $(mmms(mean_mrs))"
   ratios = Dict{String, Float32}()
