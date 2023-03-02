@@ -100,7 +100,7 @@ function batch_reset!(envs::Vector{PyObject}, models::Dict{String,<:Chain})
 end
 
 # TODO Refactor to make this work with different agents
-function batch_step!(envs::Vector{PyObject}, models::Dict{String,<:Chain}, b_obs::Vector{<:AbstractDict{String,<:AbstractArray}}; evaluation=false)
+function batch_step!(envs::Vector{PyObject}, models::Dict{String,<:Chain}, b_obs::Vector{<:AbstractDict{String,<:AbstractArray}}; evaluation=true)
   """Perform a batch step on a vector of environments and models. Actions begin at 1, and are
     converted to 0 for python inside this function."""
   ret_obss, ret_rews, ret_dones = Vector{PyDict{String,PyArray,true}}(), [], []
