@@ -122,9 +122,9 @@ function log_genepool_stats(mi::ModelInfo, id::String, stats::GenePoolStatistics
   for i in eachindex(stats.copied_layers_ratios)
     ratios[mi.names[i]] = get(ratios, mi.names[i], 0f0) + stats.copied_layers_ratios[i]
   end
-  for (name, ratio) in ratios
-    @info "$(id)_stats.copied_ratios.$name: $ratio"
-  end
+  # for (name, ratio) in ratios
+  #   @info "$(id)_stats.copied_ratios.$name: $ratio"
+  # end
   if stats.num_copied_muts > 0
     @assert sum(values(ratios)) ≈ 1f0
   end
