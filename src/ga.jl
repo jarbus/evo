@@ -131,7 +131,7 @@ function create_next_pop(mi::ModelInfo, pop::Pop, γ::Float32, num_elites::Int)
 
   e_genos = [ind.geno for ind in elites]
   new_genos = add_mutations(gp, e_genos, pop.size-1)
-  next_genos = [e_genos[1], new_genos...]
+  next_genos = [deepcopy(e_genos[1]), new_genos...]
   next_inds = Ind.(next_genos)
   for (i, ind) in enumerate(next_inds)
     ind.id = pop.id*"_"*string(i)
@@ -139,6 +139,7 @@ function create_next_pop(mi::ModelInfo, pop::Pop, γ::Float32, num_elites::Int)
   next_pop = Pop(pop.id, pop.size, next_inds)
   next_pop.elites = elites
   next_pop.archive = pop.archive
+  next_pop.id_map = mk_id_map(next_pop.inds)
   next_pop
 end
 
