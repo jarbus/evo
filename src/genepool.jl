@@ -2,9 +2,9 @@
 mutate(m::Mut)::Mut = Mut(m, mutate(m.core.mr))
 function mutate(mr::MR)
   choice = rand(Float32)
-  if choice < 0.4
+  if choice < 0.0
    return mr * 0.5f0
-  elseif 0.4 <= choice < 0.9
+  elseif 0.0 <= choice < 1.0
    return mr 
  else
    return mr * 2f0
@@ -133,7 +133,8 @@ end
 make_genepool(model_info::ModelInfo, pop::Pop) =
   make_genepool(model_info, pop.id, genos(pop), pop.size)
 function make_genepool(mi::ModelInfo, id::String, genos::Vector{Geno}, size::Int)::GenePool
-  gp = accumulate_muts(genos, Int(size/2))
+  #gp = accumulate_muts(genos, Int(size/2))
+  gp = Mut[]
   stats = compute_stats(mi, gp)
   log_genepool_stats(mi, id, stats)
   pad_genepool!(mi, gp, stats, size - length(gp))
@@ -150,7 +151,12 @@ end
 
 function update_score!(geno::Geno, score::Float32)
   """Update the score of the last mutation in the genome"""
+  # if geno[end].score != score && !geno[end].crossed_over
+  #   println(length(geno))
+  #   throw("Score mismatch: $(geno[end].score) != $(score)")
+  # else
   geno[end] = mark_score(geno[end], score)
+  # end
 end
 
 function add_mutation(geno::Geno, mut::Mut)

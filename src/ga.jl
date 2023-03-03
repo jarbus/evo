@@ -324,13 +324,23 @@ end
 function compute_scores!(pop::Pop, γ::Float32)
     """Compute the score for each ind in pop"""
     if γ == 0f0
-      for ind in pop.inds
-        update_score!(ind.geno, ind.fitness)
+      for (i, ind) in enumerate(pop.inds)
+        try
+          update_score!(ind.geno, ind.fitness)
+        catch e
+          println("failed to update score for ind $i")
+          throw(e)
+        end
       end
       return
     elseif γ == 1f0
-      for ind in pop.inds
-        update_score!(ind.geno, ind.novelty)
+      for (i, ind) in enumerate(pop.inds)
+        try
+          update_score!(ind.geno, ind.novelty)
+        catch e
+          println("failed to update score for ind $i")
+          throw(e)
+        end
       end
     else
       throw(ArgumentError("γ must be 0 or 1"))

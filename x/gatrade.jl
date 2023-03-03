@@ -35,7 +35,7 @@ function main()
   global_logger(EvoTradeLogger(args["local"] ? stdout : logname))
   df = nothing
   wp = WorkerPool(workers())
-  n_pops = isnothing(args["maze"]) ? 2 : 1
+  n_pops = isnothing(args["maze"]) ? 1 : 1
   γ = args["exploration-rate"]
   @info "cls: $clsname"
   @info "exp: $expname"
@@ -50,7 +50,7 @@ function main()
         env = PyTrade().Trade(env_config)
         EvoTrade.Trade.reset!(env)
         grid = env.table 
-        group_fn = all_v_best
+        group_fn = singleton_groups
     end
     m = make_model(env, args)
     θ, re = Flux.destructure(m)
