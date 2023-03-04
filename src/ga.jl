@@ -79,38 +79,6 @@ function mutate(ind::Ind, mut_rate::Float32)
     child
 end
 
-function create_next_pop(pops::Vector{Pop}, γ::Float64, num_elites::Int)
-    @inline [create_next_pop(pop, γ, num_elites) for pop in pops]
-end
-function create_next_pop(pop::Pop, γ::Float64, num_elites::Int)
-    nums = compute_ratios(pop.size, γ, num_elites)
-    function make_elites(order_metric, num)
-        Ind.(pop.inds[sortperm(order_metric, rev=true)[1:num]])
-    end
-    exploiter_elites = make_elites(fitnesses(pop), nums[:n_e_exploit])
-    explorer_elites  = make_elites(novelties(pop), nums[:n_e_explore])
-
-    @assert length(explorer_elites) == 0 || length(exploiter_elites) == 0
-    elites = [exploiter_elites; explorer_elites]
-    next_inds = [deepcopy(elites[1])]
-    for _ in 1:(nums[:n_n_exploit]+nums[:n_e_exploit]) # add exploiters
-      push!(next_inds, mutate(rand(exploiter_elites), Fσs[1]))
-    end
-    for _ in 1:(nums[:n_n_explore]+nums[:n_e_explore]) # add explorers
-      push!(next_inds, mutate(rand(explorer_elites), Nσs[1]))
-    end
-    next_inds = next_inds[1:pop.size]
-    @assert length(next_inds) == pop.size
-    # set ids of next gen
-    for (i, ind) in enumerate(next_inds)
-        ind.id = pop.id*"_"*string(i)
-    end
-    next_pop = Pop(pop.id, pop.size, next_inds)
-    next_pop.elites = elites
-    next_pop.archive = pop.archive
-    next_pop
-end
-
 function create_next_pop(mi::ModelInfo, pops::Vector{Pop}, γ::Float32, num_elites::Int)
     @inline [create_next_pop(mi, pop, γ, num_elites) for pop in pops]
 end
