@@ -162,7 +162,7 @@ end
 function add_mutation(geno::Geno, mut::Mut)
   """Adds a mutation to a genome, creating a binding if
   the binding is missing. Assumes mutation is a match."""
-  new_geno = deepcopy(geno)
+  new_geno = copy(geno)
   # Bind mutation if not bound
   if ismissing(mut.binding.start)
     binding = create_binding(new_geno)
