@@ -56,7 +56,7 @@ function main()
     θ, re = Flux.destructure(m)
     mi = ModelInfo(m)
     model_size = length(θ)
-    nt = NoiseTable(StableRNG(1), length(mi), args["mutation-rate"])
+    nt = NoiseTable(StableRNG(1), length(mi), 1f0)
     # pass mazeenv struct or trade config dict
     env = env isa MazeEnv ? env : env_config
     global sc = SeedCache(maxsize=args["num-elites"]*2)
