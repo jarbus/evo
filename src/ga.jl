@@ -57,21 +57,18 @@ function novelties(inds::Vector{Ind})
     novelties
 end
 
-function compute_ratios(pop_size::Int, γ::Float64, num_elites::Int)
+function compute_ratios(pop_size::Int, γ::AbstractFloat, num_elites::Int)
     """Compute % of elites and pop to select based on fitness
     and novelty for a given exploration ratio γ."""
     # If you change the below two lines, update src/visual.jl::plot_walks() too
-    new_pop_size = pop_size - num_elites
-    num_elite_explorers = floor(Int, γ * num_elites)
-    num_elite_exploiters = num_elites - num_elite_explorers
-    @assert num_elite_explorers + num_elite_exploiters == num_elites
-    num_next_explorers = floor(Int, new_pop_size*(num_elite_explorers / num_elites))
-    num_next_exploiters  = new_pop_size - num_next_explorers
-    @assert num_elite_explorers + num_elite_exploiters + new_pop_size == pop_size
-    Dict(:n_e_explore=>num_elite_explorers,
-         :n_e_exploit=>num_elite_exploiters,
-         :n_n_explore=>num_next_explorers,
-         :n_n_exploit=>num_next_exploiters)
+    if γ != 0.0 && γ != 1.0
+      throw(ArgumentError("γ must be 0.0 or 1.0, is $(γ)"))
+    end
+    if γ == 0.0
+      return Dict(:n_e_explore=>0, :n_e_exploit=>num_elites, :n_n_explore=>0, :n_n_exploit=>pop_size)
+    elseif γ == 1.0
+      return Dict(:n_e_explore=>num_elites, :n_e_exploit=>0, :n_n_explore=>pop_size, :n_n_exploit=>0)
+    end
 end
 
 function mutate(ind::Ind, mut_rate::Float32)
