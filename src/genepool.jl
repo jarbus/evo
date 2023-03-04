@@ -130,11 +130,10 @@ function log_genepool_stats(mi::ModelInfo, id::String, stats::GenePoolStatistics
   end
 end
 
-make_genepool(model_info::ModelInfo, pop::Pop) =
-  make_genepool(model_info, pop.id, genos(pop), pop.size)
-function make_genepool(mi::ModelInfo, id::String, genos::Vector{Geno}, size::Int)::GenePool
-  #gp = accumulate_muts(genos, Int(size/2))
-  gp = Mut[]
+make_genepool(model_info::ModelInfo, pop::Pop; no_accumulation::Bool=false) =
+  make_genepool(model_info, pop.id, genos(pop), pop.size; no_accumulation=no_accumulation)
+function make_genepool(mi::ModelInfo, id::String, genos::Vector{Geno}, size::Int; no_accumulation::Bool=false)::GenePool
+  gp = no_accumulation ? Mut[] : accumulate_muts(genos, Int(size/2))
   stats = compute_stats(mi, gp)
   log_genepool_stats(mi, id, stats)
   pad_genepool!(mi, gp, stats, size - length(gp))

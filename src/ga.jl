@@ -82,7 +82,7 @@ end
 function create_next_pop(mi::ModelInfo, pops::Vector{Pop}, γ::Float32, num_elites::Int)
     @inline [create_next_pop(mi, pop, γ, num_elites) for pop in pops]
 end
-function create_next_pop(mi::ModelInfo, pop::Pop, γ::Float32, num_elites::Int)
+function create_next_pop(mi::ModelInfo, pop::Pop, γ::Float32, num_elites::Int; no_accumulation::Bool=false)
   γ ∉ (0.0f0, 1.0f0) && error("γ must be in (0, 1)")
   function make_elites(order_metric, num)
     Ind.(pop.inds[sortperm(order_metric, rev=true)[1:num]])
@@ -92,7 +92,7 @@ function create_next_pop(mi::ModelInfo, pop::Pop, γ::Float32, num_elites::Int)
   elseif γ == 1.0f0
     make_elites(novelties(pop), num_elites)
   end
-  gp = make_genepool(mi, pop)
+  gp = make_genepool(mi, pop, no_accumulation=no_accumulation)
 
   @info "finished making genepool, adding mutations"
   e_genos = [ind.geno for ind in elites]
