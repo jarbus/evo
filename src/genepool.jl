@@ -44,6 +44,7 @@ function accumulate_muts(genos::Vector{Geno}, size::Int)::GenePool
     return Vector{Mut}()
   end
   muts = [m[2] for m in muts_and_deltas]
+  @assert all([m.crossed_over for m in muts])
   @assert length(muts) == size
   muts
 end
