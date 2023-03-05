@@ -104,7 +104,7 @@ match(mut::Mut, geno::Geno) = match(mut.binding, geno)
 function match(bind::MutBinding, geno::Geno)::Bool
   """Return true if the mutation binding matches the genome"""
   ismissing(bind.start)     && return true
-  length(geno) < bind.start && return false
+  length(geno) < bind.start + length(bind.geno) - 1 && return false
   @simd for i in 1:length(bind.geno)
     @assert 1 <= i+bind.start-1 <= length(geno)
     if geno[bind.start+i-1].core != bind.geno[i]
