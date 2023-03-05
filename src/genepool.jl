@@ -201,17 +201,28 @@ log_improvements(pops::Vector{Pop}) = [log_improvements(p) for p in pops]
 log_improvements(p::Pop) = log_improvements(p.id, genos(p))
 function log_improvements(id::String, genos::Vector{Geno})
   """To be applied once new mutations have an associated score"""
-  num_crossovers = sum(g[end].crossed_over for g in genos)
+  num_crossovers = 0
+  num_reapplications = 0
   crossover_deltas = Float32[]
+  reapplication_deltas = Float32[]
   non_crossover_deltas = Float32[]
   for geno in genos
-    if geno[end].crossed_over && length(geno) > 1
-      crossover_deltas = [crossover_deltas; geno[end].score - geno[end-1].score]
-    elseif length(geno) > 1
+    length(geno) < 2 && continue
+    if geno[end].crossed_over
+      if geno[end-1].core.seed == geno[end].core.seed
+        num_reapplications += 1
+        reapplication_deltas = [reapplication_deltas; geno[end].score - geno[end-1].score]
+      else
+        num_crossovers += 1
+        crossover_deltas = [crossover_deltas; geno[end].score - geno[end-1].score]
+      end
+    else
       non_crossover_deltas = [non_crossover_deltas; geno[end].score - geno[end-1].score]
     end
   end
   @info "$(id)_num_crossovers: |$num_crossovers|"
+  @info "$(id)_num_reapplications: |$num_reapplications|"
+  @info "$(id)_reapplication_deltas: $(mmms(reapplication_deltas))"
   @info "$(id)_crossover_deltas: $(mmms(crossover_deltas))"
   @info "$(id)_non_crossover_deltas: $(mmms(non_crossover_deltas))"
 end
