@@ -1,5 +1,5 @@
 
-mutate(m::Mut)::Mut = Mut(m, mutate(m.core.mr))
+mutate(m::Mut)::Mut = m#Mut(m, mutate(m.core.mr))
 function mutate(mr::MR)
   choice = rand(Float32)
   if choice < 0.0
