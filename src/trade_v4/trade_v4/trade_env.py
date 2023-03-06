@@ -249,10 +249,17 @@ class Trade:
 
 
 
+        # old: extra info for trade
         # (self + policies) * (food frames and pos frame)
-        food_frame_and_agent_channels = (2) * (self.food_types+1)
+        #food_frame_and_agent_channels = (2) * (self.food_types+1)
         # x, y + agents_and_foods + food frames + comms
-        self.channels = 2 + food_frame_and_agent_channels + (self.food_types) + (self.vocab_size) + int(self.punish) + (2*int(self.day_night_cycle))
+        #self.channels = 2 + food_frame_and_agent_channels + (self.food_types) + (self.vocab_size) + int(self.punish) + (2*int(self.day_night_cycle))
+
+        # new: single food single agent forage only
+        # food_frames and pos_frame
+        food_frame_and_agent_channels = self.food_types+1
+        # x + y + food_frames + pos_frame
+        self.channels = 2 + food_frame_and_agent_channels
         self.agent_food_counts = dict()
         self.MOVES = ["UP", "DOWN", "LEFT", "RIGHT"]
         if self.punish:
@@ -420,37 +427,37 @@ class Trade:
         # Self position
         full_frames[ax,ay, fnum] = 1
         fnum +=1
-        # Self food
-        full_frames[ax, ay, fnum:fnum+self.food_types] += self.agent_food_counts[agent]
-        full_frames[ax, ay, fnum:fnum+self.food_types] /= SCALE_DOWN
-        fnum += self.food_types
-        # Others pos, Others food, comms
-        pol_pos_frames = full_frames[:,:,fnum]
-        fnum += 1
-        pol_food_frames = full_frames[:,:,fnum:fnum+self.food_types]
-        fnum += self.food_types
-        comm_frames = full_frames[:,:,fnum:fnum+self.vocab_size]
-        fnum += self.vocab_size
+        ## Self food
+        #full_frames[ax, ay, fnum:fnum+self.food_types] += self.agent_food_counts[agent]
+        #full_frames[ax, ay, fnum:fnum+self.food_types] /= SCALE_DOWN
+        #fnum += self.food_types
+        ## Others pos, Others food, comms
+        #pol_pos_frames = full_frames[:,:,fnum]
+        #fnum += 1
+        #pol_food_frames = full_frames[:,:,fnum:fnum+self.food_types]
+        #fnum += self.food_types
+        #comm_frames = full_frames[:,:,fnum:fnum+self.vocab_size]
+        #fnum += self.vocab_size
 
-        for i, a in enumerate(self.agents):
-            if self.compute_done(a):
-                continue
-            oax, oay = self.agent_positions[a]
-            comm_frames[oax, oay, :] = self.communications[a]
-            if a != agent:
-                pol_pos_frames[oax, oay] += 1
-                pol_food_frames[oax, oay, :] += self.agent_food_counts[a]
-        pol_food_frames /= SCALE_DOWN
-        # Light
-        if self.day_night_cycle:
-            full_frames[:,:,fnum] = self.light.frame[:, :]
-            fnum += 1
-            full_frames[:,:,fnum] = self.light.campfire_frame[:, :]
-            fnum += 1
-        # punish ?
-        if self.punish:
-            full_frames[:,:,fnum] = np.sum(self.punish_frames, axis=0)[None, :, :]
-            fnum += 1
+        #for i, a in enumerate(self.agents):
+        #    if self.compute_done(a):
+        #        continue
+        #    oax, oay = self.agent_positions[a]
+        #    comm_frames[oax, oay, :] = self.communications[a]
+        #    if a != agent:
+        #        pol_pos_frames[oax, oay] += 1
+        #        pol_food_frames[oax, oay, :] += self.agent_food_counts[a]
+        #pol_food_frames /= SCALE_DOWN
+        ## Light
+        #if self.day_night_cycle:
+        #    full_frames[:,:,fnum] = self.light.frame[:, :]
+        #    fnum += 1
+        #    full_frames[:,:,fnum] = self.light.campfire_frame[:, :]
+        #    fnum += 1
+        ## punish ?
+        #if self.punish:
+        #    full_frames[:,:,fnum] = np.sum(self.punish_frames, axis=0)[None, :, :]
+        #    fnum += 1
 
         full_frames[:,:,fnum] = np.repeat(np.arange(gy).reshape(1, gy), gx, axis=0) / gy
         fnum+=1
