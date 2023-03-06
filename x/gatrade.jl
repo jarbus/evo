@@ -23,6 +23,7 @@ using Logging
     id_batch = process_batch(gamebatch, id_map, eval_gen)
     id_batch = EvoTrade.add_metrics(id_batch, rdc_mets)
     id_batch
+    rand() < 0.01 && GC.gc()
   end
 end
 
@@ -168,5 +169,6 @@ function main()
                          "sc"=>rm_params(sc),"prefixes"=>prefixes))
     end
     pops = next_pops
+    rand() < 0.2 &&  GC.gc()
   end
 end
