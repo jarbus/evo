@@ -3,6 +3,7 @@ module Maze
 export maze_from_file, step!, reset!, sample_batch, get_obs, MazeEnv, print_maze
 using StatsBase
 using Plots
+import Evo
 
 mutable struct MazeEnv
     grid::Array{Int64,2}
@@ -47,12 +48,12 @@ function sample_batch(probs::Matrix{Float32})
   [sample(1:size(probs, 1), Weights(probs[:, i])) for i in 1:size(probs, 2)]
 end
 
-function reset!(env::MazeEnv)
+function Evo.reset!(env::MazeEnv)
     env.locations = [env.start for _ in 1:4]
 end
     
 
-function step!(env::MazeEnv, act::Int64)
+function Evo.step!(env::MazeEnv, act::Int64)
     # act is 1: up, 2: right, 3: down, 4: left
     # get the current location
     r, c = env.locations[4]

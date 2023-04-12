@@ -15,6 +15,7 @@ max_bc, add_elite_idxs_to_groups, compute_prefixes,
 compress_groups, decompress_group, add_elite_idxs, compress_pop
 export run_batch, invert
 export EvoLogger
+export make, step!, reset!
 
 using ArgParse
 using Infiltrator
@@ -27,6 +28,10 @@ using Statistics
 using Printf
 using Plots
 using LoggingExtras
+
+function reset! end
+function step! end
+
 include("utils.jl")
 include("args.jl")
 include("multiproc.jl")
@@ -36,12 +41,15 @@ include("construction.jl")
 using .Net
 
 
+
+include("gym.jl")
 include("trade.jl")
-using .Trade
 include("maze.jl")
-using .Maze
 include("es.jl")
 include("ga.jl")
+using .Gym
+using .Trade
+using .Maze
 using .ES
 using .GANS
 include("rollout.jl")
