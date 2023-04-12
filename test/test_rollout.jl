@@ -1,4 +1,4 @@
-using EvoTrade
+using Evo
 using Flux
 using Test
 root_dir = dirname(@__FILE__)  |> dirname |> String

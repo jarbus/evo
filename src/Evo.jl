@@ -1,4 +1,4 @@
-module EvoTrade
+module Evo
 
 export get_arg_table, parse_args, make_procs, make_model
 export mk_env_config, update_df, write_mets, ts, log_mmm!
@@ -14,7 +14,7 @@ elite, mr, create_rollout_groups, average_bc, aid, average_walk,
 max_bc, add_elite_idxs_to_groups, compute_prefixes,
 compress_groups, decompress_group, add_elite_idxs, compress_pop
 export run_batch, invert
-export EvoTradeLogger
+export EvoLogger
 
 using ArgParse
 using Infiltrator

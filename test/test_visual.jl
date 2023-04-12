@@ -1,4 +1,4 @@
-using EvoTrade
+using Evo
 using Test
 using PyCall
 using Plots
@@ -15,7 +15,7 @@ using Plots
     pt = PyTrade()
     env = pt.Trade(env_config)
     @test env isa PyObject
-    EvoTrade.Trade.reset!(env)
+    Evo.Trade.reset!(env)
     walks = [[(4,4), (3,4), (3,3), (3,2), (2, 2), (1,2), (1,3), (1,4), (1,5)]]
     plot_walks("walks.png", env.table, walks)
 end
@@ -31,12 +31,12 @@ end
 #    pt = PyTrade()
 #    env = pt.Trade(env_config)
 #    @test env isa PyObject
-#    EvoTrade.Trade.reset!(env)
+#    Evo.Trade.reset!(env)
 #    moves = env.MOVES
 #    println(moves)
 #    @test env.agent_positions["f0a0"] == (4,4)
 #    idx = findfirst(x->x=="UP", moves)-1
-#    EvoTrade.Trade.step!(env, Dict("f0a0"=>idx))
+#    Evo.Trade.step!(env, Dict("f0a0"=>idx))
 #end
 
 

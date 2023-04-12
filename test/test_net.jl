@@ -1,4 +1,4 @@
-using EvoTrade
+using Evo
 using Test
 using Flux
 using PyCall
@@ -15,7 +15,7 @@ root_dir = dirname(@__FILE__)  |> dirname |> String
 end
 @testset "test_make_head" begin
     for s in [1, 2, 4]
-        cnn = EvoTrade.Net.make_head((11, 11, 7, 10), scale=s)
+        cnn = Evo.Net.make_head((11, 11, 7, 10), scale=s)
         out = cnn(rand(Float32, 11, 11, 7, 10))
         @test size(out, 2) == 10
         @test ndims(out) == 2
@@ -25,9 +25,9 @@ end
 @testset "test_make_tail" begin
     for s in [1, 2, 4], lstm in [true, false]
         input_size = (11, 11, 7, 10)
-        cnn = EvoTrade.Net.make_head((11, 11, 7, 10), scale=s)
+        cnn = Evo.Net.make_head((11, 11, 7, 10), scale=s)
         cnn_size = Flux.outputsize(cnn, input_size)
-        tail = EvoTrade.Net.make_tail(cnn_size, 4, scale=s, lstm=lstm)
+        tail = Evo.Net.make_tail(cnn_size, 4, scale=s, lstm=lstm)
         cnn_out = cnn(rand(Float32, 11, 11, 7, 10))
         tail_out = tail(cnn_out)
         @test size(tail_out) == (4, 10)
@@ -44,7 +44,7 @@ end
     identical_obs = 0
     for seed in 1:10
         env = PyTrade().Trade(env_config)
-        obs = EvoTrade.Trade.reset!(env)
+        obs = Evo.Trade.reset!(env)
         m = make_model(:large, size(obs["f0a0"]), 4, lstm=true)
         θ, re = Flux.destructure(m)
         mi = ModelInfo(m)
@@ -58,7 +58,7 @@ end
         prev_out = m(obs["f0a0"])
         prev_obs = obs["f0a0"]
         for i in 1:args["episode-length"]*3
-            obs, rew, done = EvoTrade.Trade.step!(env, Dict("f0a0"=>0))
+            obs, rew, done = Evo.Trade.step!(env, Dict("f0a0"=>0))
             out = m(obs["f0a0"])
             if argmax(out) != argmax(prev_out)
                 action_change += 1

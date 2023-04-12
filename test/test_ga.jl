@@ -5,8 +5,8 @@ function euclidist(v1::Vector, v2::Vector)::Float64
 end
 
 @testset "test_average_bc" begin
-  @test EvoTrade.average_bc([[1,2,3], [1,2,3]]) == [1,2,3]
-  @test EvoTrade.average_bc([[1,2,3], [3,4,5]]) == [2,3,4]
+  @test Evo.average_bc([[1,2,3], [1,2,3]]) == [1,2,3]
+  @test Evo.average_bc([[1,2,3], [3,4,5]]) == [2,3,4]
 end
 
 @testset "test_bc3" begin

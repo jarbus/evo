@@ -1,4 +1,4 @@
-using EvoTrade
+using Evo
 using Test
 using Flux
 using StableRNGs

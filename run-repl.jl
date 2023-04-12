@@ -19,7 +19,7 @@ cls_name = basename(dirname(file))
 
 using Revise
 using Dates
-using EvoTrade
+using Evo
 expname = ["--exp-name", exp_name, "--cls-name", cls_name, "--local", "--datime", Dates.format(now(), "mm-dd_HH:MM")] # get rid of .arg
 arg_vector = read(file, String) |> split
 lines = readlines(file) .|> strip

@@ -7,7 +7,7 @@ using Logging
 
 
 @everywhere begin
-    using EvoTrade
+    using Evo
     args = $args
     expname = args["exp-name"]
     clsname = args["cls-name"]
@@ -66,7 +66,7 @@ function main()
     met_csv_name = "outs/$clsname/$expname/metrics.csv"
     sc_name = "outs/$clsname/$expname/sc.jld2"
     start_gen = 1
-    global_logger(EvoTradeLogger(args["local"] ? stdout : logname))
+    global_logger(EvoLogger(args["local"] ? stdout : logname))
     df = nothing
     wp = WorkerPool(workers())
     pop_size = args["pop-size"]
@@ -90,7 +90,7 @@ function main()
             grid = env.grid 
         else
             env = PyTrade().Trade(env_config)
-            EvoTrade.Trade.reset!(env)
+            Evo.Trade.reset!(env)
             grid = env.table 
         end
 

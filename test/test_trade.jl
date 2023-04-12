@@ -1,4 +1,4 @@
-using EvoTrade
+using Evo
 using Test
 using PyCall
 root_dir = dirname(@__FILE__)  |> dirname |> String
@@ -10,7 +10,7 @@ root_dir = dirname(@__FILE__)  |> dirname |> String
 #    env_config = mk_env_config(args)
 #    env = PyTrade().Trade(env_config)
 #    @test env isa PyObject
-#    EvoTrade.Trade.reset!(env)
+#    Evo.Trade.reset!(env)
 #end
 #
 #@testset "test_75_daystep" begin
@@ -20,7 +20,7 @@ root_dir = dirname(@__FILE__)  |> dirname |> String
 #    env_config = mk_env_config(args)
 #    env = PyTrade().Trade(env_config)
 #    @test env isa PyObject
-#    EvoTrade.Trade.reset!(env)
+#    Evo.Trade.reset!(env)
 #    min_light = 0.0
 #    max_light = 0.0
 #    for i in 1:args["episode-length"]*3
@@ -44,7 +44,7 @@ root_dir = dirname(@__FILE__)  |> dirname |> String
 #    pt = PyTrade()
 #    env = pt.Trade(env_config)
 #    @test env isa PyObject
-#    EvoTrade.Trade.reset!(env)
+#    Evo.Trade.reset!(env)
 #    no_seed_table = env.table
 #
 #
@@ -53,14 +53,14 @@ root_dir = dirname(@__FILE__)  |> dirname |> String
 #    @test "seed" in keys(env_config)
 #
 #    env1 = pt.Trade(env_config)
-#    EvoTrade.Trade.reset!(env1)
+#    Evo.Trade.reset!(env1)
 #    @test env1 isa PyObject
 #    seed_table_1 = env1.table
 #    
 #
 #    env2 = pt.Trade(env_config)
 #    @test env2 isa PyObject
-#    EvoTrade.Trade.reset!(env2)
+#    Evo.Trade.reset!(env2)
 #    seed_table_2 = env2.table
 #
 #    @test seed_table_1 != no_seed_table
@@ -74,7 +74,7 @@ root_dir = dirname(@__FILE__)  |> dirname |> String
     env_config = mk_env_config(args)
     env = PyTrade().Trade(env_config)
     @test env isa PyObject
-    EvoTrade.Trade.reset!(env)
+    Evo.Trade.reset!(env)
     cff = env.light.campfire_frame
     @test maximum(cff) == 1.0
     @test minimum(cff) == 0.0
@@ -83,10 +83,10 @@ root_dir = dirname(@__FILE__)  |> dirname |> String
     for a in 1:1000
         acts = [rand(1:9) for i in 1:args["episode-length"]]
         env = PyTrade().Trade(env_config)
-        EvoTrade.Trade.reset!(env)
+        Evo.Trade.reset!(env)
         for i in 1:10
-            obs, rew, done = EvoTrade.Trade.step!(env, Dict("f0a0" => acts[i]))
-            EvoTrade.Trade.render(env, "/dev/null")
+            obs, rew, done = Evo.Trade.step!(env, Dict("f0a0" => acts[i]))
+            Evo.Trade.render(env, "/dev/null")
             # for frame in 1:size(obs["f0a0"], 3)
                 # println(frame_types[frame])
                 # obs["f0a0"][:,:,frame] |> display

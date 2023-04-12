@@ -37,7 +37,7 @@
       [],
       [9,0.1,9,0.1,9],
       [9,0.1,9,0.1,9,0.1,9,0.1,9,0.1,9]]]
-    eidxs = EvoTrade.GANS.compute_elite_idxs(elites)
+    eidxs = Evo.GANS.compute_elite_idxs(elites)
     @test eidxs[elites[1][:seeds]] == Set{Int}([0,1])
     @test eidxs[elites[2][:seeds]] == Set{Int}([0,3,1])
     @test eidxs[elites[3][:seeds]] == Set{Int}([0,3,1])
