@@ -1,5 +1,5 @@
 using Random
-import EvoTrade: match, MutBinding, accumulate_muts, compute_stats,
+import Evo: match, MutBinding, accumulate_muts, compute_stats,
                  new_mr, pad_genepool!, make_genepool, add_mutations
 
 sc = SeedCache(maxsize=10)
@@ -15,15 +15,15 @@ nt = NoiseTable(StableRNG(1), length(mi), 1f0)
                     missing,
                     MutBinding(1, [mut_nobind.core]))
   geno = [mut_match]
-  @test EvoTrade.match(mut_match, geno)
+  @test Evo.match(mut_match, geno)
   # test that trying to match an unbound mutation throws an error
   try
-    !EvoTrade.match(mut_nobind, geno)
+    !Evo.match(mut_nobind, geno)
   catch e
     @test true
   end
   # test that mutation with wrong binding doesn't match
-  @test !EvoTrade.match(mut_nomatch, geno)
+  @test !Evo.match(mut_nomatch, geno)
 end
 
 @testset "accumulate_mutations" begin
@@ -94,7 +94,7 @@ end
   # test that add_mutations works when no mutations are added
   genos = [[Mut(Mut(mi).core, i-j, MutBinding(0, []))
            for j in 1:2] for i in 1:10]
-  gp = EvoTrade.make_genepool(mi, "1", genos, 20)
+  gp = Evo.make_genepool(mi, "1", genos, 20)
   for m in gp
     @test m.crossed_over == false
   end
@@ -105,9 +105,9 @@ end
     @test g[end].binding.start == 1 # test binding is fresh
     @test g[end].binding.geno == [g[1].core, g[2].core]
     @test mark_crossover(g[end]) ∉ gp
-    EvoTrade.update_score!(g, 100f0)
+    Evo.update_score!(g, 100f0)
   end
-  gp = EvoTrade.make_genepool(mi, "1", genos, 20)
+  gp = Evo.make_genepool(mi, "1", genos, 20)
   g_ends = [g[end] for g in genos]
   for m in g_ends
     @test mark_crossover(m) ∈ gp # test good muts added to gene pool
@@ -121,7 +121,7 @@ end
   # test that add_mutations works when mutations are added
   genos = [[Mut(Mut(mi).core, i+j, MutBinding(missing, []))
            for j in 1:2] for i in 1:10]
-  gp = EvoTrade.make_genepool(mi, "1", genos, 20)
+  gp = Evo.make_genepool(mi, "1", genos, 20)
   [@test m.crossed_over for m in gp[1:10]]
   [@test !m.crossed_over for m in gp[11:end]]
   # filter out padded muts
@@ -136,7 +136,7 @@ end
     @test g[end].binding.geno == [g[1].core, g[2].core]
     @test g[end-1].crossed_over == false
     @test g[end].crossed_over == true
-    EvoTrade.update_score!(g, 100f0)
+    Evo.update_score!(g, 100f0)
   end
   log_improvements("1", genos)
 end
@@ -146,15 +146,15 @@ end
   for ind in pop.inds
     ind.fitness = 100f0
   end
-  EvoTrade.compute_scores!(pop, 0f0)
-  next_pop = EvoTrade.create_next_pop(mi, pop, 0f0, 10)
+  Evo.compute_scores!(pop, 0f0)
+  next_pop = Evo.create_next_pop(mi, pop, 0f0, 10)
   @test length(next_pop.inds) == 10
 
   for ind in next_pop.inds
     ind.fitness = 100f0
   end
-  EvoTrade.compute_scores!(next_pop, 0f0)
-  next_pop = EvoTrade.create_next_pop(mi, next_pop, 0f0, 2)
+  Evo.compute_scores!(next_pop, 0f0)
+  next_pop = Evo.create_next_pop(mi, next_pop, 0f0, 2)
   @test length(next_pop.inds) == 10
   @test length(next_pop.elites) == 2
 end
@@ -165,11 +165,11 @@ end
   inds = [Ind("1", g1), Ind("2", g2)]
   pop = Pop("1", 2, inds)
   γ = 0.0f0
-  EvoTrade.update_score!(pop.inds[1].geno, 100f0)
+  Evo.update_score!(pop.inds[1].geno, 100f0)
   pop.inds[1].fitness = 100f0
-  EvoTrade.update_score!(pop.inds[2].geno, -100f0)
+  Evo.update_score!(pop.inds[2].geno, -100f0)
   pop.inds[2].fitness = -100f0
-  gp = EvoTrade.make_genepool(mi, pop)
+  gp = Evo.make_genepool(mi, pop)
   @test g1[1] ∉ gp
   @test g2[1] ∉ gp
   new_pop = create_next_pop(mi, pop, γ, 1)
@@ -182,13 +182,13 @@ end
   @test length(new_pop.inds[2].geno) == UInt32(2)
   pop = new_pop
 
-  EvoTrade.update_score!(pop.inds[1].geno, -100f0)
+  Evo.update_score!(pop.inds[1].geno, -100f0)
   pop.inds[1].fitness = -100f0
-  EvoTrade.update_score!(pop.inds[2].geno, 200f0)
+  Evo.update_score!(pop.inds[2].geno, 200f0)
   pop.inds[2].fitness = 200f0
 
   Random.seed!(1)
-  gp = EvoTrade.make_genepool(mi, pop)
+  gp = Evo.make_genepool(mi, pop)
   @test mark_crossover(pop.inds[1].geno[end]) ∉ gp
   @test mark_crossover(pop.inds[2].geno[end]) ∈ gp
   Random.seed!(1)
@@ -209,12 +209,12 @@ end
   sibling2 = deepcopy(sibling1)
   sibling2[9] = Mut(Mut(mi).core, 81, MutBinding())
   sibling2[10] = Mut(Mut(mi).core, 100, MutBinding())
-  binding1 = EvoTrade.create_binding(sibling1)
+  binding1 = Evo.create_binding(sibling1)
   sibling1[end] = Mut(sibling1[end], binding1)
   @test sibling1[end].crossed_over == false
   @test sibling1[end].binding.start == 5
   @test match(sibling1[end], sibling2)
-  gp = EvoTrade.make_genepool(mi, "1", [sibling1], 2)[1:1]
+  gp = Evo.make_genepool(mi, "1", [sibling1], 2)[1:1]
   @test gp[1].core == sibling1[end].core
   new_sibling2 = add_mutations(gp, [sibling2], 1)[1]
   @test new_sibling2[end].binding.start == 5

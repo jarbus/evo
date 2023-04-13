@@ -237,7 +237,7 @@ end
 compute_novelties!(pops::Vector{Pop}) = map(compute_novelties!, pops)
 function compute_novelties!(pop::Pop, k=25)
   """Compute maximum novelty over all bcs for each ind in pop"""
-  bc_mat, bc_ids, n_pop_bcs = EvoTrade.make_bc_matrix(pop)
+  bc_mat, bc_ids, n_pop_bcs = Evo.make_bc_matrix(pop)
   k = min(size(bc_mat,2), k)
   idx::Int = 0
   

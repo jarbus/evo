@@ -44,8 +44,8 @@ end
       @test ind.geno == pops[i].inds[j].geno
     end
     id_batches = [make_random_idbatch(ind.id) for pop in pops for ind in pop.inds]
-    EvoTrade.update_pops!(pops, id_batches)
-    #EvoTrade.plot_bcs("bcs", pops, 3)
+    Evo.update_pops!(pops, id_batches)
+    #Evo.plot_bcs("bcs", pops, 3)
     next_pops = create_next_pop(pops, γ, n_elites)
     pops = next_pops
   end

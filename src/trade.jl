@@ -1,6 +1,7 @@
 module Trade
 
-export batch_reset!, batch_step!, PyTrade, render, get_metrics, reset!, step!, batch_pos!, get_bcs
+import Evo
+export batch_reset!, batch_step!, PyTrade, render, get_metrics, batch_pos!, get_bcs
 
 using PyCall
 using Pathnames
@@ -26,9 +27,9 @@ function ecat(x...)
   cat(x..., dims=ndims(x[1]))
 end
 
-function reset!(env::PyObject)
-  pycall(env.reset, PyDict{String,PyArray})
-end
+# function Evo.reset!(env::PyObject)
+#   pycall(env.reset, PyDict{String,PyArray})
+# end
 
 
 function render(env::PyObject, filename::String)
@@ -49,9 +50,9 @@ function get_metrics(envs::Vector{PyObject})
     mergewith(vcat, mets_vec...)
 end
 
-function step!(env::PyObject, actions::Dict{String,Int})::step_return_type
-  pycall(env.step, step_return_type, actions)
-end
+# function Evo.step!(env::PyObject, actions::Dict{String,Int})::step_return_type
+#   pycall(env.step, step_return_type, actions)
+# end
 function sample_batch(probs::Matrix{Float32})
   [sample(1:size(probs, 1), Weights(probs[:, i])) for i in 1:size(probs, 2)]
 end

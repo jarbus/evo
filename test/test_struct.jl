@@ -79,7 +79,7 @@ end
   end
   push!(pop.archive, rand(Float32, 7))
   @testset "make_bc_matrix" begin
-    bc_mat, bc_ids = EvoTrade.make_bc_matrix(pop)
+    bc_mat, bc_ids = Evo.make_bc_matrix(pop)
     @test size(bc_mat) == (7, 9)
     @test bc_ids[1] == [1,2]
     @test bc_ids[4] == [7,8]
@@ -102,18 +102,18 @@ end
 #             [[1,0.1,2,0.1,3,0.1,4,0.1,5,0.1,6],
 #              [1,0.1,2,0.1,3,0.1,5,0.1,8], [4] ]]
 #   @testset "last_matching_index" begin
-#     @test 5 == EvoTrade.find_last_matching_idx(es[1], es[2])
-#     @test 0 == EvoTrade.find_last_matching_idx(es[1], es[3])
+#     @test 5 == Evo.find_last_matching_idx(es[1], es[2])
+#     @test 0 == Evo.find_last_matching_idx(es[1], es[3])
 #   end
 #   @testset "compute_elite_idxs" begin
-#     eidxs= EvoTrade.compute_elite_idxs!(es)
+#     eidxs= Evo.compute_elite_idxs!(es)
 #     @test es[1].elite_idxs == Set{Int}([0, 5, 11])
 #     @test es[2].elite_idxs == Set{Int}([0, 5, 9])
 #   end
 #   @testset "get_elite_idxs" begin
 #     pop = Pop("1", 3, [Ind([e.geno; [0.1f0,32f0]]) for e in es])
 #     pop.elites = es
-#     pop_idxs = EvoTrade.get_elite_idxs(pop)
+#     pop_idxs = Evo.get_elite_idxs(pop)
 #     for i in 1:length(pop.inds)
 #       @test pop_idxs[i] == es[i].elite_idxs
 #     end

@@ -1,5 +1,5 @@
 using Test
-using EvoTrade
+using Evo
 
 include("test_ga.jl")
 include("test_net.jl")

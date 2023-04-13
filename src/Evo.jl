@@ -1,4 +1,4 @@
-module EvoTrade
+module Evo
 
 # args, net, multiproc
 export get_arg_table, parse_args, make_procs, make_model
@@ -30,7 +30,7 @@ export compute_prefixes, decompress_group, add_elite_idxs,
 compress_pop, compress_pops, compress_elites
 # rollout & logger
 export run_batch, mk_mods, process_batch
-export EvoTradeLogger
+export EvoLogger
 # noisetable
 export NoiseTable
 # genepool
@@ -65,8 +65,10 @@ include("args.jl")
 include("multiproc.jl")
 include("logger.jl")
 include("net.jl")
+include("gym.jl")
 include("construction.jl")
 include("trade.jl")
+using .Gym
 using .Trade
 include("maze.jl")
 using .Maze

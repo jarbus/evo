@@ -1,4 +1,4 @@
-using EvoTrade
+using Evo
 using Flux
 using Test
 using StableRNGs
@@ -12,7 +12,7 @@ using StableRNGs
   nt = NoiseTable(StableRNG(1), length(mi), 1f0)
   geno = rand(Mut, 1)
   elite_idxs = EliteIdxs([1])
-  rdc = EvoTrade.ReconDataCollector()
+  rdc = Evo.ReconDataCollector()
   z = construct!(sc, nt, mi, geno, elite_idxs, rdc)
   @test 0 ∈ z # test bias vector
   @test sum(z) != 0 # test there are weights
@@ -41,7 +41,7 @@ end
 #   n_elites = 3
 #   model_size = 10_000
 #   param_cache::SeedCache = SeedCache(maxsize=n_elites*3)
-#   rdc = EvoTrade.ReconDataCollector()
+#   rdc = Evo.ReconDataCollector()
 #   m = make_model(:large, (11, 11, 7, 10), 4, lstm=true)
 #   mi = ModelInfo(m)
 #   ind1 = Ind("1", [1f0])

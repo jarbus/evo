@@ -9,14 +9,14 @@ function run_batch(env::MazeEnv, models::Dict{String,<:Chain}, args; evaluation=
     sample_act_func = x->[argmax(c) for c in eachcol(x)]
     walk = Vector{Tuple{Float64,Float64}}()
     for i in 1:batch_size 
-        EvoTrade.Maze.reset!(env)
+        Evo.Maze.reset!(env)
         r = -Inf
         for j in 1:args["episode-length"]
             obs = get_obs(env)
             probs = model(obs)
             acts = sample_act_func(probs)
             @assert length(acts) == 1
-            r, done = EvoTrade.Maze.step!(env, acts[1])
+            r, done = Evo.Maze.step!(env, acts[1])
             push!(walk, (env.locations[4] .- 1))
             done && break
         end
@@ -140,4 +140,18 @@ end
 function add_metrics(batch::Batch, metrics::Dict)
     new_metrics = merge(batch.mets, metrics)
     Batch(batch.rews, new_metrics, batch.bcs, batch.info)
+end
+
+# Run gym env
+function run_batch(env::PyObject, models::Dict{String,<:Chain}, args; evaluation=false, render_str::Union{Nothing,String}=nothing, batch_size=nothing)
+  obs = reset!(env)[1]
+  actions = models["test"](Matrix(obs'))
+  action_ints = [argmax(c)-1 for c in eachrow(actions)]
+  for i in 1:1
+    observation, reward, terminated, truncated, info = step!(env, action_ints)
+    actions = models["test"](Matrix(observation'))
+    if any(terminated) || any(truncated)
+       observation, info = env.reset()
+     end
+  end
 end

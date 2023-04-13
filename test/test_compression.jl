@@ -12,16 +12,16 @@
   i4 = Ind("3", g4)
   pop = Pop("1", 5, [i0, i1, i2, i3, i4])
   pop.elites = pop.inds
-  idxs = EvoTrade.get_elite_idxs(pop)
+  idxs = Evo.get_elite_idxs(pop)
   sorted_idxs = [sort(Int.(collect(i.elite_idxs))) for i in pop.inds]
   @test sorted_idxs[1] == [1]
   @test sorted_idxs[2] == [1, 2]
   @test sorted_idxs[3] == [1, 2]
   @test sorted_idxs[4] == [2]
   @test sorted_idxs[5] == [4]
-  prefixes = EvoTrade.compute_prefixes([pop])
+  prefixes = Evo.compute_prefixes([pop])
   compop = compress_pop(pop, prefixes)
-  dc = EvoTrade.decompress_group(compop, prefixes)
+  dc = Evo.decompress_group(compop, prefixes)
   @test dc[1].geno == g0
   @test dc[2].geno == g1
   @test dc[3].geno == g2

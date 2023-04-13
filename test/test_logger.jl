@@ -1,4 +1,4 @@
-evologger = EvoTradeLogger(stdout)
+evologger = EvoLogger(stdout)
 
 println("Testing logger")
 with_logger(evologger) do
@@ -7,7 +7,7 @@ with_logger(evologger) do
 end
 
 
-evologger = EvoTradeLogger("test/test.log")
+evologger = EvoLogger("test/test.log")
 
 with_logger(evologger) do
     @info "This is an info log message"

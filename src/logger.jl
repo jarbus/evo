@@ -19,7 +19,7 @@ function higher_filter(logger)
 end
 
 
-function EvoTradeLogger(io)
+function EvoLogger(io)
   info_logger = io == stdout ? ConsoleLogger() : FormatLogger(io) do io, args
              println(io, args.message)
          end
