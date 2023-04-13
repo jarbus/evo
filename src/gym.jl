@@ -10,8 +10,11 @@ function make(env_name::String, num_envs::Int64=1)
   env
 end
 
-Evo.reset!(env::PyObject) = env.reset()
-Evo.step!(env::PyObject, actions::Vector{T}) where T <: Integer = env.step(actions)
+Evo.reset!(env::PyObject) = Matrix(env.reset()[1]')
+function Evo.step!(env::PyObject, actions::Vector{T}) where T <: Integer 
+  observation, reward, terminated, truncated, info = env.step(actions)
+  Matrix(observation'), reward, terminated, truncated, info
+end
 
 
 end
