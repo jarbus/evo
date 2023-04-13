@@ -44,7 +44,7 @@ end
     identical_obs = 0
     for seed in 1:10
         env = PyTrade().Trade(env_config)
-        obs = Evo.Trade.reset!(env)
+        obs = reset!(env)
         m = make_model(:large, size(obs["f0a0"]), 4, lstm=true)
         θ, re = Flux.destructure(m)
         mi = ModelInfo(m)

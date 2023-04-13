@@ -9,7 +9,7 @@ function run_batch(env::MazeEnv, models::Dict{String,<:Chain}, args; evaluation=
     sample_act_func = x->[argmax(c) for c in eachcol(x)]
     walk = Vector{Tuple{Float64,Float64}}()
     for i in 1:batch_size 
-        Evo.Maze.reset!(env)
+        reset!(env)
         r = -Inf
         for j in 1:args["episode-length"]
             obs = get_obs(env)

@@ -90,7 +90,7 @@ function main()
             grid = env.grid 
         else
             env = PyTrade().Trade(env_config)
-            Evo.Trade.reset!(env)
+            Evo.reset!(env)
             grid = env.table 
         end
 
