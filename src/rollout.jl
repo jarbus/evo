@@ -74,3 +74,17 @@ function run_batch(env_config::Dict, models::Dict{String,<:Chain}, args; evaluat
     info = Dict{String, Any}("avg_walks"=>avg_walks)
     rew_dict, mets, bc, info
 end
+
+# Run gym env
+function run_batch(env::PyObject, models::Dict{String,<:Chain}, args; evaluation=false, render_str::Union{Nothing,String}=nothing, batch_size=nothing)
+  obs = reset!(env)[1]
+  actions = models["test"](Matrix(obs'))
+  action_ints = [argmax(c)-1 for c in eachrow(actions)]
+  for i in 1:1
+    observation, reward, terminated, truncated, info = step!(env, action_ints)
+    actions = models["test"](Matrix(observation'))
+    if any(terminated) || any(truncated)
+       observation, info = env.reset()
+     end
+  end
+end
