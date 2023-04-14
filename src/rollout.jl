@@ -79,12 +79,18 @@ end
 function run_batch(env::PyObject, models::Dict{String,<:Chain}, args; evaluation=false, render_str::Union{Nothing,String}=nothing, batch_size=nothing)
   obs = reset!(env)
   actions = models["test"](obs)
-  action_ints = [argmax(c)-1 for c in eachrow(actions)]
-  for i in 1:1
-    observation, reward, terminated, truncated, info = step!(env, action_ints)
+  action_ints = [argmax(c)-1 for c in eachcol(actions)]
+  n_envs = length(action_ints)
+  fitness = 0
+  terminated, truncated = falses(n_envs), falses(n_envs)
+  while !all(terminated) && !all(truncated)
+    observation, reward, step_terminated, step_truncated, info = step!(env, action_ints)
+    terminated .|= step_terminated
+    truncated .|= step_truncated
+    non_terminated_rewards = reward .* Int.(.!terminated)
+    fitness += sum(non_terminated_rewards)
     actions = models["test"](observation)
-    if any(terminated) || any(truncated)
-       observation, info = env.reset()
-     end
+    action_ints = [argmax(c)-1 for c in eachcol(actions)]
   end
+  fitness / n_envs
 end
