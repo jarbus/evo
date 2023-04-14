@@ -24,6 +24,7 @@ create_next_pop, add_to_archive!, M, elite, fitnesses,
 mr, create_rollout_groups, aid, update_pops!, novelties,
 all_v_all, singleton_groups, random_groups, all_v_best,
 bcs
+export make
 
 # compression
 export compute_prefixes, decompress_group, add_elite_idxs,
@@ -42,6 +43,8 @@ Prefixes, V32, Batch, compute_compression_data, Mut,
 Seed, MR, MutCore, MutBinding, EliteIdxs, mark_crossover,
 mark_score
 
+function reset! end
+function step! end
 
 using ArgParse
 using Infiltrator
@@ -53,6 +56,7 @@ using DataFrames
 using Statistics
 using Printf
 using Plots
+using PyCall
 using LoggingExtras
 using Random
 using Optionals
