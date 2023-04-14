@@ -1,7 +1,7 @@
 using Revise
 using ProfileView
 using BenchmarkTools
-using EvoTrade
+using Evo
 using Flux
 using StableRNGs
 using Test
@@ -21,7 +21,7 @@ function t()
     file = joinpath("test/",read(pipeline(`ls test`, `fzf`), String)) |> strip
     println(file)
     include(file)
-    roc([file], [EvoTrade]) do
+    roc([file], [Evo]) do
         println("Running main()")
         include(file)
     end
