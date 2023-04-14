@@ -10,7 +10,7 @@ root_dir = dirname(@__FILE__)  |> dirname |> String
 #    env_config = mk_env_config(args)
 #    env = PyTrade().Trade(env_config)
 #    @test env isa PyObject
-#    Evo.Trade.reset!(env)
+#    Evo.reset!(env)
 #end
 #
 #@testset "test_75_daystep" begin
@@ -20,7 +20,7 @@ root_dir = dirname(@__FILE__)  |> dirname |> String
 #    env_config = mk_env_config(args)
 #    env = PyTrade().Trade(env_config)
 #    @test env isa PyObject
-#    Evo.Trade.reset!(env)
+#    Evo.reset!(env)
 #    min_light = 0.0
 #    max_light = 0.0
 #    for i in 1:args["episode-length"]*3
@@ -44,7 +44,7 @@ root_dir = dirname(@__FILE__)  |> dirname |> String
 #    pt = PyTrade()
 #    env = pt.Trade(env_config)
 #    @test env isa PyObject
-#    Evo.Trade.reset!(env)
+#    Evo.reset!(env)
 #    no_seed_table = env.table
 #
 #
@@ -53,14 +53,14 @@ root_dir = dirname(@__FILE__)  |> dirname |> String
 #    @test "seed" in keys(env_config)
 #
 #    env1 = pt.Trade(env_config)
-#    Evo.Trade.reset!(env1)
+#    Evo.reset!(env1)
 #    @test env1 isa PyObject
 #    seed_table_1 = env1.table
 #    
 #
 #    env2 = pt.Trade(env_config)
 #    @test env2 isa PyObject
-#    Evo.Trade.reset!(env2)
+#    Evo.reset!(env2)
 #    seed_table_2 = env2.table
 #
 #    @test seed_table_1 != no_seed_table
@@ -75,7 +75,7 @@ root_dir = dirname(@__FILE__)  |> dirname |> String
 #    env_config = mk_env_config(args)
 #    env = PyTrade().Trade(env_config)
 #    @test env isa PyObject
-#    Evo.Trade.reset!(env)
+#    Evo.reset!(env)
 #    cff = env.light.campfire_frame
 #    @test maximum(cff) == 1.0
 #    @test minimum(cff) == 0.0
@@ -83,10 +83,10 @@ root_dir = dirname(@__FILE__)  |> dirname |> String
 #    for a in 1:1000
 #        acts = [rand(1:9) for i in 1:args["episode-length"]]
 #        env = PyTrade().Trade(env_config)
-#        Evo.Trade.reset!(env)
+#        Evo.reset!(env)
 #        for i in 1:10
-#            obs, rew, done = Evo.Trade.step!(env, Dict("f0a0" => acts[i]))
-#            Evo.Trade.render(env, "/dev/null")
+#            obs, rew, done = Evo.step!(env, Dict("f0a0" => acts[i]))
+#            Evo.render(env, "/dev/null")
 #        end
 #    end
 #end
@@ -106,38 +106,38 @@ root_dir = dirname(@__FILE__)  |> dirname |> String
     env_config["fires"] = [(0,0,0)]
     acts = [rand(1:9) for i in 1:args["episode-length"]]
     env = PyTrade().Trade(env_config)
-    Evo.Trade.reset!(env)
+    Evo.reset!(env)
     @test 1.0f0 == pycall(env.collection_modifier, Float32, i1, 0)
     @test 0.5f0 == pycall(env.collection_modifier, Float32, i1, 1) 
     @test 0.5f0 == pycall(env.collection_modifier, Float32, i2, 0)
     @test 1.0f0 == pycall(env.collection_modifier, Float32, i2, 1)
     # 0-3 is direction
     # 4,5,6,7 are pick0, place0, pick1, place1
-    Evo.Trade.step!(env, Dict(i1 => 4))
+    Evo.step!(env, Dict(i1 => 4))
     @test env.agent_food_counts[i1][1] == 4.9
     @test env.mc.picked_counts[i1][1] == 5
     @test env.agent_food_counts[i1][2] == 0.0
     @test env.mc.picked_counts[i1][2] == 0
-    Evo.Trade.step!(env, Dict(i2 => 6))
+    Evo.step!(env, Dict(i2 => 6))
     @test env.agent_food_counts[i2][1] == 0.0
     @test env.mc.picked_counts[i2][1] == 0
     @test env.agent_food_counts[i2][2] == 4.9
     @test env.mc.picked_counts[i2][2] == 5
 
-    Evo.Trade.reset!(env)
-    Evo.Trade.step!(env, Dict(i1 => 6))
+    Evo.reset!(env)
+    Evo.step!(env, Dict(i1 => 6))
     @test env.agent_food_counts[i1][1] == 0.0
     @test env.mc.picked_counts[i1][1] == 0
     @test env.agent_food_counts[i1][2] == 2.4
     @test env.mc.picked_counts[i1][2] == 2.5
-    Evo.Trade.step!(env, Dict(i2 => 4))
+    Evo.step!(env, Dict(i2 => 4))
     @test env.agent_food_counts[i2][1] == 2.4
     @test env.mc.picked_counts[i2][1] == 2.5
     @test env.agent_food_counts[i2][2] == 0.0
     @test env.mc.picked_counts[i2][2] == 0
 
     # for i in 1:10
-    #     obs, rew, done = Evo.Trade.step!(env, Dict("f0a0" => acts[i]))
-    #     Evo.Trade.render(env, "/dev/null")
+    #     obs, rew, done = Evo.step!(env, Dict("f0a0" => acts[i]))
+    #     Evo.render(env, "/dev/null")
     # end
 end

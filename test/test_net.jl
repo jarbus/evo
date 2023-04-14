@@ -44,7 +44,7 @@ end
     identical_obs = 0
     for seed in 1:10
         env = PyTrade().Trade(env_config)
-        obs = Evo.Trade.reset!(env)
+        obs = Evo.reset!(env)
         m = make_model(:large, size(obs["f0a0"]), 4, lstm=true)
         θ, re = Flux.destructure(m)
         mi = ModelInfo(m)
@@ -58,7 +58,7 @@ end
         prev_out = m(obs["f0a0"])
         prev_obs = obs["f0a0"]
         for i in 1:args["episode-length"]*3
-            obs, rew, done = Evo.Trade.step!(env, Dict("f0a0"=>0))
+            obs, rew, done = Evo.step!(env, Dict("f0a0"=>0))
             out = m(obs["f0a0"])
             if argmax(out) != argmax(prev_out)
                 action_change += 1
